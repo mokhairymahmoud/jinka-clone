@@ -1,6 +1,15 @@
 import { PlaywrightCrawler } from "crawlee";
 
-import type { ListingSource, ListingVariant } from "@jinka-eg/types";
+import type {
+  Coordinates,
+  ListingPurpose,
+  ListingSource,
+  ListingVariant,
+  LocalizedText,
+  MarketSegment,
+  PriceAmount,
+  PropertyType
+} from "@jinka-eg/types";
 
 export interface SourceSeed {
   url: string;
@@ -23,11 +32,41 @@ export interface ConnectorHealth {
   notes: string[];
 }
 
+export interface ParsedListingCandidate {
+  source?: ListingSource;
+  sourceListingId?: string;
+  sourceUrl?: string;
+  title?: LocalizedText;
+  description?: LocalizedText;
+  purpose?: ListingPurpose;
+  marketSegment?: MarketSegment;
+  propertyType?: PropertyType;
+  price?: PriceAmount;
+  bedrooms?: number;
+  bathrooms?: number;
+  areaSqm?: number;
+  compoundName?: LocalizedText;
+  developerName?: LocalizedText;
+  location?: Coordinates;
+  imageUrls?: string[];
+  publishedAt?: string;
+  extractionConfidence?: number;
+  areaName?: string;
+  rawFields?: Record<string, unknown>;
+}
+
+export interface NormalizedListingCandidate extends ListingVariant {
+  areaName?: string;
+  mediaHashes: string[];
+  rawFields: Record<string, unknown>;
+}
+
 export interface SourceConnector {
   readonly source: ListingSource;
   discover(): Promise<SourceSeed[]>;
   createCrawler(): PlaywrightCrawler;
-  parse(raw: RawPageResult): Promise<Partial<ListingVariant>[]>;
-  normalize(candidate: Partial<ListingVariant>): Promise<ListingVariant | null>;
+  fetch(seed: SourceSeed): Promise<RawPageResult>;
+  parse(raw: RawPageResult): Promise<ParsedListingCandidate[]>;
+  normalize(candidate: ParsedListingCandidate): Promise<NormalizedListingCandidate | null>;
   healthcheck(): Promise<ConnectorHealth>;
 }

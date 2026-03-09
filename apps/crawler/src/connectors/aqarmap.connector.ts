@@ -1,7 +1,13 @@
-import type { ConnectorHealth, RawPageResult, SourceSeed } from "../core/connector.js";
-import type { ListingVariant } from "@jinka-eg/types";
+import type {
+  ConnectorHealth,
+  NormalizedListingCandidate,
+  ParsedListingCandidate,
+  RawPageResult,
+  SourceSeed
+} from "../core/connector.js";
 
 import { BasePlaywrightConnector } from "../core/base-playwright-connector.js";
+import { hashImageUrls, localizeText, normalizePrice } from "../core/normalization.js";
 
 export class AqarmapConnector extends BasePlaywrightConnector {
   readonly source = "aqarmap" as const;
@@ -10,26 +16,35 @@ export class AqarmapConnector extends BasePlaywrightConnector {
     return [{ url: "https://aqarmap.com.eg/en/for-sale/property-type/cairo", label: "anti-bot-heavy" }];
   }
 
-  async parse(raw: RawPageResult): Promise<Partial<ListingVariant>[]> {
+  async parse(raw: RawPageResult): Promise<ParsedListingCandidate[]> {
+    const price = normalizePrice(5600000, "EGP", "total");
+
+    if (!price) {
+      return [];
+    }
+
     return [
       {
         source: this.source,
         sourceListingId: raw.sourceListingId ?? "demo-aqarmap-id",
         sourceUrl: raw.url,
-        title: { en: "Parsed from Aqarmap", ar: "تم التحليل من عقارماب" },
-        description: { en: "Protected source connector stub", ar: "موصل أولي لمصدر محمي" },
+        title: localizeText("Parsed from Aqarmap", "تم التحليل من عقارماب"),
+        description: localizeText("Protected source connector stub", "موصل أولي لمصدر محمي"),
         purpose: "sale",
         marketSegment: "off_plan",
         propertyType: "apartment",
-        price: { amount: 5600000, currency: "EGP", period: "total" },
+        price,
         imageUrls: [],
         publishedAt: raw.fetchedAt,
-        extractionConfidence: 0.7
+        extractionConfidence: 0.7,
+        rawFields: {
+          stub: true
+        }
       }
     ];
   }
 
-  async normalize(candidate: Partial<ListingVariant>): Promise<ListingVariant | null> {
+  async normalize(candidate: ParsedListingCandidate): Promise<NormalizedListingCandidate | null> {
     if (!candidate.sourceListingId || !candidate.sourceUrl || !candidate.title || !candidate.description || !candidate.price) {
       return null;
     }
@@ -53,7 +68,10 @@ export class AqarmapConnector extends BasePlaywrightConnector {
       areaSqm: candidate.areaSqm,
       compoundName: candidate.compoundName,
       developerName: candidate.developerName,
-      location: candidate.location
+      location: candidate.location,
+      areaName: candidate.areaName,
+      mediaHashes: hashImageUrls(candidate.imageUrls ?? []),
+      rawFields: candidate.rawFields ?? {}
     };
   }
 

@@ -1,0 +1,100 @@
+{
+  "props": {
+    "pageProps": {
+      "searchResult": {
+        "listings": [
+          {
+            "listing_type": "property",
+            "property": {
+              "id": "57484629",
+              "category_id": 2,
+              "property_type": "Apartment",
+              "price": {
+                "value": 80000,
+                "currency": "EGP",
+                "period": "monthly",
+                "is_hidden": false
+              },
+              "title": "Furnished Apartment for Rent | ZED Towers",
+              "location": {
+                "id": "41355",
+                "full_name": "Park Side Residence, Zed Towers, Sheikh Zayed Compounds, Sheikh Zayed City, Giza",
+                "coordinates": {
+                  "lat": 30.046802520751953,
+                  "lon": 31.002105712890625
+                },
+                "slug": "sheikh-zayed-city-sheikh-zayed-compounds-zed-towers-park-side-residence",
+                "path_name": "Giza, Sheikh Zayed City, Sheikh Zayed Compounds, Zed Towers"
+              },
+              "images": [
+                {
+                  "medium": "https://static.shared.propertyfinder.eg/media/images/listing/zed-towers-1.jpg"
+                }
+              ],
+              "broker": {
+                "name": "RE/MAX Everest"
+              },
+              "is_direct_from_developer": false,
+              "is_new_construction": false,
+              "bedrooms": "3",
+              "bathrooms": "3",
+              "size": {
+                "value": 170,
+                "unit": "sqm"
+              },
+              "share_url": "https://www.propertyfinder.eg/en/plp/rent/apartment-for-rent-zed-towers.html",
+              "reference": "FHESCFA63V0KE9EVJZRJWTDREW",
+              "listed_date": "2026-03-09T00:30:46Z",
+              "description": "Fully Furnished Apartment for Rent | ZED Towers"
+            }
+          },
+          {
+            "listing_type": "property",
+            "property": {
+              "id": "57481888",
+              "category_id": 1,
+              "property_type": "Villa",
+              "price": {
+                "value": 23500000,
+                "currency": "EGP",
+                "period": "total",
+                "is_hidden": false
+              },
+              "title": "Standalone Villa in New Cairo",
+              "location": {
+                "id": "99999",
+                "full_name": "Mivida, New Cairo, Cairo",
+                "coordinates": {
+                  "lat": 30.0187,
+                  "lon": 31.4911
+                },
+                "slug": "new-cairo-mivida",
+                "path_name": "Cairo, New Cairo, Mivida"
+              },
+              "images": [
+                {
+                  "medium": "https://static.shared.propertyfinder.eg/media/images/listing/mivida-villa.jpg"
+                }
+              ],
+              "broker": {
+                "name": "Coldwell Banker"
+              },
+              "is_direct_from_developer": false,
+              "is_new_construction": false,
+              "bedrooms": "5",
+              "bathrooms": "4",
+              "size": {
+                "value": 320,
+                "unit": "sqm"
+              },
+              "share_url": "https://www.propertyfinder.eg/en/plp/buy/villa-for-sale-new-cairo.html",
+              "reference": "NEWCAIROVILLA001",
+              "listed_date": "2026-03-08T22:10:00Z",
+              "description": "Standalone villa with private garden in Mivida."
+            }
+          }
+        ]
+      }
+    }
+  }
+}

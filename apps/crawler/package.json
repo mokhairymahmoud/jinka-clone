@@ -6,15 +6,22 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsx watch src/index.ts",
+    "ingest": "tsx src/enqueue.ts",
+    "ingest:once": "tsx src/run-once.ts",
     "lint": "tsc -p tsconfig.json --noEmit",
+    "replay": "tsx src/replay.ts",
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "worker": "tsx src/worker.ts"
   },
   "dependencies": {
+    "@prisma/client": "^6.4.1",
     "@jinka-eg/config": "workspace:*",
     "@jinka-eg/types": "workspace:*",
+    "bullmq": "^5.43.0",
     "crawlee": "^3.13.4",
     "ioredis": "^5.5.0",
+    "minio": "^8.0.6",
     "playwright": "^1.51.0",
     "zod": "^3.24.2"
   },

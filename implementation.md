@@ -9,18 +9,24 @@
 ## Current Status
 - `Phase 0`: complete.
 - `Phase 1`: complete as of March 9, 2026.
-- `Phase 2`: not started.
-- Delivery boundary: stop after platform foundation. No ingestion queues, raw snapshot pipeline, source normalization flow, or live scrapers have been started.
+- `Phase 2`: complete as of March 9, 2026.
 - Local verification completed on March 9, 2026:
   - `docker compose up -d postgres redis minio`
   - `pnpm --filter @jinka-eg/api exec prisma migrate deploy`
   - `pnpm --filter @jinka-eg/api prisma:seed`
-  - `pnpm lint`
-  - `pnpm typecheck`
-  - `pnpm test`
-  - `pnpm build`
+  - `pnpm --filter @jinka-eg/api typecheck`
+  - `pnpm --filter @jinka-eg/web typecheck`
+  - `pnpm --filter @jinka-eg/crawler typecheck`
+  - `pnpm --filter @jinka-eg/api test`
+  - `pnpm --filter @jinka-eg/crawler test`
+  - `pnpm --filter @jinka-eg/api build`
+  - `pnpm --filter @jinka-eg/web build`
+  - `pnpm --filter @jinka-eg/crawler build`
   - API smoke test for `request-otp -> verify-otp -> GET /v1/me -> PATCH /v1/me`
   - RBAC smoke test for `GET /v1/admin/connectors` returning `200` for admin and `403` for a regular user
+  - `pnpm --filter @jinka-eg/crawler ingest:once`
+  - Prisma verification of persisted `IngestionRun`, `RawSnapshot`, `ListingVariant`, and `Area` rows for `Nawy` and `Property Finder EG`
+  - MinIO verification of replayable raw snapshot objects under `S3_BUCKET_RAW`
 - Phase 1 runtime delivered:
   - Prisma-backed `User`, `OtpChallenge`, and `AuthSession` persistence on PostgreSQL + PostGIS
   - seed-backed admin bootstrap for `demo@example.com`
@@ -28,6 +34,14 @@
   - Next.js localized sign-in flow, protected app shell, account settings page, locale switching, and logout
   - request logging, structured exception logging, Sentry bootstrap, and OpenTelemetry bootstrap hooks
   - reproducible initial Prisma migration history under `apps/api/prisma/migrations`
+- Phase 2 runtime delivered:
+  - BullMQ-backed ingestion stages for `seed-source`, `fetch-page`, `parse-snapshot`, and `normalize-variant`, plus no-op downstream stage workers for later phases
+  - S3-compatible raw snapshot persistence to MinIO with replayable storage keys captured in `RawSnapshot`
+  - live `Nawy` and `Property Finder EG` connectors parsing embedded `__NEXT_DATA__` payloads into normalized variants
+  - parser fixtures and replay tooling for `Nawy` and `Property Finder EG`
+  - normalized `Area` upserts, fallback geocoding, and media hash enrichment stored with normalized variant payloads
+  - Prisma persistence for `IngestionRun`, `RawSnapshot`, `ListingVariant`, `PriceHistory`, and connector health metrics surfaced in admin
+  - Next.js admin dashboard wired to live ingestion run and connector health data
 
 ## Product Goals
 - Let users search rentals, resale, and off-plan inventory across multiple sources from one app.
@@ -150,7 +164,15 @@
 - Build raw snapshot storage, connector interface, BullMQ workers, parser fixtures, replay tooling, and production connectors for `Nawy` and `Property Finder EG`.
 - Add area normalization, geocoding, media hashing, and ingestion dashboards.
 - Exit criteria: normalized variants from two sources flow continuously with replayable evidence.
-- Status: not started.
+- Status: complete.
+- Completed deliverables:
+  - `apps/crawler` queue runtime and worker entrypoints for seed, fetch, parse, normalize, replay, and one-shot ingestion smoke runs
+  - live HTML-to-`__NEXT_DATA__` extraction for `Nawy` and `Property Finder EG` with connector-specific normalization
+  - persisted raw snapshots in MinIO and replayable snapshot lookup through Prisma
+  - parser fixtures for both primary Phase 2 connectors and fixture-backed connector tests
+  - normalized area mapping, centroid fallback geocoding, and media hash derivation captured in variant `rawFields`
+  - admin ingestion dashboards backed by real `IngestionRun` and connector health data
+- Exit criteria status: met.
 
 ### Phase 3: Units Search and Alerts MVP
 - Implement `ListingCluster`, search API, list or map UI, detail page, favorites, alerts, inbox, web push, and email notifications.

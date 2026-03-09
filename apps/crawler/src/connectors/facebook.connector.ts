@@ -1,7 +1,13 @@
-import type { ConnectorHealth, RawPageResult, SourceSeed } from "../core/connector.js";
-import type { ListingVariant } from "@jinka-eg/types";
+import type {
+  ConnectorHealth,
+  NormalizedListingCandidate,
+  ParsedListingCandidate,
+  RawPageResult,
+  SourceSeed
+} from "../core/connector.js";
 
 import { BasePlaywrightConnector } from "../core/base-playwright-connector.js";
+import { hashImageUrls, localizeText, normalizePrice } from "../core/normalization.js";
 
 export class FacebookConnector extends BasePlaywrightConnector {
   readonly source = "facebook" as const;
@@ -10,26 +16,35 @@ export class FacebookConnector extends BasePlaywrightConnector {
     return [{ url: "https://www.facebook.com/marketplace/cairo/propertyrentals", label: "approved-public-surface" }];
   }
 
-  async parse(raw: RawPageResult): Promise<Partial<ListingVariant>[]> {
+  async parse(raw: RawPageResult): Promise<ParsedListingCandidate[]> {
+    const price = normalizePrice(22000, "EGP", "monthly");
+
+    if (!price) {
+      return [];
+    }
+
     return [
       {
         source: this.source,
         sourceListingId: raw.sourceListingId ?? "demo-facebook-id",
         sourceUrl: raw.url,
-        title: { en: "Parsed from Facebook", ar: "تم التحليل من فيسبوك" },
-        description: { en: "Public or authorized surface only", ar: "الأسطح العامة أو المصرح بها فقط" },
+        title: localizeText("Parsed from Facebook", "تم التحليل من فيسبوك"),
+        description: localizeText("Public or authorized surface only", "الأسطح العامة أو المصرح بها فقط"),
         purpose: "rent",
         marketSegment: "resale",
         propertyType: "apartment",
-        price: { amount: 22000, currency: "EGP", period: "monthly" },
+        price,
         imageUrls: [],
         publishedAt: raw.fetchedAt,
-        extractionConfidence: 0.62
+        extractionConfidence: 0.62,
+        rawFields: {
+          stub: true
+        }
       }
     ];
   }
 
-  async normalize(candidate: Partial<ListingVariant>): Promise<ListingVariant | null> {
+  async normalize(candidate: ParsedListingCandidate): Promise<NormalizedListingCandidate | null> {
     if (!candidate.sourceListingId || !candidate.sourceUrl || !candidate.title || !candidate.description || !candidate.price) {
       return null;
     }
@@ -53,7 +68,10 @@ export class FacebookConnector extends BasePlaywrightConnector {
       areaSqm: candidate.areaSqm,
       compoundName: candidate.compoundName,
       developerName: candidate.developerName,
-      location: candidate.location
+      location: candidate.location,
+      areaName: candidate.areaName,
+      mediaHashes: hashImageUrls(candidate.imageUrls ?? []),
+      rawFields: candidate.rawFields ?? {}
     };
   }
 

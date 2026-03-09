@@ -1,0 +1,71 @@
+{
+  "props": {
+    "pageProps": {
+      "loadedSearchResultsSSR": {
+        "page": 1,
+        "pageSize": 2,
+        "total": 2,
+        "results": [
+          {
+            "id": 1979,
+            "coordinates": [31.452669, 30.047121],
+            "imageUrl": "https://prod-images.nawy.com/processed/inventory/compounds/1979/gallery/everyday.webp",
+            "name": "everyday - THE MORNINGS",
+            "slug": "1979-everyday---the-mornings",
+            "areaId": 2,
+            "areaName": "New Cairo",
+            "developerId": 191,
+            "developerName": "Al Ahly Sabbour Developments",
+            "subtitle": "Discover Al Ahly Sabbour Developments's Properties in New Cairo",
+            "propertyTypes": [
+              {
+                "name": "Apartment",
+                "namePlural": "Apartments",
+                "isFiltered": false
+              }
+            ],
+            "developerPlan": {
+              "readyBy": 20281231,
+              "downPaymentPercentage": 5,
+              "installmentPercentage": 0.989583,
+              "numberOfInstallmentYears": 8,
+              "isBackLoaded": false,
+              "installmentType": "DEFAULT",
+              "minPrice": 7900000,
+              "currency": "EGP"
+            }
+          },
+          {
+            "id": 1771,
+            "coordinates": [30.841422, 30.059923],
+            "imageUrl": "https://prod-images.nawy.com/processed/inventory/compounds/1771/gallery/jirian.webp",
+            "name": "Jirian - Nations of Sky",
+            "slug": "1771-jirian-nations-of-sky",
+            "areaId": 40,
+            "areaName": "New Zayed",
+            "developerId": 457,
+            "developerName": "Nations Of Sky",
+            "subtitle": "Discover Nations Of Sky's Properties in New Zayed – With Financing Up to 8 Years",
+            "propertyTypes": [
+              {
+                "name": "Townhouse",
+                "namePlural": "Townhouses",
+                "isFiltered": false
+              }
+            ],
+            "developerPlan": {
+              "readyBy": 20291231,
+              "downPaymentPercentage": 5,
+              "installmentPercentage": 0.989583,
+              "numberOfInstallmentYears": 8,
+              "isBackLoaded": false,
+              "installmentType": "DEFAULT",
+              "minPrice": 22000000,
+              "currency": "EGP"
+            }
+          }
+        ]
+      }
+    }
+  }
+}
