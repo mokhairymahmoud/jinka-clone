@@ -706,12 +706,62 @@ export class IngestionPipeline {
     const score = Number(Math.min(0.15 + lowPriceSignal + variantCount * 0.03, 0.82).toFixed(3));
     const label =
       score >= 0.8 ? PrismaFraudLabel.HIGH_RISK : score >= 0.35 ? PrismaFraudLabel.REVIEW : PrismaFraudLabel.SAFE;
+    const explanation =
+      label === PrismaFraudLabel.HIGH_RISK
+        ? ["Cluster crossed the high-risk fraud threshold.", "Price is significantly below the current heuristic baseline."]
+        : label === PrismaFraudLabel.REVIEW
+          ? ["Cluster flagged for manual review based on pricing or duplication heuristics."]
+          : ["Cluster is currently within the safe heuristic band."];
 
     await this.prisma.listingCluster.update({
       where: { id: clusterId },
       data: {
         fraudLabel: label,
         fraudScore: score
+      }
+    });
+
+    if (label === PrismaFraudLabel.SAFE) {
+      await this.prisma.fraudCase.updateMany({
+        where: {
+          clusterId,
+          resolvedAt: null
+        },
+        data: {
+          resolvedAt: new Date()
+        }
+      });
+      return;
+    }
+
+    const existingOpenCase = await this.prisma.fraudCase.findFirst({
+      where: {
+        clusterId,
+        resolvedAt: null
+      },
+      orderBy: {
+        createdAt: "desc"
+      }
+    });
+
+    if (existingOpenCase) {
+      await this.prisma.fraudCase.update({
+        where: { id: existingOpenCase.id },
+        data: {
+          label,
+          score,
+          explanation
+        }
+      });
+      return;
+    }
+
+    await this.prisma.fraudCase.create({
+      data: {
+        clusterId,
+        label,
+        score,
+        explanation
       }
     });
   }
