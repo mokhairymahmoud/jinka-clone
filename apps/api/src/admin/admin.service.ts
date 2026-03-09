@@ -11,6 +11,12 @@ type ConnectorHealth = {
   parserCoverage: number;
 };
 
+type ClusterEdgeReason = {
+  code?: string;
+  message?: string;
+  weight?: number;
+};
+
 @Injectable()
 export class AdminService {
   constructor(@Inject(AppPrismaService) private readonly prisma: AppPrismaService) {}
@@ -78,6 +84,72 @@ export class AdminService {
       resolved: Boolean(entry.resolvedAt),
       canonicalTitleEn: entry.cluster.canonicalTitleEn
     }));
+  }
+
+  async getClusterEdges() {
+    const edges = await this.prisma.clusterEdge.findMany({
+      orderBy: [{ score: "desc" }, { createdAt: "desc" }],
+      take: 30
+    });
+
+    if (edges.length === 0) {
+      return [];
+    }
+
+    const variantIds = [...new Set(edges.flatMap((edge) => [edge.leftVariantId, edge.rightVariantId]))];
+    const variants = await this.prisma.listingVariant.findMany({
+      where: {
+        id: {
+          in: variantIds
+        }
+      }
+    });
+    const variantMap = new Map(variants.map((variant) => [variant.id, variant]));
+
+    return edges
+      .map((edge) => {
+        const left = variantMap.get(edge.leftVariantId);
+        const right = variantMap.get(edge.rightVariantId);
+
+        if (!left || !right) {
+          return null;
+        }
+
+        if (!left.clusterId || !right.clusterId || left.clusterId === right.clusterId) {
+          return null;
+        }
+
+        const reasonPayload = edge.reasons as {
+          decision?: string;
+          reasons?: ClusterEdgeReason[];
+        } | null;
+
+        return {
+          id: edge.id,
+          score: edge.score,
+          decision: reasonPayload?.decision ?? (edge.score >= 0.72 ? "auto_attach" : "review"),
+          sourceClusterId: left.clusterId,
+          targetClusterId: right.clusterId,
+          leftVariant: {
+            id: left.id,
+            source: this.fromPrismaSource(left.source),
+            titleEn: left.titleEn,
+            sourceListingId: left.sourceListingId
+          },
+          rightVariant: {
+            id: right.id,
+            source: this.fromPrismaSource(right.source),
+            titleEn: right.titleEn,
+            sourceListingId: right.sourceListingId
+          },
+          reasons: (reasonPayload?.reasons ?? []).map((reason) => ({
+            code: reason.code ?? "signal",
+            message: reason.message ?? "Dedup signal detected.",
+            weight: reason.weight ?? 0
+          }))
+        };
+      })
+      .filter((edge): edge is NonNullable<typeof edge> => edge !== null);
   }
 
   async mergeCluster(actorId: string, sourceClusterId: string, targetClusterId: string) {

@@ -35,6 +35,31 @@ type FraudCase = {
   canonicalTitleEn: string;
 };
 
+type ClusterEdge = {
+  id: string;
+  score: number;
+  decision: "review" | "auto_attach" | "no_match";
+  sourceClusterId: string;
+  targetClusterId: string;
+  leftVariant: {
+    id: string;
+    source: string;
+    titleEn: string;
+    sourceListingId: string;
+  };
+  rightVariant: {
+    id: string;
+    source: string;
+    titleEn: string;
+    sourceListingId: string;
+  };
+  reasons: Array<{
+    code: string;
+    message: string;
+    weight: number;
+  }>;
+};
+
 async function fetchAdminData() {
   const cookieStore = await cookies();
   const accessToken = cookieStore.get("access_token")?.value;
@@ -43,11 +68,12 @@ async function fetchAdminData() {
     return {
       connectors: [] as ConnectorHealth[],
       runs: [] as IngestionRun[],
-      fraudCases: [] as FraudCase[]
+      fraudCases: [] as FraudCase[],
+      clusterEdges: [] as ClusterEdge[]
     };
   }
 
-  const [connectorsResponse, runsResponse, fraudCasesResponse] = await Promise.all([
+  const [connectorsResponse, runsResponse, fraudCasesResponse, clusterEdgesResponse] = await Promise.all([
     apiFetch("/v1/admin/connectors", {
       headers: {
         authorization: `Bearer ${accessToken}`
@@ -62,13 +88,19 @@ async function fetchAdminData() {
       headers: {
         authorization: `Bearer ${accessToken}`
       }
+    }),
+    apiFetch("/v1/admin/cluster-edges", {
+      headers: {
+        authorization: `Bearer ${accessToken}`
+      }
     })
   ]);
 
   return {
     connectors: connectorsResponse.ok ? (((await connectorsResponse.json()) as ConnectorHealth[]) ?? []) : [],
     runs: runsResponse.ok ? (((await runsResponse.json()) as IngestionRun[]) ?? []) : [],
-    fraudCases: fraudCasesResponse.ok ? (((await fraudCasesResponse.json()) as FraudCase[]) ?? []) : []
+    fraudCases: fraudCasesResponse.ok ? (((await fraudCasesResponse.json()) as FraudCase[]) ?? []) : [],
+    clusterEdges: clusterEdgesResponse.ok ? (((await clusterEdgesResponse.json()) as ClusterEdge[]) ?? []) : []
   };
 }
 
@@ -77,7 +109,7 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
   const safeLocale = resolveLocale(locale);
   const t = getMessages(safeLocale);
   const user = await requireSessionUser(safeLocale);
-  const { connectors, runs, fraudCases } = await fetchAdminData();
+  const { connectors, runs, fraudCases, clusterEdges } = await fetchAdminData();
 
   if (user.role !== "admin" && user.role !== "ops_reviewer") {
     redirect(`/${safeLocale}/account`);
@@ -154,6 +186,35 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
                 <div className="mt-2 text-xs text-stone-500">
                   {fraudCase.resolved ? "resolved" : "open"}
                 </div>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+      <div className="grid gap-4">
+        {clusterEdges.map((edge) => (
+          <Card key={edge.id} className="p-5">
+            <div className="flex items-start justify-between gap-6">
+              <div>
+                <div className="text-lg font-semibold text-stone-950">
+                  {edge.leftVariant.titleEn} {"->"} {edge.rightVariant.titleEn}
+                </div>
+                <div className="mt-1 text-sm text-stone-600">
+                  {edge.leftVariant.source} {edge.leftVariant.sourceListingId} {"->"} {edge.rightVariant.source}{" "}
+                  {edge.rightVariant.sourceListingId}
+                </div>
+                <div className="mt-1 text-sm text-stone-600">
+                  cluster {edge.sourceClusterId} candidate for {edge.targetClusterId}
+                </div>
+                <div className="mt-3 text-sm text-stone-600">
+                  {edge.reasons.slice(0, 3).map((reason) => reason.message).join(" ")}
+                </div>
+              </div>
+              <div className="text-right">
+                <Badge tone={edge.decision === "auto_attach" ? "success" : "accent"}>
+                  {edge.decision.replace("_", " ")}
+                </Badge>
+                <div className="mt-2 text-sm text-stone-600">{Math.round(edge.score * 100)}% confidence</div>
               </div>
             </div>
           </Card>

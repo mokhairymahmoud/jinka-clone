@@ -12,6 +12,10 @@ function getNumberArg(name: string) {
   return Number.isFinite(numeric) && numeric > 0 ? numeric : undefined;
 }
 
+function hasFlag(name: string) {
+  return process.argv.includes(name);
+}
+
 async function main() {
   const redis = createRedisConnection();
   const queues = createQueues(redis);
@@ -19,7 +23,8 @@ async function main() {
 
   try {
     const result = await pipeline.backfillExistingVariants({
-      limit: getNumberArg("--limit")
+      limit: getNumberArg("--limit"),
+      recluster: !hasFlag("--skip-recluster")
     });
 
     console.log(JSON.stringify(result, null, 2));

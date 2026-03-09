@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import nawySearch from "./nawy.search.json";
 import propertyFinderSearch from "./property-finder.search.json";
 
@@ -22,6 +24,16 @@ export function getParserFixture(source: ListingSource): RawPageResult {
       payloadType: "json",
       body: JSON.stringify(propertyFinderSearch),
       fetchedAt: "2026-03-09T00:00:00.000Z"
+    };
+  }
+
+  if (source === "aqarmap") {
+    return {
+      source,
+      url: "https://aqarmap.com.eg/en/listing/987654",
+      payloadType: "html",
+      body: readFileSync(new URL("./aqarmap.listing.html", import.meta.url), "utf8"),
+      fetchedAt: "2026-03-10T00:00:00.000Z"
     };
   }
 

@@ -11,6 +11,7 @@
 - `Phase 1`: complete as of March 9, 2026.
 - `Phase 2`: complete as of March 9, 2026.
 - `Phase 3`: complete as of March 9, 2026.
+- `Phase 4`: complete as of March 10, 2026.
 - Local verification completed on March 9, 2026:
   - `docker compose up -d postgres redis minio`
   - `pnpm --filter @jinka-eg/api exec prisma migrate deploy`
@@ -31,6 +32,17 @@
   - Phase 3 smoke test for `request-otp -> verify-otp -> GET /v1/listings -> POST /v1/favorites -> GET /v1/favorites -> POST /v1/alerts/:id/test -> GET /v1/notifications -> POST /v1/push-subscriptions`
   - Prisma verification of persisted `ListingCluster`, `PriceHistory`, `Notification`, and `NotificationDelivery` rows for synthetic Phase 3 alert matches
   - Deduplication verification that re-running alert matching against the same `clusterId` reused the existing notification row and did not create additional delivery rows
+- Additional local verification completed on March 10, 2026:
+  - `pnpm --filter @jinka-eg/crawler typecheck`
+  - `pnpm --filter @jinka-eg/api typecheck`
+  - `pnpm --filter @jinka-eg/web typecheck`
+  - `pnpm --filter @jinka-eg/crawler test`
+  - `pnpm --filter @jinka-eg/api build`
+  - `pnpm --filter @jinka-eg/web build`
+  - `pnpm --filter @jinka-eg/crawler build`
+  - `pnpm --filter @jinka-eg/crawler backfill:phase3`
+  - Prisma verification before and after dedup backfill showing `37 -> 35` `ListingCluster` rows, `0 -> 15` `ClusterEdge` rows, and `10` searchable `Project` rows
+  - API smoke test on `http://localhost:4001` for `request-otp -> verify-otp -> GET /v1/admin/cluster-edges -> GET /v1/admin/fraud-cases -> GET /v1/projects`
 - Phase 1 runtime delivered:
   - Prisma-backed `User`, `OtpChallenge`, and `AuthSession` persistence on PostgreSQL + PostGIS
   - seed-backed admin bootstrap for `demo@example.com`
@@ -53,6 +65,12 @@
   - authenticated Next.js route handlers and client components for creating alerts and favorites from the app shell
   - crawler-side cluster creation, fraud scoring handoff, alert matching, notification deduplication, and delivery log generation
   - push subscription persistence and channel-aware delivery state generation for inbox, email, and web push notifications
+- Phase 4 runtime delivered:
+  - Prisma-backed `Project` and `Developer` linking from off-plan cluster ingestion and reclustering backfill, with live projects search and detail pages
+  - duplicate scoring heuristics, persisted `ClusterEdge` evidence, and score-based automatic cluster attachment during ingestion and backfill
+  - admin duplicate review queue via `GET /v1/admin/cluster-edges`, alongside live fraud review plus merge and split tooling
+  - crawler-side fraud case creation or resolution wired to canonical clusters instead of fixture-only state
+  - anti-bot-limited `Aqarmap` structured-data parsing with fixture-backed regression coverage instead of synthetic parser output
 
 ## Product Goals
 - Let users search rentals, resale, and off-plan inventory across multiple sources from one app.
@@ -128,6 +146,7 @@
 - `GET /v1/admin/connectors`
 - `GET /v1/admin/ingestion-runs`
 - `GET /v1/admin/fraud-cases`
+- `GET /v1/admin/cluster-edges`
 - `POST /v1/admin/clusters/:id/merge`
 - `POST /v1/admin/clusters/:id/split`
 - `POST /v1/admin/fraud-cases/:id/resolve`
@@ -202,6 +221,15 @@
 - Add `Project` search and detail, link clusters to projects, implement cluster scoring, review queue, fraud scoring, trust UI, and admin merge or split tooling.
 - Add `Aqarmap` after anti-bot validation.
 - Exit criteria: duplicates are collapsed, suspicious listings are labeled, and projects are searchable separately from units.
+- Status: complete.
+- Completed deliverables:
+  - live `Project` search and detail APIs, plus localized Next.js projects pages backed by Prisma instead of fixture data
+  - off-plan cluster-to-project linking and developer normalization in ingestion and backfill flows
+  - persisted duplicate evidence in `ClusterEdge`, scored review candidates, and automatic cluster attachment for high-confidence matches
+  - admin duplicate review endpoint and dashboard surface for merge candidate inspection
+  - Prisma-backed fraud review queue, suspicious cluster labeling, and operator merge or split or resolve actions
+  - `Aqarmap` connector upgraded from synthetic output to degraded but real structured-data parsing with fixture coverage
+- Exit criteria status: met.
 
 ### Phase 5: Facebook, Collaboration, and Launch Hardening
 - Add approved `Facebook` ingestion surfaces, shared shortlists, notes, reporting flow, blacklists, parser drift alarms, and support tooling.

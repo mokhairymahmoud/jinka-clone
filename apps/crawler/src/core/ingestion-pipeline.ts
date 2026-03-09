@@ -12,6 +12,12 @@ import {
 import type { ListingSource } from "@jinka-eg/types";
 import type { QueueMap } from "./queue.js";
 import type { NormalizedListingCandidate, ParsedListingCandidate, RawPageResult, SourceSeed } from "./connector.js";
+import {
+  AUTO_ATTACH_EDGE_THRESHOLD,
+  REVIEW_EDGE_THRESHOLD,
+  scoreDuplicateCandidate,
+  type DedupComparableListing
+} from "./deduplication.js";
 import { createRawSnapshotStorage, type RawSnapshotStorage } from "./object-storage.js";
 import { getConnector } from "./source-registry.js";
 import { hashImageUrls, normalizeArea, resolveCoordinates } from "./normalization.js";
@@ -60,6 +66,14 @@ type PersistedVariantRecord = Prisma.ListingVariantGetPayload<{
     };
   };
 }>;
+
+type ClusterSyncResult = {
+  clusterId: string;
+  eventType?: "new_listing" | "price_drop";
+  reviewEdgeCount: number;
+  autoAttached: boolean;
+  collapsedCluster: boolean;
+};
 
 function toPrismaSource(source: ListingSource) {
   switch (source) {
@@ -489,22 +503,24 @@ export class IngestionPipeline {
     return Promise.all(parsed.map((candidate) => connector.normalize(candidate)));
   }
 
-  async backfillExistingVariants(options: { limit?: number } = {}) {
+  async backfillExistingVariants(options: { limit?: number; recluster?: boolean } = {}) {
     const variants = await this.prisma.listingVariant.findMany({
-      where: {
-        OR: [
-          { clusterId: null },
-          { priceHistory: { some: { clusterId: null } } },
-          {
-            marketSegment: PrismaMarketSegment.OFF_PLAN,
-            cluster: {
-              is: {
-                projectId: null
+      where: options.recluster
+        ? undefined
+        : {
+            OR: [
+              { clusterId: null },
+              { priceHistory: { some: { clusterId: null } } },
+              {
+                marketSegment: PrismaMarketSegment.OFF_PLAN,
+                cluster: {
+                  is: {
+                    projectId: null
+                  }
+                }
               }
-            }
-          }
-        ]
-      },
+            ]
+          },
       include: {
         priceHistory: {
           orderBy: {
@@ -527,7 +543,10 @@ export class IngestionPipeline {
       createdPriceHistoryRows: 0,
       scoredClusters: 0,
       createdProjects: 0,
-      linkedProjectClusters: 0
+      linkedProjectClusters: 0,
+      reviewEdges: 0,
+      autoAttachedVariants: 0,
+      collapsedClusters: 0
     };
 
     for (const variant of variants) {
@@ -540,13 +559,29 @@ export class IngestionPipeline {
 
       const areaId = await this.refreshVariantNormalization(variant.id, normalized);
       const clusterSync =
-        variant.clusterId !== null
-          ? { clusterId: variant.clusterId, eventType: undefined }
+        variant.clusterId !== null && !options.recluster
+          ? {
+              clusterId: variant.clusterId,
+              eventType: undefined,
+              reviewEdgeCount: 0,
+              autoAttached: false,
+              collapsedCluster: false
+            }
           : await this.syncClusterForVariant(variant.id, normalized, areaId);
       const projectSync = await this.syncProjectForCluster(clusterSync.clusterId, normalized, areaId);
 
       if (clusterSync.eventType === "new_listing") {
         summary.backfilledClusters += 1;
+      }
+
+      summary.reviewEdges += clusterSync.reviewEdgeCount;
+
+      if (clusterSync.autoAttached) {
+        summary.autoAttachedVariants += 1;
+      }
+
+      if (clusterSync.collapsedCluster) {
+        summary.collapsedClusters += 1;
       }
 
       if (projectSync.createdProject) {
@@ -636,12 +671,32 @@ export class IngestionPipeline {
     variantId: string,
     normalized: NormalizedListingCandidate,
     areaId: string | null
-  ) {
+  ): Promise<ClusterSyncResult> {
     const variant = await this.prisma.listingVariant.findUniqueOrThrow({
       where: { id: variantId }
     });
+    const existingClusterId = variant.clusterId;
+    const dedup = await this.findDuplicateClusterForVariant(variantId, normalized);
 
-    if (!variant.clusterId) {
+    if (!existingClusterId && dedup.autoAttachClusterId) {
+      const targetCluster = await this.prisma.listingCluster.findUniqueOrThrow({
+        where: { id: dedup.autoAttachClusterId }
+      });
+
+      await this.attachVariantToCluster(variantId, targetCluster.id);
+      await this.refreshClusterSummary(targetCluster.id);
+
+      return {
+        clusterId: targetCluster.id,
+        eventType:
+          targetCluster.bestPrice !== null && normalized.price.amount < targetCluster.bestPrice ? "price_drop" : undefined,
+        reviewEdgeCount: dedup.reviewEdgeCount,
+        autoAttached: true,
+        collapsedCluster: false
+      };
+    }
+
+    if (!existingClusterId) {
       const cluster = await this.prisma.listingCluster.create({
         data: {
           canonicalTitleEn: normalized.title.en,
@@ -660,37 +715,348 @@ export class IngestionPipeline {
         }
       });
 
-      await this.prisma.listingVariant.update({
-        where: { id: variant.id },
-        data: {
-          clusterId: cluster.id
-        }
-      });
+      await this.attachVariantToCluster(variantId, cluster.id);
 
-      return { clusterId: cluster.id, eventType: "new_listing" as const };
+      return {
+        clusterId: cluster.id,
+        eventType: "new_listing",
+        reviewEdgeCount: dedup.reviewEdgeCount,
+        autoAttached: false,
+        collapsedCluster: false
+      };
     }
 
-    const cluster = await this.prisma.listingCluster.findUniqueOrThrow({
-      where: { id: variant.clusterId }
+    const currentCluster = await this.prisma.listingCluster.findUniqueOrThrow({
+      where: { id: existingClusterId }
     });
-    const nextBestPrice = cluster.bestPrice ? Math.min(cluster.bestPrice, normalized.price.amount) : normalized.price.amount;
+
+    if (dedup.autoAttachClusterId && dedup.autoAttachClusterId !== currentCluster.id) {
+      const targetCluster = await this.prisma.listingCluster.findUniqueOrThrow({
+        where: { id: dedup.autoAttachClusterId }
+      });
+      await this.attachVariantToCluster(variantId, dedup.autoAttachClusterId);
+      const collapsedCluster = await this.absorbSourceClusterIfEmpty(currentCluster.id, dedup.autoAttachClusterId);
+      await this.refreshClusterSummary(dedup.autoAttachClusterId);
+
+      return {
+        clusterId: dedup.autoAttachClusterId,
+        eventType:
+          targetCluster.bestPrice !== null && normalized.price.amount < targetCluster.bestPrice ? "price_drop" : undefined,
+        reviewEdgeCount: dedup.reviewEdgeCount,
+        autoAttached: true,
+        collapsedCluster
+      };
+    }
 
     await this.prisma.listingCluster.update({
-      where: { id: cluster.id },
+      where: { id: currentCluster.id },
       data: {
         canonicalTitleEn: normalized.title.en,
         canonicalTitleAr: normalized.title.ar,
-        areaId: areaId ?? cluster.areaId ?? undefined,
-        bedrooms: normalized.bedrooms ?? cluster.bedrooms,
-        bathrooms: normalized.bathrooms ?? cluster.bathrooms,
-        areaSqm: normalized.areaSqm ?? cluster.areaSqm,
-        bestPrice: nextBestPrice
+        areaId: areaId ?? currentCluster.areaId ?? undefined,
+        bedrooms: normalized.bedrooms ?? currentCluster.bedrooms,
+        bathrooms: normalized.bathrooms ?? currentCluster.bathrooms,
+        areaSqm: normalized.areaSqm ?? currentCluster.areaSqm,
+        bestPrice:
+          currentCluster.bestPrice !== null
+            ? Math.min(currentCluster.bestPrice, normalized.price.amount)
+            : normalized.price.amount
       }
     });
 
     return {
-      clusterId: cluster.id,
-      eventType: cluster.bestPrice && normalized.price.amount < cluster.bestPrice ? ("price_drop" as const) : undefined
+      clusterId: currentCluster.id,
+      eventType:
+        currentCluster.bestPrice !== null && normalized.price.amount < currentCluster.bestPrice ? "price_drop" : undefined,
+      reviewEdgeCount: dedup.reviewEdgeCount,
+      autoAttached: false,
+      collapsedCluster: false
+    };
+  }
+
+  private async findDuplicateClusterForVariant(variantId: string, normalized: NormalizedListingCandidate) {
+    await this.prisma.clusterEdge.deleteMany({
+      where: {
+        OR: [{ leftVariantId: variantId }, { rightVariantId: variantId }]
+      }
+    });
+
+    const candidates = await this.prisma.listingVariant.findMany({
+      where: {
+        id: {
+          not: variantId
+        },
+        clusterId: {
+          not: null
+        },
+        purpose: toPrismaPurpose(normalized.purpose),
+        marketSegment: toPrismaMarketSegment(normalized.marketSegment),
+        propertyType: normalized.propertyType
+      },
+      include: {
+        priceHistory: {
+          orderBy: {
+            recordedAt: "desc"
+          }
+        }
+      },
+      orderBy: {
+        updatedAt: "desc"
+      },
+      take: 200
+    });
+
+    const input = this.buildComparableListingFromNormalized(variantId, normalized);
+    const matches = candidates
+      .map((candidate) => {
+        const comparable = this.buildComparableListingFromVariant(candidate);
+        const score = scoreDuplicateCandidate(input, comparable);
+
+        return {
+          candidate,
+          score
+        };
+      })
+      .filter((entry) => entry.score.score >= REVIEW_EDGE_THRESHOLD)
+      .sort((left, right) => right.score.score - left.score.score);
+
+    for (const match of matches) {
+      const [leftVariantId, rightVariantId] = [variantId, match.candidate.id].sort((left, right) => left.localeCompare(right));
+      await this.prisma.clusterEdge.upsert({
+        where: {
+          leftVariantId_rightVariantId: {
+            leftVariantId,
+            rightVariantId
+          }
+        },
+        update: {
+          score: match.score.score,
+          reasons: {
+            decision: match.score.decision,
+            reasons: match.score.reasons
+          }
+        },
+        create: {
+          leftVariantId,
+          rightVariantId,
+          score: match.score.score,
+          reasons: {
+            decision: match.score.decision,
+            reasons: match.score.reasons
+          }
+        }
+      });
+    }
+
+    const bestMatch = matches[0];
+
+    return {
+      autoAttachClusterId:
+        bestMatch && bestMatch.score.score >= AUTO_ATTACH_EDGE_THRESHOLD ? (bestMatch.candidate.clusterId ?? null) : null,
+      reviewEdgeCount: matches.length
+    };
+  }
+
+  private async attachVariantToCluster(variantId: string, clusterId: string) {
+    await this.prisma.$transaction([
+      this.prisma.listingVariant.update({
+        where: { id: variantId },
+        data: {
+          clusterId
+        }
+      }),
+      this.prisma.priceHistory.updateMany({
+        where: { variantId },
+        data: {
+          clusterId
+        }
+      })
+    ]);
+  }
+
+  private async absorbSourceClusterIfEmpty(sourceClusterId: string, targetClusterId: string) {
+    const sourceCluster = await this.prisma.listingCluster.findUnique({
+      where: { id: sourceClusterId },
+      include: {
+        variants: {
+          select: { id: true }
+        }
+      }
+    });
+
+    if (!sourceCluster) {
+      return false;
+    }
+
+    if (sourceCluster.variants.length > 0) {
+      await this.refreshClusterSummary(sourceClusterId);
+      return false;
+    }
+
+    const sourceFavoriteUserIds = await this.prisma.favorite.findMany({
+      where: { clusterId: sourceClusterId },
+      select: { userId: true }
+    });
+
+    const duplicateTargetFavorites = await this.prisma.favorite.findMany({
+      where: {
+        clusterId: targetClusterId,
+        userId: {
+          in: sourceFavoriteUserIds.map((entry) => entry.userId)
+        }
+      },
+      select: { userId: true }
+    });
+
+    await this.prisma.$transaction(async (tx) => {
+      if (duplicateTargetFavorites.length > 0) {
+        await tx.favorite.deleteMany({
+          where: {
+            clusterId: sourceClusterId,
+            userId: {
+              in: duplicateTargetFavorites.map((entry) => entry.userId)
+            }
+          }
+        });
+      }
+
+      await Promise.all([
+        tx.favorite.updateMany({
+          where: { clusterId: sourceClusterId },
+          data: { clusterId: targetClusterId }
+        }),
+        tx.notification.updateMany({
+          where: { clusterId: sourceClusterId },
+          data: { clusterId: targetClusterId }
+        }),
+        tx.report.updateMany({
+          where: { clusterId: sourceClusterId },
+          data: { clusterId: targetClusterId }
+        }),
+        tx.fraudCase.updateMany({
+          where: { clusterId: sourceClusterId },
+          data: { clusterId: targetClusterId }
+        }),
+        tx.priceHistory.updateMany({
+          where: { clusterId: sourceClusterId },
+          data: { clusterId: targetClusterId }
+        }),
+        tx.listingCluster.delete({
+          where: { id: sourceClusterId }
+        })
+      ]);
+    });
+
+    return true;
+  }
+
+  private async refreshClusterSummary(clusterId: string) {
+    const cluster = await this.prisma.listingCluster.findUnique({
+      where: { id: clusterId },
+      include: {
+        variants: {
+          include: {
+            priceHistory: {
+              orderBy: {
+                recordedAt: "desc"
+              }
+            }
+          },
+          orderBy: [{ extractionConfidence: "desc" }, { updatedAt: "desc" }]
+        }
+      }
+    });
+
+    if (!cluster || cluster.variants.length === 0) {
+      return;
+    }
+
+    const primaryVariant = cluster.variants[0];
+    const summary = this.extractVariantSummary(primaryVariant);
+    const rawFields = asRecord(primaryVariant.rawFields);
+    const area = asRecord(rawFields?.area);
+    const areaSlug = asString(area?.slug);
+    const bestPrice = await this.getBestPriceForVariants(
+      cluster.variants.map((variant) => variant.id),
+      cluster.bestPrice
+    );
+    const nextArea = areaSlug ? await this.prisma.area.findUnique({ where: { slug: areaSlug } }) : null;
+
+    await this.prisma.listingCluster.update({
+      where: { id: cluster.id },
+      data: {
+        canonicalTitleEn: primaryVariant.titleEn,
+        canonicalTitleAr: primaryVariant.titleAr,
+        purpose: primaryVariant.purpose,
+        marketSegment: primaryVariant.marketSegment,
+        propertyType: primaryVariant.propertyType,
+        areaId: nextArea?.id ?? cluster.areaId ?? undefined,
+        bedrooms: summary.bedrooms ?? cluster.bedrooms,
+        bathrooms: summary.bathrooms ?? cluster.bathrooms,
+        areaSqm: summary.areaSqm ?? cluster.areaSqm,
+        bestPrice,
+        currency: primaryVariant.priceHistory[0]?.currency ?? cluster.currency
+      }
+    });
+  }
+
+  private buildComparableListingFromNormalized(
+    variantId: string,
+    normalized: NormalizedListingCandidate
+  ): DedupComparableListing {
+    const area = normalizeArea(normalized.areaName, [
+      normalized.areaName ?? "",
+      normalized.compoundName?.en ?? "",
+      normalized.developerName?.en ?? ""
+    ]);
+
+    return {
+      variantId,
+      source: normalized.source,
+      sourceListingId: normalized.sourceListingId,
+      canonicalUrl: normalized.sourceUrl,
+      purpose: normalized.purpose,
+      marketSegment: normalized.marketSegment,
+      propertyType: normalized.propertyType,
+      priceAmount: normalized.price.amount,
+      bedrooms: normalized.bedrooms ?? null,
+      bathrooms: normalized.bathrooms ?? null,
+      areaSqm: normalized.areaSqm ?? null,
+      areaSlug: area?.slug ?? null,
+      titleEn: normalized.title.en,
+      titleAr: normalized.title.ar,
+      compoundName: normalized.compoundName?.en ?? null,
+      developerName: normalized.developerName?.en ?? null,
+      coordinates: normalized.location ?? null,
+      mediaHashes: normalized.mediaHashes
+    };
+  }
+
+  private buildComparableListingFromVariant(variant: PersistedVariantRecord): DedupComparableListing {
+    const rawFields = asRecord(variant.rawFields);
+    const normalizedSummary = asRecord(rawFields?.normalized);
+    const area = asRecord(rawFields?.area);
+
+    return {
+      variantId: variant.id,
+      clusterId: variant.clusterId,
+      source: this.fromPrismaSource(variant.source),
+      sourceListingId: variant.sourceListingId,
+      canonicalUrl: variant.canonicalUrl,
+      purpose: this.fromPrismaPurpose(variant.purpose),
+      marketSegment: this.fromPrismaMarketSegment(variant.marketSegment),
+      propertyType: variant.propertyType,
+      priceAmount: this.resolveVariantPrice(variant, asRecord(rawFields?.sourcePayload), normalizedSummary)?.amount ?? 0,
+      bedrooms: asNumber(normalizedSummary?.bedrooms) ?? null,
+      bathrooms: asNumber(normalizedSummary?.bathrooms) ?? null,
+      areaSqm: asNumber(normalizedSummary?.areaSqm) ?? null,
+      areaSlug: asString(area?.slug) ?? null,
+      titleEn: variant.titleEn,
+      titleAr: variant.titleAr,
+      compoundName: asString(asRecord(normalizedSummary?.compoundName)?.en) ?? null,
+      developerName: asString(asRecord(normalizedSummary?.developerName)?.en) ?? null,
+      coordinates: asCoordinates(normalizedSummary?.location) ?? asCoordinates(rawFields?.geocodedLocation) ?? null,
+      mediaHashes: asStringArray(rawFields?.mediaHashes)
     };
   }
 
@@ -1266,6 +1632,46 @@ export class IngestionPipeline {
       en: stringValue,
       ar: stringValue
     };
+  }
+
+  private extractVariantSummary(variant: { rawFields: Prisma.JsonValue | null }) {
+    const rawFields = (variant.rawFields ?? {}) as {
+      normalized?: {
+        bedrooms?: number | null;
+        bathrooms?: number | null;
+        areaSqm?: number | null;
+      };
+    };
+
+    return {
+      bedrooms: rawFields.normalized?.bedrooms ?? undefined,
+      bathrooms: rawFields.normalized?.bathrooms ?? undefined,
+      areaSqm: rawFields.normalized?.areaSqm ?? undefined
+    };
+  }
+
+  private async getBestPriceForVariants(variantIds: string[], fallback: number | null) {
+    const priceHistory = await this.prisma.priceHistory.findMany({
+      where: {
+        variantId: {
+          in: variantIds
+        }
+      },
+      orderBy: {
+        recordedAt: "desc"
+      }
+    });
+
+    const latestByVariant = new Map<string, number>();
+
+    for (const entry of priceHistory) {
+      if (entry.variantId && !latestByVariant.has(entry.variantId)) {
+        latestByVariant.set(entry.variantId, entry.price);
+      }
+    }
+
+    const prices = [...latestByVariant.values()];
+    return prices.length > 0 ? Math.min(...prices) : fallback;
   }
 
   private async syncProjectForCluster(clusterId: string, normalized: NormalizedListingCandidate, areaId: string | null) {

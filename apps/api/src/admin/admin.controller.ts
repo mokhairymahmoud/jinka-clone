@@ -45,6 +45,11 @@ export class AdminController {
     return this.adminService.getFraudCases();
   }
 
+  @Get("cluster-edges")
+  getClusterEdges() {
+    return this.adminService.getClusterEdges();
+  }
+
   @Post("clusters/:id/merge")
   mergeCluster(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string, @Body() body: MergeClusterDto) {
     return this.adminService.mergeCluster(user.id, id, body.targetClusterId);

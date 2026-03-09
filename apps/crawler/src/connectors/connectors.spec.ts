@@ -46,4 +46,17 @@ describe("connector health", () => {
     expect(normalized?.bedrooms).toBeGreaterThan(0);
     expect(normalized?.location?.lng).toBeGreaterThan(0);
   });
+
+  it("parses and normalizes Aqarmap fixture data", async () => {
+    const connector = new AqarmapConnector();
+    const parsed = await connector.parse(getParserFixture("aqarmap"));
+
+    expect(parsed.length).toBeGreaterThan(0);
+
+    const normalized = await connector.normalize(parsed[0]);
+
+    expect(normalized?.source).toBe("aqarmap");
+    expect(normalized?.sourceListingId).toBe("987654");
+    expect(normalized?.price.amount).toBe(5400000);
+  });
 });
