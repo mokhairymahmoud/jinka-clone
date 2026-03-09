@@ -14,7 +14,7 @@ import type { QueueMap } from "./queue.js";
 import type { NormalizedListingCandidate, ParsedListingCandidate, RawPageResult, SourceSeed } from "./connector.js";
 import { createRawSnapshotStorage, type RawSnapshotStorage } from "./object-storage.js";
 import { getConnector } from "./source-registry.js";
-import { normalizeArea, resolveCoordinates } from "./normalization.js";
+import { hashImageUrls, normalizeArea, resolveCoordinates } from "./normalization.js";
 
 type SeedSourcePayload = {
   source: ListingSource;
@@ -50,6 +50,16 @@ type PipelineStagePayload = {
 };
 
 type AlertFilterRecord = Record<string, unknown>;
+
+type PersistedVariantRecord = Prisma.ListingVariantGetPayload<{
+  include: {
+    priceHistory: {
+      orderBy: {
+        recordedAt: "desc";
+      };
+    };
+  };
+}>;
 
 function toPrismaSource(source: ListingSource) {
   switch (source) {
@@ -127,6 +137,55 @@ function isWithinQuietHours(start?: string | null, end?: string | null) {
   }
 
   return minutesNow >= startTotal || minutesNow <= endTotal;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+}
+
+function asString(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function asNumber(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : undefined;
+  }
+
+  return undefined;
+}
+
+function asStringArray(value: unknown) {
+  return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === "string" && entry.length > 0) : [];
+}
+
+function asLocalizedText(value: unknown) {
+  const record = asRecord(value);
+  const en = asString(record?.en);
+  const ar = asString(record?.ar);
+
+  if (!en && !ar) {
+    return undefined;
+  }
+
+  const fallback = en ?? ar ?? "";
+  return {
+    en: en ?? fallback,
+    ar: ar ?? fallback
+  };
+}
+
+function asCoordinates(value: unknown) {
+  const record = asRecord(value);
+  const lat = asNumber(record?.lat);
+  const lng = asNumber(record?.lng ?? record?.lon);
+
+  return lat !== undefined && lng !== undefined ? { lat, lng } : undefined;
 }
 
 export class IngestionPipeline {
@@ -284,50 +343,8 @@ export class IngestionPipeline {
       return { source: payload.source, normalized: false };
     }
 
-    const area = normalizeArea(normalized.areaName, [
-      normalized.areaName ?? "",
-      normalized.compoundName?.en ?? "",
-      normalized.developerName?.en ?? ""
-    ]);
-    const coordinates = resolveCoordinates(normalized.location, area);
-    const normalizedSummary = {
-      bedrooms: normalized.bedrooms ?? null,
-      bathrooms: normalized.bathrooms ?? null,
-      areaSqm: normalized.areaSqm ?? null,
-      location: toJsonCoordinates(coordinates),
-      compoundName: toJsonLocalizedText(normalized.compoundName),
-      developerName: toJsonLocalizedText(normalized.developerName),
-      pricePeriod: normalized.price.period ?? null
-    } satisfies Prisma.InputJsonObject;
-    const persistedRawFields = {
-      ...normalized.rawFields,
-      area: area
-        ? {
-            slug: area.slug,
-            nameEn: area.nameEn,
-            nameAr: area.nameAr,
-            centroid: toJsonCoordinates(area.centroid)
-          }
-        : null,
-      geocodedLocation: toJsonCoordinates(coordinates),
-      mediaHashes: normalized.mediaHashes,
-      normalized: normalizedSummary
-    } satisfies Prisma.InputJsonObject;
-
-    const areaRecord = area
-      ? await this.prisma.area.upsert({
-          where: { slug: area.slug },
-          update: {
-            nameEn: area.nameEn,
-            nameAr: area.nameAr
-          },
-          create: {
-            slug: area.slug,
-            nameEn: area.nameEn,
-            nameAr: area.nameAr
-          }
-        })
-      : null;
+    const enrichment = this.buildNormalizedEnrichment(normalized);
+    const areaRecord = await this.upsertAreaRecord(enrichment.area);
 
     const variant = await this.prisma.listingVariant.upsert({
       where: {
@@ -348,7 +365,7 @@ export class IngestionPipeline {
         propertyType: normalized.propertyType,
         publishedAt: normalized.publishedAt ? new Date(normalized.publishedAt) : null,
         extractionConfidence: normalized.extractionConfidence,
-        rawFields: persistedRawFields,
+        rawFields: enrichment.persistedRawFields,
         imageUrls: normalized.imageUrls
       },
       create: {
@@ -365,13 +382,13 @@ export class IngestionPipeline {
         propertyType: normalized.propertyType,
         publishedAt: normalized.publishedAt ? new Date(normalized.publishedAt) : null,
         extractionConfidence: normalized.extractionConfidence,
-        rawFields: persistedRawFields,
+        rawFields: enrichment.persistedRawFields,
         imageUrls: normalized.imageUrls
       }
     });
 
     const clusterSync = await this.syncClusterForVariant(variant.id, normalized, areaRecord?.id ?? null);
-    await this.persistPriceHistory(normalized, clusterSync.clusterId);
+    await this.persistPriceHistory(variant.id, clusterSync.clusterId, normalized.price);
     await this.markRunProgress(payload.runId, payload.rawSnapshotId, payload.expectedTotal, true);
 
     if (clusterSync.eventType) {
@@ -463,6 +480,68 @@ export class IngestionPipeline {
     return Promise.all(parsed.map((candidate) => connector.normalize(candidate)));
   }
 
+  async backfillExistingVariants(options: { limit?: number } = {}) {
+    const variants = await this.prisma.listingVariant.findMany({
+      where: {
+        OR: [{ clusterId: null }, { priceHistory: { some: { clusterId: null } } }]
+      },
+      include: {
+        priceHistory: {
+          orderBy: {
+            recordedAt: "desc"
+          }
+        }
+      },
+      orderBy: {
+        createdAt: "asc"
+      },
+      ...(options.limit ? { take: options.limit } : {})
+    });
+
+    const touchedClusters = new Set<string>();
+    const summary = {
+      scannedVariants: variants.length,
+      backfilledClusters: 0,
+      skippedVariants: 0,
+      repairedPriceHistoryRows: 0,
+      createdPriceHistoryRows: 0,
+      scoredClusters: 0
+    };
+
+    for (const variant of variants) {
+      const normalized = this.rehydrateNormalizedCandidate(variant);
+
+      if (!normalized) {
+        summary.skippedVariants += 1;
+        continue;
+      }
+
+      const areaId = await this.refreshVariantNormalization(variant.id, normalized);
+      const clusterSync =
+        variant.clusterId !== null
+          ? { clusterId: variant.clusterId, eventType: undefined }
+          : await this.syncClusterForVariant(variant.id, normalized, areaId);
+
+      if (clusterSync.eventType === "new_listing") {
+        summary.backfilledClusters += 1;
+      }
+
+      const priceHistoryResult = await this.persistPriceHistory(variant.id, clusterSync.clusterId, normalized.price);
+      summary.repairedPriceHistoryRows += priceHistoryResult.updatedCount;
+      summary.createdPriceHistoryRows += priceHistoryResult.created ? 1 : 0;
+
+      if (!touchedClusters.has(clusterSync.clusterId)) {
+        await this.scoreClusterFraud(clusterSync.clusterId);
+        touchedClusters.add(clusterSync.clusterId);
+      }
+    }
+
+    return {
+      ...summary,
+      scoredClusters: touchedClusters.size
+    };
+  }
+
   async markRunFailed(runId: string | undefined, _message: string) {
     if (!runId) {
       return;
@@ -480,40 +559,46 @@ export class IngestionPipeline {
     });
   }
 
-  private async persistPriceHistory(normalized: NormalizedListingCandidate, clusterId: string) {
+  private async persistPriceHistory(variantId: string, clusterId: string, price: NormalizedListingCandidate["price"]) {
+    const updated = await this.prisma.priceHistory.updateMany({
+      where: {
+        variantId,
+        clusterId: null
+      },
+      data: {
+        clusterId
+      }
+    });
+
     const existingLatest = await this.prisma.priceHistory.findFirst({
       where: {
-        variant: {
-          source: toPrismaSource(normalized.source),
-          sourceListingId: normalized.sourceListingId
-        }
+        variantId
       },
       orderBy: {
         recordedAt: "desc"
       }
     });
 
-    if (existingLatest?.price === normalized.price.amount) {
-      return;
+    if (existingLatest?.price === price.amount && existingLatest.currency === price.currency) {
+      return {
+        updatedCount: updated.count,
+        created: false
+      };
     }
-
-    const variant = await this.prisma.listingVariant.findUniqueOrThrow({
-      where: {
-        source_sourceListingId: {
-          source: toPrismaSource(normalized.source),
-          sourceListingId: normalized.sourceListingId
-        }
-      }
-    });
 
     await this.prisma.priceHistory.create({
       data: {
         clusterId,
-        variantId: variant.id,
-        price: normalized.price.amount,
-        currency: normalized.price.currency
+        variantId,
+        price: price.amount,
+        currency: price.currency
       }
     });
+
+    return {
+      updatedCount: updated.count,
+      created: true
+    };
   }
 
   private async syncClusterForVariant(
@@ -880,5 +965,225 @@ export class IngestionPipeline {
       case PrismaListingSource.FACEBOOK:
         return "facebook";
     }
+  }
+
+  private fromPrismaPurpose(purpose: PrismaListingPurpose) {
+    return purpose === PrismaListingPurpose.RENT ? "rent" : "sale";
+  }
+
+  private fromPrismaMarketSegment(segment: PrismaMarketSegment) {
+    switch (segment) {
+      case PrismaMarketSegment.PRIMARY:
+        return "primary";
+      case PrismaMarketSegment.OFF_PLAN:
+        return "off_plan";
+      default:
+        return "resale";
+    }
+  }
+
+  private buildNormalizedEnrichment(normalized: NormalizedListingCandidate) {
+    const area = normalizeArea(normalized.areaName, [
+      normalized.areaName ?? "",
+      normalized.compoundName?.en ?? "",
+      normalized.developerName?.en ?? ""
+    ]);
+    const coordinates = resolveCoordinates(normalized.location, area);
+    const normalizedSummary = {
+      bedrooms: normalized.bedrooms ?? null,
+      bathrooms: normalized.bathrooms ?? null,
+      areaSqm: normalized.areaSqm ?? null,
+      location: toJsonCoordinates(coordinates),
+      compoundName: toJsonLocalizedText(normalized.compoundName),
+      developerName: toJsonLocalizedText(normalized.developerName),
+      pricePeriod: normalized.price.period ?? null
+    } satisfies Prisma.InputJsonObject;
+    const persistedRawFields = {
+      ...normalized.rawFields,
+      area: area
+        ? {
+            slug: area.slug,
+            nameEn: area.nameEn,
+            nameAr: area.nameAr,
+            centroid: toJsonCoordinates(area.centroid)
+          }
+        : null,
+      geocodedLocation: toJsonCoordinates(coordinates),
+      mediaHashes: normalized.mediaHashes,
+      normalized: normalizedSummary
+    } satisfies Prisma.InputJsonObject;
+
+    return { area, coordinates, persistedRawFields };
+  }
+
+  private async upsertAreaRecord(area: ReturnType<typeof normalizeArea>) {
+    if (!area) {
+      return null;
+    }
+
+    return this.prisma.area.upsert({
+      where: { slug: area.slug },
+      update: {
+        nameEn: area.nameEn,
+        nameAr: area.nameAr
+      },
+      create: {
+        slug: area.slug,
+        nameEn: area.nameEn,
+        nameAr: area.nameAr
+      }
+    });
+  }
+
+  private async refreshVariantNormalization(variantId: string, normalized: NormalizedListingCandidate) {
+    const enrichment = this.buildNormalizedEnrichment(normalized);
+    const areaRecord = await this.upsertAreaRecord(enrichment.area);
+
+    await this.prisma.listingVariant.update({
+      where: { id: variantId },
+      data: {
+        rawFields: enrichment.persistedRawFields
+      }
+    });
+
+    return areaRecord?.id ?? null;
+  }
+
+  private rehydrateNormalizedCandidate(variant: PersistedVariantRecord): NormalizedListingCandidate | null {
+    const rawFields = asRecord(variant.rawFields) ?? {};
+    const sourcePayload = asRecord(rawFields.sourcePayload);
+    const normalizedSummary = asRecord(rawFields.normalized);
+    const areaRecord = asRecord(rawFields.area);
+    const locationRecord = asCoordinates(normalizedSummary?.location) ?? asCoordinates(rawFields.geocodedLocation);
+    const price = this.resolveVariantPrice(variant, sourcePayload, normalizedSummary);
+
+    if (!price) {
+      return null;
+    }
+
+    const sourceLocation = this.resolveSourcePayloadCoordinates(sourcePayload);
+    const sourceLocationPayload = asRecord(sourcePayload?.location);
+    const sourceBroker = asRecord(sourcePayload?.broker);
+    const sourceSize = asRecord(sourcePayload?.size);
+    const sourcePrice = asRecord(sourcePayload?.price);
+    const sourceDeveloperPlan = asRecord(sourcePayload?.developerPlan);
+    const mediaHashes = asStringArray(rawFields.mediaHashes);
+    const sourceAreaName =
+      asString(areaRecord?.nameEn) ??
+      asString(sourcePayload?.areaName) ??
+      asString(sourceLocationPayload?.path_name) ??
+      asString(sourceLocationPayload?.full_name);
+    const sourceCompound = asLocalizedText(normalizedSummary?.compoundName) ?? this.localizeFromString(sourcePayload?.name);
+    const sourceDeveloper =
+      asLocalizedText(normalizedSummary?.developerName) ??
+      this.localizeFromString(sourcePayload?.developerName) ??
+      this.localizeFromString(sourceBroker?.name);
+
+    return {
+      id: variant.id,
+      source: this.fromPrismaSource(variant.source),
+      sourceListingId: variant.sourceListingId,
+      sourceUrl: variant.canonicalUrl,
+      title: {
+        en: variant.titleEn,
+        ar: variant.titleAr
+      },
+      description: {
+        en: variant.descriptionEn ?? variant.titleEn,
+        ar: variant.descriptionAr ?? variant.titleAr
+      },
+      purpose: this.fromPrismaPurpose(variant.purpose),
+      marketSegment: this.fromPrismaMarketSegment(variant.marketSegment),
+      propertyType: variant.propertyType as NormalizedListingCandidate["propertyType"],
+      price,
+      bedrooms: asNumber(normalizedSummary?.bedrooms) ?? asNumber(sourcePayload?.bedrooms),
+      bathrooms: asNumber(normalizedSummary?.bathrooms) ?? asNumber(sourcePayload?.bathrooms),
+      areaSqm: asNumber(normalizedSummary?.areaSqm) ?? asNumber(sourceSize?.value),
+      compoundName: sourceCompound,
+      developerName: sourceDeveloper,
+      location: locationRecord ?? sourceLocation,
+      imageUrls: variant.imageUrls,
+      publishedAt: (variant.publishedAt ?? variant.updatedAt).toISOString(),
+      extractionConfidence: variant.extractionConfidence,
+      areaName: sourceAreaName,
+      mediaHashes: mediaHashes.length > 0 ? mediaHashes : hashImageUrls(variant.imageUrls),
+      rawFields: {
+        ...rawFields,
+        sourcePayload: {
+          ...sourcePayload,
+          price: sourcePrice ?? undefined,
+          developerPlan: sourceDeveloperPlan ?? undefined
+        }
+      }
+    };
+  }
+
+  private resolveVariantPrice(
+    variant: PersistedVariantRecord,
+    sourcePayload: Record<string, unknown> | null,
+    normalizedSummary: Record<string, unknown> | null
+  ) {
+    const sourcePrice = asRecord(sourcePayload?.price);
+    const sourceDeveloperPlan = asRecord(sourcePayload?.developerPlan);
+    const latestPriceHistory = variant.priceHistory[0];
+
+    if (asNumber(sourcePrice?.value) !== undefined) {
+      return {
+        amount: asNumber(sourcePrice?.value) ?? 0,
+        currency: (asString(sourcePrice?.currency) ?? "EGP") as "EGP",
+        period: (asString(sourcePrice?.period) as "monthly" | "total" | undefined) ?? undefined
+      };
+    }
+
+    if (asNumber(sourceDeveloperPlan?.minPrice) !== undefined) {
+      return {
+        amount: asNumber(sourceDeveloperPlan?.minPrice) ?? 0,
+        currency: (asString(sourceDeveloperPlan?.currency) ?? "EGP") as "EGP",
+        period: "total" as const
+      };
+    }
+
+    if (latestPriceHistory) {
+      return {
+        amount: latestPriceHistory.price,
+        currency: latestPriceHistory.currency as "EGP",
+        period:
+          (asString(normalizedSummary?.pricePeriod) as "monthly" | "total" | undefined) ??
+          (variant.purpose === PrismaListingPurpose.RENT ? "monthly" : "total")
+      };
+    }
+
+    return null;
+  }
+
+  private resolveSourcePayloadCoordinates(sourcePayload: Record<string, unknown> | null) {
+    const arrayCoordinates = sourcePayload?.coordinates;
+
+    if (
+      Array.isArray(arrayCoordinates) &&
+      arrayCoordinates.length === 2 &&
+      typeof arrayCoordinates[0] === "number" &&
+      typeof arrayCoordinates[1] === "number"
+    ) {
+      return {
+        lat: arrayCoordinates[1],
+        lng: arrayCoordinates[0]
+      };
+    }
+
+    return asCoordinates(asRecord(asRecord(sourcePayload?.location)?.coordinates));
+  }
+
+  private localizeFromString(value: unknown) {
+    const stringValue = asString(value);
+
+    if (!stringValue) {
+      return undefined;
+    }
+
+    return {
+      en: stringValue,
+      ar: stringValue
+    };
   }
 }

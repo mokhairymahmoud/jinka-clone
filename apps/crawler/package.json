@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsx watch src/index.ts",
+    "backfill:phase3": "tsx src/backfill-phase3.ts",
     "ingest": "tsx src/enqueue.ts",
     "ingest:once": "tsx src/run-once.ts",
     "lint": "tsc -p tsconfig.json --noEmit",
