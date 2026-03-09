@@ -1,9 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { mockProjects } from "@jinka-eg/fixtures";
+import type { ProjectSummary } from "@jinka-eg/types";
 import { Badge, Card } from "@jinka-eg/ui";
 import { resolveLocale } from "../../../../../i18n/messages";
+import { apiFetch } from "../../../../../lib/api";
+
+async function fetchProject(id: string): Promise<ProjectSummary | null> {
+  const response = await apiFetch(`/v1/projects/${id}`);
+
+  if (!response.ok) {
+    return null;
+  }
+
+  return response.json();
+}
 
 export default async function ProjectDetailPage({
   params
@@ -12,7 +23,7 @@ export default async function ProjectDetailPage({
 }) {
   const { locale, id } = await params;
   const safeLocale = resolveLocale(locale);
-  const project = mockProjects.find((item) => item.id === id);
+  const project = await fetchProject(id);
 
   if (!project) notFound();
 

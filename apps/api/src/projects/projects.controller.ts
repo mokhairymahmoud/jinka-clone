@@ -1,20 +1,18 @@
-import { Controller, Get, Inject, NotFoundException, Param } from "@nestjs/common";
+import { Controller, Get, Inject, Param, Query } from "@nestjs/common";
 
-import { AppStoreService } from "../common/app-store.service.js";
+import { ProjectsService } from "./projects.service.js";
 
 @Controller("projects")
 export class ProjectsController {
-  constructor(@Inject(AppStoreService) private readonly store: AppStoreService) {}
+  constructor(@Inject(ProjectsService) private readonly projectsService: ProjectsService) {}
 
   @Get()
-  getProjects() {
-    return this.store.getProjects();
+  getProjects(@Query("q") q?: string) {
+    return this.projectsService.findAll(q);
   }
 
   @Get(":id")
   getProject(@Param("id") id: string) {
-    const project = this.store.getProjectById(id);
-    if (!project) throw new NotFoundException("Project not found");
-    return project;
+    return this.projectsService.findOne(id);
   }
 }

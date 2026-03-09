@@ -147,6 +147,14 @@ function asString(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
+function slugify(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 function asNumber(value: unknown) {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
@@ -388,6 +396,7 @@ export class IngestionPipeline {
     });
 
     const clusterSync = await this.syncClusterForVariant(variant.id, normalized, areaRecord?.id ?? null);
+    await this.syncProjectForCluster(clusterSync.clusterId, normalized, areaRecord?.id ?? null);
     await this.persistPriceHistory(variant.id, clusterSync.clusterId, normalized.price);
     await this.markRunProgress(payload.runId, payload.rawSnapshotId, payload.expectedTotal, true);
 
@@ -483,7 +492,18 @@ export class IngestionPipeline {
   async backfillExistingVariants(options: { limit?: number } = {}) {
     const variants = await this.prisma.listingVariant.findMany({
       where: {
-        OR: [{ clusterId: null }, { priceHistory: { some: { clusterId: null } } }]
+        OR: [
+          { clusterId: null },
+          { priceHistory: { some: { clusterId: null } } },
+          {
+            marketSegment: PrismaMarketSegment.OFF_PLAN,
+            cluster: {
+              is: {
+                projectId: null
+              }
+            }
+          }
+        ]
       },
       include: {
         priceHistory: {
@@ -505,7 +525,9 @@ export class IngestionPipeline {
       skippedVariants: 0,
       repairedPriceHistoryRows: 0,
       createdPriceHistoryRows: 0,
-      scoredClusters: 0
+      scoredClusters: 0,
+      createdProjects: 0,
+      linkedProjectClusters: 0
     };
 
     for (const variant of variants) {
@@ -521,9 +543,18 @@ export class IngestionPipeline {
         variant.clusterId !== null
           ? { clusterId: variant.clusterId, eventType: undefined }
           : await this.syncClusterForVariant(variant.id, normalized, areaId);
+      const projectSync = await this.syncProjectForCluster(clusterSync.clusterId, normalized, areaId);
 
       if (clusterSync.eventType === "new_listing") {
         summary.backfilledClusters += 1;
+      }
+
+      if (projectSync.createdProject) {
+        summary.createdProjects += 1;
+      }
+
+      if (projectSync.linkedCluster) {
+        summary.linkedProjectClusters += 1;
       }
 
       const priceHistoryResult = await this.persistPriceHistory(variant.id, clusterSync.clusterId, normalized.price);
@@ -1184,6 +1215,94 @@ export class IngestionPipeline {
     return {
       en: stringValue,
       ar: stringValue
+    };
+  }
+
+  private async syncProjectForCluster(clusterId: string, normalized: NormalizedListingCandidate, areaId: string | null) {
+    if (normalized.marketSegment !== "off_plan" || !areaId) {
+      return {
+        createdProject: false,
+        linkedCluster: false
+      };
+    }
+
+    const sourcePayload = asRecord(normalized.rawFields.sourcePayload);
+    const projectName = asString(sourcePayload?.name) ?? normalized.compoundName?.en ?? normalized.title.en;
+    const projectSlug = asString(sourcePayload?.slug) ?? slugify(projectName);
+    const developerName =
+      asString(sourcePayload?.developerName) ?? normalized.developerName?.en ?? "Unknown developer";
+    const developerSlug = slugify(developerName) || "unknown-developer";
+
+    if (!projectSlug) {
+      return {
+        createdProject: false,
+        linkedCluster: false
+      };
+    }
+
+    const developer = await this.prisma.developer.upsert({
+      where: { slug: developerSlug },
+      update: {
+        nameEn: developerName,
+        nameAr: developerName
+      },
+      create: {
+        slug: developerSlug,
+        nameEn: developerName,
+        nameAr: developerName
+      }
+    });
+
+    const developerPlan = asRecord(sourcePayload?.developerPlan);
+    const existingProject = await this.prisma.project.findUnique({
+      where: { slug: projectSlug }
+    });
+    const readyBy = asNumber(developerPlan?.readyBy);
+    const sourceUrls = [...new Set([...(existingProject?.sourceUrls ?? []), normalized.sourceUrl])];
+
+    const project = await this.prisma.project.upsert({
+      where: { slug: projectSlug },
+      update: {
+        nameEn: projectName,
+        nameAr: projectName,
+        developerId: developer.id,
+        areaId,
+        handoffYear: readyBy ? Math.trunc(readyBy / 10000) : undefined,
+        startingPrice: asNumber(developerPlan?.minPrice) ?? normalized.price.amount,
+        paymentPlanYears: asNumber(developerPlan?.numberOfInstallmentYears),
+        imageUrl: asString(sourcePayload?.imageUrl) ?? normalized.imageUrls[0] ?? existingProject?.imageUrl ?? null,
+        sourceUrls
+      },
+      create: {
+        slug: projectSlug,
+        nameEn: projectName,
+        nameAr: projectName,
+        developerId: developer.id,
+        areaId,
+        handoffYear: readyBy ? Math.trunc(readyBy / 10000) : undefined,
+        startingPrice: asNumber(developerPlan?.minPrice) ?? normalized.price.amount,
+        paymentPlanYears: asNumber(developerPlan?.numberOfInstallmentYears),
+        imageUrl: asString(sourcePayload?.imageUrl) ?? normalized.imageUrls[0] ?? null,
+        sourceUrls
+      }
+    });
+
+    const cluster = await this.prisma.listingCluster.findUniqueOrThrow({
+      where: { id: clusterId }
+    });
+
+    if (cluster.projectId !== project.id) {
+      await this.prisma.listingCluster.update({
+        where: { id: clusterId },
+        data: {
+          projectId: project.id
+        }
+      });
+    }
+
+    return {
+      createdProject: existingProject === null,
+      linkedCluster: cluster.projectId !== project.id
     };
   }
 }
