@@ -10,6 +10,7 @@
 - `Phase 0`: complete.
 - `Phase 1`: complete as of March 9, 2026.
 - `Phase 2`: complete as of March 9, 2026.
+- `Phase 3`: complete as of March 9, 2026.
 - Local verification completed on March 9, 2026:
   - `docker compose up -d postgres redis minio`
   - `pnpm --filter @jinka-eg/api exec prisma migrate deploy`
@@ -27,6 +28,9 @@
   - `pnpm --filter @jinka-eg/crawler ingest:once`
   - Prisma verification of persisted `IngestionRun`, `RawSnapshot`, `ListingVariant`, and `Area` rows for `Nawy` and `Property Finder EG`
   - MinIO verification of replayable raw snapshot objects under `S3_BUCKET_RAW`
+  - Phase 3 smoke test for `request-otp -> verify-otp -> GET /v1/listings -> POST /v1/favorites -> GET /v1/favorites -> POST /v1/alerts/:id/test -> GET /v1/notifications -> POST /v1/push-subscriptions`
+  - Prisma verification of persisted `ListingCluster`, `PriceHistory`, `Notification`, and `NotificationDelivery` rows for synthetic Phase 3 alert matches
+  - Deduplication verification that re-running alert matching against the same `clusterId` reused the existing notification row and did not create additional delivery rows
 - Phase 1 runtime delivered:
   - Prisma-backed `User`, `OtpChallenge`, and `AuthSession` persistence on PostgreSQL + PostGIS
   - seed-backed admin bootstrap for `demo@example.com`
@@ -42,6 +46,13 @@
   - normalized `Area` upserts, fallback geocoding, and media hash enrichment stored with normalized variant payloads
   - Prisma persistence for `IngestionRun`, `RawSnapshot`, `ListingVariant`, `PriceHistory`, and connector health metrics surfaced in admin
   - Next.js admin dashboard wired to live ingestion run and connector health data
+- Phase 3 runtime delivered:
+  - Prisma-backed `ListingCluster`, `Favorite`, `Alert`, `Notification`, and `NotificationDelivery` flows, plus the accompanying migration history
+  - unit search and detail APIs backed by canonical clusters and source variants instead of fixture-only app-store data
+  - localized Next.js units search, listing detail, alerts, favorites, and inbox pages wired to live API data
+  - authenticated Next.js route handlers and client components for creating alerts and favorites from the app shell
+  - crawler-side cluster creation, fraud scoring handoff, alert matching, notification deduplication, and delivery log generation
+  - push subscription persistence and channel-aware delivery state generation for inbox, email, and web push notifications
 
 ## Product Goals
 - Let users search rentals, resale, and off-plan inventory across multiple sources from one app.
@@ -178,6 +189,14 @@
 - Implement `ListingCluster`, search API, list or map UI, detail page, favorites, alerts, inbox, web push, and email notifications.
 - Add event-driven alert matching and delivery logs.
 - Exit criteria: a signed-in user can search units, save an alert, save favorites, and receive a deduped notification for a new matching unit.
+- Status: complete.
+- Completed deliverables:
+  - canonical `ListingCluster` persistence, area linkage, price history writes, and alert-triggering pipeline stages in the crawler
+  - Prisma-backed `GET /v1/listings`, `GET /v1/listings/:id`, `GET /v1/alerts`, `POST /v1/alerts`, `POST /v1/alerts/:id/test`, `GET /v1/favorites`, `POST /v1/favorites`, `GET /v1/notifications`, and `POST /v1/push-subscriptions`
+  - units search and listing detail pages backed by live listing clusters, including source-variant detail and fraud labels
+  - authenticated favorites, alerts, and inbox surfaces in the web app, plus route handlers for creating alerts and favorites from the browser
+  - notification dedupe keys and delivery logs for inbox, email, and push channel decisions
+- Exit criteria status: met.
 
 ### Phase 4: Projects Surface, Dedup, and Fraud
 - Add `Project` search and detail, link clusters to projects, implement cluster scoring, review queue, fraud scoring, trust UI, and admin merge or split tooling.

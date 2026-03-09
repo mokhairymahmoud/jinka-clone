@@ -2,8 +2,10 @@ import { Body, Controller, Get, Inject, Param, Patch, Post, UseGuards } from "@n
 import { IsBoolean, IsObject, IsOptional, IsString } from "class-validator";
 
 import type { SearchFilters } from "@jinka-eg/types";
-import { AppStoreService } from "../common/app-store.service.js";
+import { CurrentUser } from "../auth/current-user.decorator.js";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard.js";
+import type { AuthenticatedUser } from "../auth/auth.types.js";
+import { AlertsService } from "./alerts.service.js";
 
 class CreateAlertDto {
   @IsString()
@@ -43,28 +45,25 @@ class UpdateAlertDto {
 @Controller("alerts")
 @UseGuards(JwtAuthGuard)
 export class AlertsController {
-  constructor(@Inject(AppStoreService) private readonly store: AppStoreService) {}
+  constructor(@Inject(AlertsService) private readonly alertsService: AlertsService) {}
 
   @Get()
-  getAlerts() {
-    return this.store.getAlerts();
+  getAlerts(@CurrentUser() user: AuthenticatedUser) {
+    return this.alertsService.getAlerts(user.id);
   }
 
   @Post()
-  createAlert(@Body() body: CreateAlertDto) {
-    return this.store.createAlert(body);
+  createAlert(@CurrentUser() user: AuthenticatedUser, @Body() body: CreateAlertDto) {
+    return this.alertsService.createAlert(user.id, body);
   }
 
   @Patch(":id")
-  updateAlert(@Param("id") id: string, @Body() body: UpdateAlertDto) {
-    return this.store.updateAlert(id, body);
+  updateAlert(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string, @Body() body: UpdateAlertDto) {
+    return this.alertsService.updateAlert(user.id, id, body);
   }
 
   @Post(":id/test")
-  testAlert(@Param("id") id: string) {
-    return {
-      id,
-      matchedListingIds: this.store.getListings().slice(0, 1).map((listing) => listing.id)
-    };
+  testAlert(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
+    return this.alertsService.testAlert(user.id, id);
   }
 }

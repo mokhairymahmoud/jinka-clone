@@ -130,3 +130,22 @@ export interface AlertDefinition {
   quietHoursStart?: string;
   quietHoursEnd?: string;
 }
+
+export interface FavoriteRecord {
+  id: string;
+  clusterId: string;
+  note?: string;
+  state: "saved" | "shortlisted";
+  listing: ListingCluster;
+}
+
+export interface NotificationItem {
+  id: string;
+  title: string;
+  body: string;
+  type: "new_listing" | "price_drop";
+  createdAt: string;
+  readAt?: string | null;
+  clusterId?: string;
+  listing?: ListingCluster;
+}

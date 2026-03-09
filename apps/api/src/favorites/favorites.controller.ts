@@ -1,8 +1,10 @@
 import { Body, Controller, Get, Inject, Param, Patch, Post, UseGuards } from "@nestjs/common";
 import { IsOptional, IsString } from "class-validator";
 
-import { AppStoreService } from "../common/app-store.service.js";
+import { CurrentUser } from "../auth/current-user.decorator.js";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard.js";
+import type { AuthenticatedUser } from "../auth/auth.types.js";
+import { FavoritesService } from "./favorites.service.js";
 
 class CreateFavoriteDto {
   @IsString()
@@ -26,20 +28,20 @@ class UpdateFavoriteDto {
 @Controller("favorites")
 @UseGuards(JwtAuthGuard)
 export class FavoritesController {
-  constructor(@Inject(AppStoreService) private readonly store: AppStoreService) {}
+  constructor(@Inject(FavoritesService) private readonly favoritesService: FavoritesService) {}
 
   @Get()
-  getFavorites() {
-    return this.store.getFavorites();
+  getFavorites(@CurrentUser() user: AuthenticatedUser) {
+    return this.favoritesService.getFavorites(user.id);
   }
 
   @Post()
-  createFavorite(@Body() body: CreateFavoriteDto) {
-    return this.store.addFavorite(body.clusterId, body.note);
+  createFavorite(@CurrentUser() user: AuthenticatedUser, @Body() body: CreateFavoriteDto) {
+    return this.favoritesService.createFavorite(user.id, body.clusterId, body.note);
   }
 
   @Patch(":id")
-  updateFavorite(@Param("id") id: string, @Body() body: UpdateFavoriteDto) {
-    return this.store.updateFavorite(id, body);
+  updateFavorite(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string, @Body() body: UpdateFavoriteDto) {
+    return this.favoritesService.updateFavorite(user.id, id, body);
   }
 }

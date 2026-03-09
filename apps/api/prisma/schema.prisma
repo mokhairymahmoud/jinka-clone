@@ -53,6 +53,7 @@ model User {
   memberships         ShortlistMember[]
   pushSubscriptions   PushSubscription[]
   reports             Report[]
+  notifications       Notification[]
   adminAuditLogs      AdminAuditLog[]
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
@@ -110,6 +111,7 @@ model Alert {
   quietHoursStart String?
   quietHoursEnd   String?
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notifications   Notification[]
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
@@ -124,6 +126,8 @@ model Favorite {
   cluster    ListingCluster @relation(fields: [clusterId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  @@unique([userId, clusterId])
 }
 
 model Shortlist {
@@ -234,6 +238,7 @@ model ListingCluster {
   priceHistory     PriceHistory[]
   fraudCases       FraudCase[]
   reports          Report[]
+  notifications    Notification[]
   project          Project?           @relation(fields: [projectId], references: [id])
   area             Area?              @relation(fields: [areaId], references: [id])
   favorites        Favorite[]
@@ -323,6 +328,40 @@ model IngestionRun {
   extractionRate   Float?
   startedAt        DateTime      @default(now())
   completedAt      DateTime?
+}
+
+model Notification {
+  id               String                 @id @default(cuid())
+  userId           String
+  alertId          String?
+  clusterId        String?
+  type             String
+  title            String
+  body             String
+  dedupeKey        String                 @unique
+  readAt           DateTime?
+  metadata         Json?
+  user             User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  alert            Alert?                 @relation(fields: [alertId], references: [id], onDelete: SetNull)
+  cluster          ListingCluster?        @relation(fields: [clusterId], references: [id], onDelete: SetNull)
+  deliveries       NotificationDelivery[]
+  createdAt        DateTime               @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model NotificationDelivery {
+  id             String        @id @default(cuid())
+  notificationId String
+  channel        String
+  status         String
+  metadata       Json?
+  attemptedAt    DateTime?
+  deliveredAt    DateTime?
+  notification   Notification  @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime      @default(now())
+
+  @@index([notificationId, channel])
 }
 
 model AdminAuditLog {

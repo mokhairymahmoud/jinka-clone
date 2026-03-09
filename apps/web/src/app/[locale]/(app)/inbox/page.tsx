@@ -1,25 +1,41 @@
+import Link from "next/link";
 import { Badge, Card } from "@jinka-eg/ui";
 
 import { getMessages, resolveLocale } from "../../../../i18n/messages";
+import { apiFetch } from "../../../../lib/api";
+import { getAccessTokenFromCookies } from "../../../../lib/server-api";
 
-const inboxItems = [
-  {
-    id: "notif-001",
-    title: "New match in New Cairo",
-    body: "A fresh 3BR resale listing matched your saved alert.",
-    timestamp: "2 minutes ago"
-  },
-  {
-    id: "notif-002",
-    title: "Price drop detected",
-    body: "A Mivida unit dropped by EGP 150,000 across one source variant.",
-    timestamp: "27 minutes ago"
+async function fetchNotifications() {
+  const accessToken = await getAccessTokenFromCookies();
+
+  if (!accessToken) {
+    return [];
   }
-];
+
+  const response = await apiFetch("/v1/notifications", {
+    headers: {
+      authorization: `Bearer ${accessToken}`
+    }
+  });
+
+  if (!response.ok) {
+    return [];
+  }
+
+  return response.json();
+}
 
 export default async function InboxPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
-  const t = getMessages(resolveLocale(locale));
+  const safeLocale = resolveLocale(locale);
+  const t = getMessages(safeLocale);
+  const inboxItems = (await fetchNotifications()) as Array<{
+    id: string;
+    title: string;
+    body: string;
+    createdAt: string;
+    clusterId?: string;
+  }>;
 
   return (
     <div className="space-y-8">
@@ -34,8 +50,13 @@ export default async function InboxPage({ params }: { params: Promise<{ locale: 
               <div>
                 <div className="text-lg font-semibold text-stone-950">{item.title}</div>
                 <div className="mt-2 text-stone-600">{item.body}</div>
+                {item.clusterId ? (
+                  <Link href={`/${safeLocale}/listing/${item.clusterId}`} className="mt-3 inline-flex text-sm font-semibold text-clay">
+                    Open listing
+                  </Link>
+                ) : null}
               </div>
-              <div className="text-sm text-stone-500">{item.timestamp}</div>
+              <div className="text-sm text-stone-500">{new Date(item.createdAt).toLocaleString()}</div>
             </div>
           </Card>
         ))}

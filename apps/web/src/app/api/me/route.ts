@@ -1,15 +1,10 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { apiFetch } from "../../../lib/api";
-
-async function getAccessToken() {
-  const cookieStore = await cookies();
-  return cookieStore.get("access_token")?.value ?? null;
-}
+import { getAccessTokenFromCookies } from "../../../lib/server-api";
 
 export async function GET() {
-  const accessToken = await getAccessToken();
+  const accessToken = await getAccessTokenFromCookies();
 
   if (!accessToken) {
     return NextResponse.json({ error: { message: "Unauthorized" } }, { status: 401 });
@@ -26,7 +21,7 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
-  const accessToken = await getAccessToken();
+  const accessToken = await getAccessTokenFromCookies();
 
   if (!accessToken) {
     return NextResponse.json({ error: { message: "Unauthorized" } }, { status: 401 });

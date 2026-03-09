@@ -9,10 +9,12 @@ function formatPrice(amount: number) {
 
 export function ListingCard({
   listing,
-  locale
+  locale,
+  action
 }: {
   listing: ListingCluster;
   locale: "en" | "ar";
+  action?: React.ReactNode;
 }) {
   const title = listing.title[locale];
   const area = listing.area.name[locale];
@@ -43,12 +45,15 @@ export function ListingCard({
         </div>
         <div className="flex items-center justify-between">
           <div className="text-sm text-stone-500">{listing.variants[0]?.source}</div>
-          <Link
-            href={`/${locale}/listing/${listing.id}`}
-            className="rounded-full bg-stone-950 px-4 py-2 text-sm font-semibold text-white"
-          >
-            View detail
-          </Link>
+          <div className="flex items-center gap-2">
+            {action}
+            <Link
+              href={`/${locale}/listing/${listing.id}`}
+              className="rounded-full bg-stone-950 px-4 py-2 text-sm font-semibold text-white"
+            >
+              View detail
+            </Link>
+          </div>
         </div>
       </div>
     </Card>

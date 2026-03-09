@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { mockListings } from "@jinka-eg/fixtures";
 import { Badge, Card } from "@jinka-eg/ui";
+import { FavoriteButton } from "../../../../../components/favorite-button";
+import { apiFetch } from "../../../../../lib/api";
 import { resolveLocale } from "../../../../../i18n/messages";
+import { getAccessTokenFromCookies } from "../../../../../lib/server-api";
 
 export default async function ListingDetailPage({
   params
@@ -12,9 +14,41 @@ export default async function ListingDetailPage({
 }) {
   const { locale, id } = await params;
   const safeLocale = resolveLocale(locale);
-  const listing = mockListings.find((item) => item.id === id);
+  const [listingResponse, favoritesResponse] = await Promise.all([
+    apiFetch(`/v1/listings/${id}`),
+    (async () => {
+      const accessToken = await getAccessTokenFromCookies();
+      if (!accessToken) return null;
+      return apiFetch("/v1/favorites", {
+        headers: {
+          authorization: `Bearer ${accessToken}`
+        }
+      });
+    })()
+  ]);
 
-  if (!listing) notFound();
+  if (!listingResponse.ok) notFound();
+
+  const listing = (await listingResponse.json()) as Parameters<typeof FavoriteButton>[0] & {
+    id: string;
+    title: { en: string; ar: string };
+    area: { name: { en: string; ar: string } };
+    fraudAssessment: { label: "safe" | "review" | "high_risk"; reasons: string[] };
+    price: { amount: number };
+    variantCount: number;
+    bedrooms?: number;
+    bathrooms?: number;
+    areaSqm?: number;
+    variants: Array<{
+      id: string;
+      source: string;
+      extractionConfidence: number;
+      title: { en: string; ar: string };
+      sourceUrl: string;
+    }>;
+  };
+  const favorites = favoritesResponse && favoritesResponse.ok ? await favoritesResponse.json() : [];
+  const isFavorite = (favorites as Array<{ clusterId: string }>).some((favorite) => favorite.clusterId === listing.id);
 
   return (
     <div className="space-y-8">
@@ -24,6 +58,9 @@ export default async function ListingDetailPage({
         </Badge>
         <h1 className="mt-4 text-5xl font-semibold tracking-tight">{listing.title[safeLocale]}</h1>
         <p className="mt-3 text-lg text-white/80">{listing.area.name[safeLocale]}</p>
+        <div className="mt-6">
+          <FavoriteButton clusterId={listing.id} initialSaved={isFavorite} />
+        </div>
       </div>
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <Card className="space-y-6 p-6">
