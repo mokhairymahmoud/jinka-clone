@@ -152,6 +152,75 @@ export class AdminService {
       .filter((edge): edge is NonNullable<typeof edge> => edge !== null);
   }
 
+  async getReports() {
+    const reports = await this.prisma.report.findMany({
+      include: {
+        user: true,
+        cluster: true
+      },
+      orderBy: [{ resolvedAt: "asc" }, { createdAt: "desc" }],
+      take: 50
+    });
+
+    return reports.map((report) => ({
+      id: report.id,
+      clusterId: report.clusterId,
+      clusterTitleEn: report.cluster.canonicalTitleEn,
+      reason: report.reason,
+      details: report.details ?? undefined,
+      resolved: Boolean(report.resolvedAt),
+      resolutionNote: report.resolutionNote ?? undefined,
+      reportedBy: report.user.email,
+      createdAt: report.createdAt.toISOString()
+    }));
+  }
+
+  async resolveReport(actorId: string, reportId: string, resolutionNote?: string) {
+    const report = await this.prisma.report.findUnique({
+      where: { id: reportId }
+    });
+
+    if (!report) {
+      throw new NotFoundException("Report not found");
+    }
+
+    const resolved = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.report.update({
+        where: { id: reportId },
+        data: {
+          resolvedAt: new Date(),
+          resolutionNote: resolutionNote ?? report.resolutionNote ?? "Reviewed by support"
+        }
+      });
+
+      await tx.adminAuditLog.create({
+        data: {
+          userId: actorId,
+          action: "report.resolve",
+          entityType: "Report",
+          entityId: reportId,
+          beforeState: {
+            resolvedAt: report.resolvedAt,
+            resolutionNote: report.resolutionNote
+          },
+          afterState: {
+            resolvedAt: updated.resolvedAt,
+            resolutionNote: updated.resolutionNote
+          }
+        }
+      });
+
+      return updated;
+    });
+
+    return {
+      id: resolved.id,
+      clusterId: resolved.clusterId,
+      resolved: true,
+      resolutionNote: resolved.resolutionNote ?? undefined
+    };
+  }
+
   async mergeCluster(actorId: string, sourceClusterId: string, targetClusterId: string) {
     if (sourceClusterId === targetClusterId) {
       throw new BadRequestException("Source and target cluster must differ");

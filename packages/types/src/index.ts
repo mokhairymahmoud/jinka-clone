@@ -139,6 +139,52 @@ export interface FavoriteRecord {
   listing: ListingCluster;
 }
 
+export interface ShortlistItemRecord {
+  id: string;
+  clusterId: string;
+  note?: string;
+  addedAt: string;
+  listing: ListingCluster;
+}
+
+export interface ShortlistCommentRecord {
+  id: string;
+  body: string;
+  listingId?: string;
+  createdAt: string;
+  author: {
+    id: string;
+    email: string;
+    name?: string;
+  };
+}
+
+export interface ShortlistRecord {
+  id: string;
+  name: string;
+  description?: string;
+  members: Array<{
+    id: string;
+    email: string;
+    name?: string;
+    role: string;
+  }>;
+  items: ShortlistItemRecord[];
+  comments: ShortlistCommentRecord[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReportRecord {
+  id: string;
+  clusterId: string;
+  reason: string;
+  details?: string;
+  resolved: boolean;
+  resolutionNote?: string;
+  createdAt: string;
+}
+
 export interface NotificationItem {
   id: string;
   title: string;

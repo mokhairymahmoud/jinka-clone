@@ -55,6 +55,8 @@ model User {
   reports             Report[]
   notifications       Notification[]
   adminAuditLogs      AdminAuditLog[]
+  shortlistComments   ShortlistComment[]
+  shortlistItemsAdded ShortlistItem[]
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
 }
@@ -136,6 +138,7 @@ model Shortlist {
   description String?
   members     ShortlistMember[]
   comments    ShortlistComment[]
+  items       ShortlistItem[]
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 }
@@ -148,6 +151,8 @@ model ShortlistMember {
   shortlist   Shortlist @relation(fields: [shortlistId], references: [id], onDelete: Cascade)
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime  @default(now())
+
+  @@unique([shortlistId, userId])
 }
 
 model ShortlistComment {
@@ -157,7 +162,23 @@ model ShortlistComment {
   body        String
   listingId   String?
   shortlist   Shortlist @relation(fields: [shortlistId], references: [id], onDelete: Cascade)
+  author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
   createdAt   DateTime  @default(now())
+}
+
+model ShortlistItem {
+  id          String    @id @default(cuid())
+  shortlistId String
+  clusterId   String
+  addedById   String
+  note        String?
+  shortlist   Shortlist @relation(fields: [shortlistId], references: [id], onDelete: Cascade)
+  cluster     ListingCluster @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+  addedBy     User      @relation(fields: [addedById], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([shortlistId, clusterId])
 }
 
 model Developer {
@@ -242,6 +263,7 @@ model ListingCluster {
   project          Project?           @relation(fields: [projectId], references: [id])
   area             Area?              @relation(fields: [areaId], references: [id])
   favorites        Favorite[]
+  shortlistItems   ShortlistItem[]
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 }
@@ -313,6 +335,8 @@ model Report {
   clusterId   String
   reason      String
   details     String?
+  resolvedAt  DateTime?
+  resolutionNote String?
   user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   cluster     ListingCluster  @relation(fields: [clusterId], references: [id], onDelete: Cascade)
   createdAt   DateTime        @default(now())

@@ -60,6 +60,18 @@ type ClusterEdge = {
   }>;
 };
 
+type ReportQueueItem = {
+  id: string;
+  clusterId: string;
+  clusterTitleEn: string;
+  reason: string;
+  details?: string;
+  resolved: boolean;
+  resolutionNote?: string;
+  reportedBy: string;
+  createdAt: string;
+};
+
 async function fetchAdminData() {
   const cookieStore = await cookies();
   const accessToken = cookieStore.get("access_token")?.value;
@@ -69,11 +81,12 @@ async function fetchAdminData() {
       connectors: [] as ConnectorHealth[],
       runs: [] as IngestionRun[],
       fraudCases: [] as FraudCase[],
-      clusterEdges: [] as ClusterEdge[]
+      clusterEdges: [] as ClusterEdge[],
+      reports: [] as ReportQueueItem[]
     };
   }
 
-  const [connectorsResponse, runsResponse, fraudCasesResponse, clusterEdgesResponse] = await Promise.all([
+  const [connectorsResponse, runsResponse, fraudCasesResponse, clusterEdgesResponse, reportsResponse] = await Promise.all([
     apiFetch("/v1/admin/connectors", {
       headers: {
         authorization: `Bearer ${accessToken}`
@@ -93,6 +106,11 @@ async function fetchAdminData() {
       headers: {
         authorization: `Bearer ${accessToken}`
       }
+    }),
+    apiFetch("/v1/admin/reports", {
+      headers: {
+        authorization: `Bearer ${accessToken}`
+      }
     })
   ]);
 
@@ -100,7 +118,8 @@ async function fetchAdminData() {
     connectors: connectorsResponse.ok ? (((await connectorsResponse.json()) as ConnectorHealth[]) ?? []) : [],
     runs: runsResponse.ok ? (((await runsResponse.json()) as IngestionRun[]) ?? []) : [],
     fraudCases: fraudCasesResponse.ok ? (((await fraudCasesResponse.json()) as FraudCase[]) ?? []) : [],
-    clusterEdges: clusterEdgesResponse.ok ? (((await clusterEdgesResponse.json()) as ClusterEdge[]) ?? []) : []
+    clusterEdges: clusterEdgesResponse.ok ? (((await clusterEdgesResponse.json()) as ClusterEdge[]) ?? []) : [],
+    reports: reportsResponse.ok ? (((await reportsResponse.json()) as ReportQueueItem[]) ?? []) : []
   };
 }
 
@@ -109,7 +128,7 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
   const safeLocale = resolveLocale(locale);
   const t = getMessages(safeLocale);
   const user = await requireSessionUser(safeLocale);
-  const { connectors, runs, fraudCases, clusterEdges } = await fetchAdminData();
+  const { connectors, runs, fraudCases, clusterEdges, reports } = await fetchAdminData();
 
   if (user.role !== "admin" && user.role !== "ops_reviewer") {
     redirect(`/${safeLocale}/account`);
@@ -215,6 +234,26 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
                   {edge.decision.replace("_", " ")}
                 </Badge>
                 <div className="mt-2 text-sm text-stone-600">{Math.round(edge.score * 100)}% confidence</div>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+      <div className="grid gap-4">
+        {reports.map((report) => (
+          <Card key={report.id} className="p-5">
+            <div className="flex items-start justify-between gap-6">
+              <div>
+                <div className="text-lg font-semibold text-stone-950">{report.clusterTitleEn}</div>
+                <div className="mt-1 text-sm text-stone-600">
+                  {report.reason} · by {report.reportedBy}
+                </div>
+                {report.details ? <div className="mt-3 text-sm text-stone-600">{report.details}</div> : null}
+                <div className="mt-2 text-xs text-stone-500">{new Date(report.createdAt).toLocaleString()}</div>
+              </div>
+              <div className="text-right">
+                <Badge tone={report.resolved ? "success" : "danger"}>{report.resolved ? "resolved" : "open"}</Badge>
+                {report.resolutionNote ? <div className="mt-2 text-xs text-stone-500">{report.resolutionNote}</div> : null}
               </div>
             </div>
           </Card>

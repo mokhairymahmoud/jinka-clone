@@ -24,6 +24,11 @@ class ResolveFraudCaseDto {
   label!: FraudAssessment["label"];
 }
 
+class ResolveReportDto {
+  @IsString()
+  resolutionNote!: string;
+}
+
 @Controller("admin")
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles("admin", "ops_reviewer")
@@ -50,6 +55,11 @@ export class AdminController {
     return this.adminService.getClusterEdges();
   }
 
+  @Get("reports")
+  getReports() {
+    return this.adminService.getReports();
+  }
+
   @Post("clusters/:id/merge")
   mergeCluster(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string, @Body() body: MergeClusterDto) {
     return this.adminService.mergeCluster(user.id, id, body.targetClusterId);
@@ -63,5 +73,10 @@ export class AdminController {
   @Post("fraud-cases/:id/resolve")
   resolveFraudCase(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string, @Body() body: ResolveFraudCaseDto) {
     return this.adminService.resolveFraudCase(user.id, id, body.label);
+  }
+
+  @Post("reports/:id/resolve")
+  resolveReport(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string, @Body() body: ResolveReportDto) {
+    return this.adminService.resolveReport(user.id, id, body.resolutionNote);
   }
 }
