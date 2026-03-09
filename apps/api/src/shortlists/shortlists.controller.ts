@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, Inject, Param, Post, UseGuards } from "@nestjs/common";
 import { IsEmail, IsString } from "class-validator";
 
 import { AppStoreService } from "../common/app-store.service.js";
+import { JwtAuthGuard } from "../auth/jwt-auth.guard.js";
 
 class CreateShortlistDto {
   @IsString()
@@ -14,8 +15,9 @@ class ShareShortlistDto {
 }
 
 @Controller("shortlists")
+@UseGuards(JwtAuthGuard)
 export class ShortlistsController {
-  constructor(private readonly store: AppStoreService) {}
+  constructor(@Inject(AppStoreService) private readonly store: AppStoreService) {}
 
   @Post()
   createShortlist(@Body() body: CreateShortlistDto) {

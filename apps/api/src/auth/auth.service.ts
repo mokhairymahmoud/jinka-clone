@@ -1,40 +1,271 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Inject, Injectable, NotImplementedException, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
+import { UserRole } from "@prisma/client";
+import { createHash, randomInt } from "node:crypto";
 
-import { AppStoreService } from "../common/app-store.service.js";
+import { PrismaService } from "../common/prisma.service.js";
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly jwtService: JwtService,
-    private readonly store: AppStoreService
+    @Inject(JwtService) private readonly jwtService: JwtService,
+    @Inject(PrismaService) private readonly prisma: PrismaService
   ) {}
 
-  requestOtp(email: string) {
+  private hashValue(value: string) {
+    return createHash("sha256").update(value).digest("hex");
+  }
+
+  private toPublicRole(role: UserRole) {
+    if (role === UserRole.ADMIN) return "admin" as const;
+    if (role === UserRole.OPS_REVIEWER) return "ops_reviewer" as const;
+    return "user" as const;
+  }
+
+  private async createAuthPayload(user: { id: string; email: string; role: UserRole }, metadata?: { ipAddress?: string; userAgent?: string }) {
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    const refreshToken = await this.jwtService.signAsync(
+      {
+        sub: user.id,
+        email: user.email,
+        role: this.toPublicRole(user.role),
+        sid: sessionId
+      },
+      {
+        secret: process.env.JWT_REFRESH_SECRET ?? "refresh-secret",
+        expiresIn: "7d"
+      }
+    );
+
+    await this.prisma.authSession.create({
+      data: {
+        id: sessionId,
+        userId: user.id,
+        refreshTokenHash: this.hashValue(refreshToken),
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        ipAddress: metadata?.ipAddress,
+        userAgent: metadata?.userAgent
+      }
+    });
+
+    const accessToken = await this.jwtService.signAsync(
+      {
+        sub: user.id,
+        email: user.email,
+        role: this.toPublicRole(user.role)
+      },
+      {
+        secret: process.env.JWT_ACCESS_SECRET ?? "development-secret",
+        expiresIn: "15m"
+      }
+    );
+
     return {
-      success: true,
-      email,
-      otpPreview: "123456"
+      accessToken,
+      refreshToken
     };
   }
 
-  verifyOtp(email: string) {
-    const user = this.store.getCurrentUser();
-    const payload = { sub: user.id, email, role: user.role };
+  async requestOtp(email: string) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: normalizedEmail }
+    });
+    const code = String(randomInt(100000, 999999));
+
+    await this.prisma.otpChallenge.create({
+      data: {
+        email: normalizedEmail,
+        userId: existingUser?.id,
+        codeHash: this.hashValue(code),
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000)
+      }
+    });
+
     return {
-      user,
-      accessToken: this.jwtService.sign(payload, { expiresIn: "15m" }),
-      refreshToken: this.jwtService.sign(payload, { expiresIn: "7d", secret: process.env.JWT_REFRESH_SECRET ?? "refresh-secret" })
+      success: true,
+      email: normalizedEmail,
+      expiresInSeconds: 600,
+      otpPreview: process.env.NODE_ENV === "production" ? undefined : code
+    };
+  }
+
+  async verifyOtp(email: string, code: string, metadata?: { ipAddress?: string; userAgent?: string }) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const challenge = await this.prisma.otpChallenge.findFirst({
+      where: {
+        email: normalizedEmail,
+        consumedAt: null,
+        expiresAt: {
+          gt: new Date()
+        }
+      },
+      orderBy: {
+        createdAt: "desc"
+      }
+    });
+
+    if (!challenge) {
+      throw new UnauthorizedException("OTP challenge expired or not found");
+    }
+
+    if (challenge.codeHash !== this.hashValue(code)) {
+      await this.prisma.otpChallenge.update({
+        where: { id: challenge.id },
+        data: {
+          attempts: {
+            increment: 1
+          }
+        }
+      });
+      throw new UnauthorizedException("Invalid OTP code");
+    }
+
+    const user = await this.prisma.$transaction(async (tx) => {
+      await tx.otpChallenge.update({
+        where: { id: challenge.id },
+        data: {
+          consumedAt: new Date()
+        }
+      });
+
+      return tx.user.upsert({
+        where: { email: normalizedEmail },
+        update: {},
+        create: {
+          email: normalizedEmail,
+          locale: "en",
+          notificationPrefs: {
+            emailEnabled: true,
+            pushEnabled: true
+          },
+          role: normalizedEmail === "demo@example.com" ? UserRole.ADMIN : UserRole.USER
+        }
+      });
+    });
+
+    const tokens = await this.createAuthPayload(user, metadata);
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        locale: user.locale,
+        role: this.toPublicRole(user.role),
+        notificationPrefs: user.notificationPrefs ?? {
+          emailEnabled: true,
+          pushEnabled: true
+        }
+      },
+      ...tokens
     };
   }
 
   getGoogleStartUrl() {
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !process.env.NEXT_PUBLIC_API_URL) {
+      throw new BadRequestException("Google OAuth is not configured");
+    }
+
+    const redirectUri = `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/google/callback`;
+    const params = new URLSearchParams({
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      redirect_uri: redirectUri,
+      response_type: "code",
+      scope: "openid email profile",
+      access_type: "offline",
+      prompt: "consent"
+    });
+
     return {
-      url: "/v1/auth/google/callback?code=demo-code"
+      url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
     };
   }
 
   getGoogleCallback() {
-    return this.verifyOtp(this.store.getCurrentUser().email);
+    throw new NotImplementedException("Google callback token exchange is not implemented in this phase");
+  }
+
+  async refreshSession(refreshToken: string, metadata?: { ipAddress?: string; userAgent?: string }) {
+    try {
+      const payload = await this.jwtService.verifyAsync<{
+        sub: string;
+        email: string;
+        sid: string;
+      }>(refreshToken, {
+        secret: process.env.JWT_REFRESH_SECRET ?? "refresh-secret"
+      });
+
+      const existingSession = await this.prisma.authSession.findUnique({
+        where: { id: payload.sid }
+      });
+
+      if (
+        !existingSession ||
+        existingSession.revokedAt ||
+        existingSession.expiresAt < new Date() ||
+        existingSession.refreshTokenHash !== this.hashValue(refreshToken)
+      ) {
+        throw new UnauthorizedException("Refresh session is invalid");
+      }
+
+      await this.prisma.authSession.update({
+        where: { id: existingSession.id },
+        data: {
+          revokedAt: new Date()
+        }
+      });
+
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub }
+      });
+
+      if (!user) {
+        throw new UnauthorizedException("User not found");
+      }
+
+      const tokens = await this.createAuthPayload(user, metadata);
+
+      return {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          locale: user.locale,
+          role: this.toPublicRole(user.role),
+          notificationPrefs: user.notificationPrefs ?? {
+            emailEnabled: true,
+            pushEnabled: true
+          }
+        },
+        ...tokens
+      };
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new UnauthorizedException("Unable to refresh session");
+    }
+  }
+
+  async logout(refreshToken?: string) {
+    if (!refreshToken) {
+      return { success: true };
+    }
+
+    try {
+      const payload = await this.jwtService.verifyAsync<{ sid: string }>(refreshToken, {
+        secret: process.env.JWT_REFRESH_SECRET ?? "refresh-secret"
+      });
+
+      await this.prisma.authSession.updateMany({
+        where: { id: payload.sid },
+        data: { revokedAt: new Date() }
+      });
+    } catch {
+      return { success: true };
+    }
+
+    return { success: true };
   }
 }

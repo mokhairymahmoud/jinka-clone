@@ -1,10 +1,10 @@
-import { Controller, Get, NotFoundException, Param } from "@nestjs/common";
+import { Controller, Get, Inject, NotFoundException, Param } from "@nestjs/common";
 
 import { AppStoreService } from "../common/app-store.service.js";
 
 @Controller("projects")
 export class ProjectsController {
-  constructor(private readonly store: AppStoreService) {}
+  constructor(@Inject(AppStoreService) private readonly store: AppStoreService) {}
 
   @Get()
   getProjects() {

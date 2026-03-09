@@ -1,10 +1,10 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Inject, Injectable, NotFoundException } from "@nestjs/common";
 
 import { AppStoreService } from "../common/app-store.service.js";
 
 @Injectable()
 export class ListingsService {
-  constructor(private readonly store: AppStoreService) {}
+  constructor(@Inject(AppStoreService) private readonly store: AppStoreService) {}
 
   findAll(query?: string) {
     return this.store.searchListings(query);

@@ -1,7 +1,8 @@
-import { Body, Controller, Post } from "@nestjs/common";
+import { Body, Controller, Inject, Post, UseGuards } from "@nestjs/common";
 import { IsOptional, IsString } from "class-validator";
 
 import { AppStoreService } from "../common/app-store.service.js";
+import { JwtAuthGuard } from "../auth/jwt-auth.guard.js";
 
 class CreatePushSubscriptionDto {
   @IsString()
@@ -13,8 +14,9 @@ class CreatePushSubscriptionDto {
 }
 
 @Controller("push-subscriptions")
+@UseGuards(JwtAuthGuard)
 export class PushSubscriptionsController {
-  constructor(private readonly store: AppStoreService) {}
+  constructor(@Inject(AppStoreService) private readonly store: AppStoreService) {}
 
   @Post()
   createPushSubscription(@Body() body: CreatePushSubscriptionDto) {

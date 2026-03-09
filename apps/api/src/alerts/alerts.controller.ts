@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Get, Inject, Param, Patch, Post, UseGuards } from "@nestjs/common";
 import { IsBoolean, IsObject, IsOptional, IsString } from "class-validator";
 
 import type { SearchFilters } from "@jinka-eg/types";
 import { AppStoreService } from "../common/app-store.service.js";
+import { JwtAuthGuard } from "../auth/jwt-auth.guard.js";
 
 class CreateAlertDto {
   @IsString()
@@ -40,8 +41,9 @@ class UpdateAlertDto {
 }
 
 @Controller("alerts")
+@UseGuards(JwtAuthGuard)
 export class AlertsController {
-  constructor(private readonly store: AppStoreService) {}
+  constructor(@Inject(AppStoreService) private readonly store: AppStoreService) {}
 
   @Get()
   getAlerts() {

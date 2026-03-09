@@ -6,6 +6,29 @@
 - Frontend uses `Next.js` as a responsive PWA. Backend uses `NestJS`. Scraping runs in a separate `Crawlee` worker. Search stays on `PostgreSQL + PostGIS` in v1.
 - Product scope is consumer-only. Contact flow is deep-link to the source. Off-plan inventory is first-class, but appears in a separate **Projects** tab.
 
+## Current Status
+- `Phase 0`: complete.
+- `Phase 1`: complete as of March 9, 2026.
+- `Phase 2`: not started.
+- Delivery boundary: stop after platform foundation. No ingestion queues, raw snapshot pipeline, source normalization flow, or live scrapers have been started.
+- Local verification completed on March 9, 2026:
+  - `docker compose up -d postgres redis minio`
+  - `pnpm --filter @jinka-eg/api exec prisma migrate deploy`
+  - `pnpm --filter @jinka-eg/api prisma:seed`
+  - `pnpm lint`
+  - `pnpm typecheck`
+  - `pnpm test`
+  - `pnpm build`
+  - API smoke test for `request-otp -> verify-otp -> GET /v1/me -> PATCH /v1/me`
+  - RBAC smoke test for `GET /v1/admin/connectors` returning `200` for admin and `403` for a regular user
+- Phase 1 runtime delivered:
+  - Prisma-backed `User`, `OtpChallenge`, and `AuthSession` persistence on PostgreSQL + PostGIS
+  - seed-backed admin bootstrap for `demo@example.com`
+  - NestJS OTP auth, refresh-session support, logout revocation, protected profile endpoints, and admin RBAC
+  - Next.js localized sign-in flow, protected app shell, account settings page, locale switching, and logout
+  - request logging, structured exception logging, Sentry bootstrap, and OpenTelemetry bootstrap hooks
+  - reproducible initial Prisma migration history under `apps/api/prisma/migrations`
+
 ## Product Goals
 - Let users search rentals, resale, and off-plan inventory across multiple sources from one app.
 - Notify users within minutes when a matching listing appears or drops in price.
@@ -112,11 +135,22 @@
 - Set up workspace, CI, preview environments, Prisma schema, Postgres, Redis, and object storage.
 - Implement auth, locale handling, base layouts, RBAC, logging, Sentry, and OpenTelemetry.
 - Exit criteria: users can sign in, switch language, and access the protected app shell.
+- Status: complete.
+- Completed deliverables:
+  - `pnpm` workspace and `Turborepo` monorepo with `apps/web`, `apps/api`, `apps/crawler`, and shared packages
+  - local infrastructure via Docker Compose for PostgreSQL + PostGIS, Redis, and MinIO
+  - initial Prisma migration and seed flow
+  - Prisma-backed OTP auth and profile persistence in the API
+  - protected localized Next.js app shell and account settings UI
+  - admin route protection with role-aware guards
+  - observability hooks for request logging, exception logging, Sentry, and OpenTelemetry
+- Exit criteria status: met.
 
 ### Phase 2: Ingestion Core and First Connectors
 - Build raw snapshot storage, connector interface, BullMQ workers, parser fixtures, replay tooling, and production connectors for `Nawy` and `Property Finder EG`.
 - Add area normalization, geocoding, media hashing, and ingestion dashboards.
 - Exit criteria: normalized variants from two sources flow continuously with replayable evidence.
+- Status: not started.
 
 ### Phase 3: Units Search and Alerts MVP
 - Implement `ListingCluster`, search API, list or map UI, detail page, favorites, alerts, inbox, web push, and email notifications.

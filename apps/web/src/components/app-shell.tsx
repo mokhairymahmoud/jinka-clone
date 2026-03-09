@@ -1,6 +1,8 @@
 import Link from "next/link";
 
+import type { SessionUser } from "../lib/session";
 import { LocaleSwitcher } from "./locale-switcher";
+import { LogoutButton } from "./logout-button";
 
 const navItems = [
   { href: "search/units", key: "navSearch" },
@@ -14,10 +16,12 @@ const navItems = [
 export function AppShell({
   locale,
   labels,
+  user,
   children
 }: {
   locale: "en" | "ar";
   labels: Record<string, string>;
+  user: SessionUser;
   children: React.ReactNode;
 }) {
   return (
@@ -28,8 +32,13 @@ export function AppShell({
             <div>
               <div className="font-display text-lg font-bold text-stone-950">{labels.brand}</div>
               <p className="mt-1 text-sm text-stone-500">Aggregator workspace</p>
+              <p className="mt-4 text-sm font-medium text-stone-800">{user.name ?? user.email}</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-stone-500">{user.role}</p>
             </div>
-            <LocaleSwitcher locale={locale} />
+            <div className="flex items-center gap-2">
+              <LocaleSwitcher locale={locale} />
+              <LogoutButton locale={locale} />
+            </div>
           </div>
           <nav className="mt-6 grid gap-2">
             {navItems.map((item) => (

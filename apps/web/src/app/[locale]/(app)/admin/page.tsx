@@ -1,6 +1,8 @@
 import { Badge, Card } from "@jinka-eg/ui";
+import { redirect } from "next/navigation";
 
 import { getMessages, resolveLocale } from "../../../../i18n/messages";
+import { requireSessionUser } from "../../../../lib/session";
 
 const connectors = [
   { source: "nawy", status: "healthy", coverage: "97%" },
@@ -11,7 +13,13 @@ const connectors = [
 
 export default async function AdminPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
-  const t = getMessages(resolveLocale(locale));
+  const safeLocale = resolveLocale(locale);
+  const t = getMessages(safeLocale);
+  const user = await requireSessionUser(safeLocale);
+
+  if (user.role !== "admin" && user.role !== "ops_reviewer") {
+    redirect(`/${safeLocale}/account`);
+  }
 
   return (
     <div className="space-y-8">

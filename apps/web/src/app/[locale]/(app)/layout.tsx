@@ -1,5 +1,6 @@
 import { AppShell } from "../../../components/app-shell";
 import { getMessages, resolveLocale } from "../../../i18n/messages";
+import { requireSessionUser } from "../../../lib/session";
 
 export default async function AuthenticatedLayout({
   children,
@@ -11,6 +12,7 @@ export default async function AuthenticatedLayout({
   const { locale } = await params;
   const safeLocale = resolveLocale(locale);
   const t = getMessages(safeLocale);
+  const user = await requireSessionUser(safeLocale);
 
-  return <AppShell locale={safeLocale} labels={t}>{children}</AppShell>;
+  return <AppShell locale={safeLocale} labels={t} user={user}>{children}</AppShell>;
 }

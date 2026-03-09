@@ -19,6 +19,9 @@ export function MarketingHeader({
           <Link href={`/${locale}/how-it-works`}>{labels.howItWorks}</Link>
           <Link href={`/${locale}/trust`}>{labels.trust}</Link>
           <Link href={`/${locale}/faq`}>{labels.faq}</Link>
+          <Link href={`/${locale}/sign-in`} className="rounded-full bg-stone-950 px-4 py-2 text-white">
+            Sign in
+          </Link>
         </nav>
         <LocaleSwitcher locale={locale} />
       </div>

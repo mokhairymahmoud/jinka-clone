@@ -1,11 +1,12 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
   provider   = "postgresql"
   url        = env("DATABASE_URL")
-  extensions = [postgis]
+  extensions = [postgis, postgis_topology, postgis_tiger_geocoder, fuzzystrmatch]
 }
 
 enum UserRole {
@@ -45,6 +46,8 @@ model User {
   locale              String             @default("en")
   role                UserRole           @default(USER)
   notificationPrefs   Json?
+  otpChallenges       OtpChallenge[]
+  authSessions        AuthSession[]
   alerts              Alert[]
   favorites           Favorite[]
   memberships         ShortlistMember[]
@@ -53,6 +56,36 @@ model User {
   adminAuditLogs      AdminAuditLog[]
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
+}
+
+model OtpChallenge {
+  id          String   @id @default(cuid())
+  userId      String?
+  email       String
+  codeHash    String
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  attempts    Int      @default(0)
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([email, expiresAt])
+}
+
+model AuthSession {
+  id               String   @id @default(cuid())
+  userId           String
+  refreshTokenHash String
+  userAgent        String?
+  ipAddress        String?
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([userId, expiresAt])
 }
 
 model PushSubscription {
@@ -143,6 +176,7 @@ model Area {
   parent      Area?    @relation("AreaHierarchy", fields: [parentId], references: [id])
   children    Area[]   @relation("AreaHierarchy")
   projects    Project[]
+  listingClusters ListingCluster[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

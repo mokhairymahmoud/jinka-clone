@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Get, Inject, Param, Patch, Post, UseGuards } from "@nestjs/common";
 import { IsOptional, IsString } from "class-validator";
 
 import { AppStoreService } from "../common/app-store.service.js";
+import { JwtAuthGuard } from "../auth/jwt-auth.guard.js";
 
 class CreateFavoriteDto {
   @IsString()
@@ -23,8 +24,9 @@ class UpdateFavoriteDto {
 }
 
 @Controller("favorites")
+@UseGuards(JwtAuthGuard)
 export class FavoritesController {
-  constructor(private readonly store: AppStoreService) {}
+  constructor(@Inject(AppStoreService) private readonly store: AppStoreService) {}
 
   @Get()
   getFavorites() {
