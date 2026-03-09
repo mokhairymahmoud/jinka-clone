@@ -1,0 +1,17 @@
+{
+  "name": "@jinka-eg/fixtures",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "echo 'no tests for @jinka-eg/fixtures'",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@jinka-eg/types": "workspace:*"
+  }
+}

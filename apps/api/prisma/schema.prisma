@@ -1,0 +1,304 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis]
+}
+
+enum UserRole {
+  USER
+  OPS_REVIEWER
+  ADMIN
+}
+
+enum ListingSource {
+  NAWY
+  PROPERTY_FINDER
+  AQARMAP
+  FACEBOOK
+}
+
+enum ListingPurpose {
+  RENT
+  SALE
+}
+
+enum MarketSegment {
+  RESALE
+  PRIMARY
+  OFF_PLAN
+}
+
+enum FraudLabel {
+  SAFE
+  REVIEW
+  HIGH_RISK
+}
+
+model User {
+  id                  String             @id @default(cuid())
+  email               String             @unique
+  name                String?
+  locale              String             @default("en")
+  role                UserRole           @default(USER)
+  notificationPrefs   Json?
+  alerts              Alert[]
+  favorites           Favorite[]
+  memberships         ShortlistMember[]
+  pushSubscriptions   PushSubscription[]
+  reports             Report[]
+  adminAuditLogs      AdminAuditLog[]
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+}
+
+model PushSubscription {
+  id          String   @id @default(cuid())
+  userId      String
+  endpoint    String   @unique
+  p256dhKey   String
+  authKey     String
+  platform    String?
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+}
+
+model Alert {
+  id              String   @id @default(cuid())
+  userId          String
+  name            String
+  locale          String   @default("en")
+  filters         Json
+  notifyByPush    Boolean  @default(true)
+  notifyByEmail   Boolean  @default(true)
+  quietHoursStart String?
+  quietHoursEnd   String?
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Favorite {
+  id         String   @id @default(cuid())
+  userId     String
+  clusterId  String
+  note       String?
+  state      String   @default("saved")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cluster    ListingCluster @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Shortlist {
+  id          String            @id @default(cuid())
+  name        String
+  description String?
+  members     ShortlistMember[]
+  comments    ShortlistComment[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model ShortlistMember {
+  id          String    @id @default(cuid())
+  shortlistId String
+  userId      String
+  role        String    @default("owner")
+  shortlist   Shortlist @relation(fields: [shortlistId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+}
+
+model ShortlistComment {
+  id          String    @id @default(cuid())
+  shortlistId String
+  authorId    String
+  body        String
+  listingId   String?
+  shortlist   Shortlist @relation(fields: [shortlistId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+}
+
+model Developer {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  nameEn      String
+  nameAr      String
+  projects    Project[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Area {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  nameEn      String
+  nameAr      String
+  parentId    String?
+  geometry    Unsupported("geometry(MultiPolygon, 4326)")?
+  parent      Area?    @relation("AreaHierarchy", fields: [parentId], references: [id])
+  children    Area[]   @relation("AreaHierarchy")
+  projects    Project[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Project {
+  id               String           @id @default(cuid())
+  slug             String           @unique
+  nameEn           String
+  nameAr           String
+  developerId      String
+  areaId           String
+  handoffYear      Int?
+  startingPrice    Int?
+  paymentPlanYears Int?
+  imageUrl         String?
+  sourceUrls       String[]
+  developer        Developer        @relation(fields: [developerId], references: [id])
+  area             Area             @relation(fields: [areaId], references: [id])
+  listingClusters  ListingCluster[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+
+model RawSnapshot {
+  id                 String           @id @default(cuid())
+  source             ListingSource
+  sourceListingId    String?
+  sourceUrl          String
+  payloadType        String
+  storageKey         String
+  parserVersion      String
+  extractionCoverage Float?
+  fetchedAt          DateTime         @default(now())
+  listingVariants    ListingVariant[]
+}
+
+model ListingCluster {
+  id               String             @id @default(cuid())
+  projectId        String?
+  canonicalTitleEn String
+  canonicalTitleAr String
+  purpose          ListingPurpose
+  marketSegment    MarketSegment
+  propertyType     String
+  areaId           String?
+  location         Unsupported("geometry(Point, 4326)")?
+  bedrooms         Int?
+  bathrooms        Int?
+  areaSqm          Float?
+  bestPrice        Int?
+  currency         String             @default("EGP")
+  fraudLabel       FraudLabel         @default(SAFE)
+  fraudScore       Float              @default(0)
+  variants         ListingVariant[]
+  priceHistory     PriceHistory[]
+  fraudCases       FraudCase[]
+  reports          Report[]
+  project          Project?           @relation(fields: [projectId], references: [id])
+  area             Area?              @relation(fields: [areaId], references: [id])
+  favorites        Favorite[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+}
+
+model ListingVariant {
+  id                   String         @id @default(cuid())
+  clusterId            String?
+  rawSnapshotId        String
+  source               ListingSource
+  sourceListingId      String
+  canonicalUrl         String
+  titleEn              String
+  titleAr              String
+  descriptionEn        String?
+  descriptionAr        String?
+  purpose              ListingPurpose
+  marketSegment        MarketSegment
+  propertyType         String
+  publishedAt          DateTime?
+  extractionConfidence Float
+  rawFields            Json
+  imageUrls            String[]
+  cluster              ListingCluster? @relation(fields: [clusterId], references: [id], onDelete: SetNull)
+  rawSnapshot          RawSnapshot     @relation(fields: [rawSnapshotId], references: [id], onDelete: Cascade)
+  priceHistory         PriceHistory[]
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  @@unique([source, sourceListingId])
+}
+
+model PriceHistory {
+  id             String          @id @default(cuid())
+  clusterId      String?
+  variantId      String?
+  price          Int
+  currency       String          @default("EGP")
+  recordedAt     DateTime        @default(now())
+  cluster        ListingCluster? @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+  variant        ListingVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+}
+
+model ClusterEdge {
+  id             String   @id @default(cuid())
+  leftVariantId  String
+  rightVariantId String
+  score          Float
+  reasons        Json
+  createdAt      DateTime @default(now())
+
+  @@unique([leftVariantId, rightVariantId])
+}
+
+model FraudCase {
+  id                 String          @id @default(cuid())
+  clusterId          String
+  label              FraudLabel
+  score              Float
+  explanation        Json
+  operatorOverride   FraudLabel?
+  resolvedAt         DateTime?
+  cluster            ListingCluster  @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+  createdAt          DateTime        @default(now())
+}
+
+model Report {
+  id          String          @id @default(cuid())
+  userId      String
+  clusterId   String
+  reason      String
+  details     String?
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cluster     ListingCluster  @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+  createdAt   DateTime        @default(now())
+}
+
+model IngestionRun {
+  id               String        @id @default(cuid())
+  source           ListingSource
+  status           String
+  discoveredCount  Int           @default(0)
+  parsedCount      Int           @default(0)
+  failedCount      Int           @default(0)
+  extractionRate   Float?
+  startedAt        DateTime      @default(now())
+  completedAt      DateTime?
+}
+
+model AdminAuditLog {
+  id          String   @id @default(cuid())
+  userId      String
+  action      String
+  entityType  String
+  entityId    String
+  beforeState Json?
+  afterState  Json?
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+}
