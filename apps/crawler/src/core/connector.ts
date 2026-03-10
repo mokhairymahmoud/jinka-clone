@@ -14,6 +14,12 @@ import type {
 export interface SourceSeed {
   url: string;
   label: string;
+  purpose?: ListingPurpose;
+  marketSegment?: MarketSegment;
+  propertyType?: PropertyType;
+  areaSlug?: string;
+  page?: number;
+  priority?: number;
 }
 
 export interface RawPageResult {

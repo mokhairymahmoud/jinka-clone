@@ -30,12 +30,14 @@ type FetchPagePayload = {
   source: ListingSource;
   runId: string;
   seed: SourceSeed;
+  partitionId?: string;
 };
 
 type ParseSnapshotPayload = {
   source: ListingSource;
   runId: string;
   rawSnapshotId: string;
+  partitionId?: string;
 };
 
 type NormalizeVariantPayload = {
@@ -44,6 +46,7 @@ type NormalizeVariantPayload = {
   rawSnapshotId: string;
   candidate: ParsedListingCandidate;
   expectedTotal: number;
+  partitionId?: string;
 };
 
 type PipelineStagePayload = {
@@ -106,6 +109,13 @@ function toPrismaMarketSegment(segment: "resale" | "primary" | "off_plan") {
 function buildStorageKey(source: ListingSource, runId: string, seedLabel: string, payloadType: "html" | "json") {
   const safeLabel = seedLabel.toLowerCase().replace(/[^a-z0-9-]+/g, "-");
   return `${source}/${runId}/${safeLabel}-${randomUUID()}.${payloadType === "json" ? "json" : "html"}`;
+}
+
+function getNextPartitionCrawlAt(priority = 100, from = new Date()) {
+  const intervalMinutes =
+    priority <= 25 ? 5 : priority <= 50 ? 15 : priority <= 80 ? 60 : priority <= 110 ? 360 : 720;
+
+  return new Date(from.getTime() + intervalMinutes * 60_000);
 }
 
 function toJsonCoordinates(coordinates?: { lat: number; lng: number } | null) {
@@ -221,8 +231,59 @@ export class IngestionPipeline {
     await this.prisma.$disconnect();
   }
 
+  async syncSourcePartitions(sources: ListingSource[]) {
+    const enabledSources = await this.filterEnabledSources(sources);
+    let syncedPartitions = 0;
+
+    for (const source of enabledSources) {
+      const connector = getConnector(source);
+      const seeds = await connector.discover();
+
+      for (const seed of seeds) {
+        await this.prisma.sourcePartition.upsert({
+          where: {
+            source_label: {
+              source: toPrismaSource(source),
+              label: seed.label
+            }
+          },
+          update: {
+            seedUrl: seed.url,
+            purpose: seed.purpose ? toPrismaPurpose(seed.purpose) : undefined,
+            marketSegment: seed.marketSegment ? toPrismaMarketSegment(seed.marketSegment) : undefined,
+            propertyType: seed.propertyType,
+            areaSlug: seed.areaSlug,
+            page: seed.page,
+            priority: seed.priority ?? 100,
+            isActive: true
+          },
+          create: {
+            source: toPrismaSource(source),
+            label: seed.label,
+            seedUrl: seed.url,
+            purpose: seed.purpose ? toPrismaPurpose(seed.purpose) : undefined,
+            marketSegment: seed.marketSegment ? toPrismaMarketSegment(seed.marketSegment) : undefined,
+            propertyType: seed.propertyType,
+            areaSlug: seed.areaSlug,
+            page: seed.page,
+            priority: seed.priority ?? 100,
+            nextCrawlAt: new Date()
+          }
+        });
+        syncedPartitions += 1;
+      }
+    }
+
+    return {
+      requestedSources: sources,
+      syncedSources: enabledSources,
+      syncedPartitions
+    };
+  }
+
   async enqueueSources(sources: ListingSource[]) {
     const enabledSources = await this.filterEnabledSources(sources);
+    await this.syncSourcePartitions(enabledSources);
 
     await Promise.all(
       enabledSources.map((source) =>
@@ -236,6 +297,91 @@ export class IngestionPipeline {
       requestedSources: sources,
       queuedSources: enabledSources,
       skippedSources: sources.filter((source) => !enabledSources.includes(source))
+    };
+  }
+
+  async enqueueDuePartitions(options: { sources: ListingSource[]; limit?: number } = { sources: [] }) {
+    const enabledSources = await this.filterEnabledSources(options.sources);
+
+    if (enabledSources.length === 0) {
+      return {
+        requestedSources: options.sources,
+        queuedPartitions: 0,
+        queuedSources: [] as ListingSource[]
+      };
+    }
+
+    const partitions = await this.prisma.sourcePartition.findMany({
+      where: {
+        source: {
+          in: enabledSources.map((source) => toPrismaSource(source))
+        },
+        isActive: true,
+        nextCrawlAt: {
+          lte: new Date()
+        }
+      },
+      orderBy: [{ priority: "asc" }, { nextCrawlAt: "asc" }],
+      take: options.limit ?? 25
+    });
+
+    for (const partition of partitions) {
+      const source = this.fromPrismaSource(partition.source);
+      const run = await this.prisma.ingestionRun.create({
+        data: {
+          source: partition.source,
+          status: "running"
+        }
+      });
+
+      await this.queues["fetch-page"].add(`fetch:${source}:${run.id}:${partition.label}`, {
+        source,
+        runId: run.id,
+        partitionId: partition.id,
+        seed: {
+          url: partition.seedUrl,
+          label: partition.label,
+          purpose: partition.purpose ? this.fromPrismaPurpose(partition.purpose) : undefined,
+          marketSegment: partition.marketSegment ? this.fromPrismaMarketSegment(partition.marketSegment) : undefined,
+          propertyType: partition.propertyType as SourceSeed["propertyType"] | undefined,
+          areaSlug: partition.areaSlug ?? undefined,
+          page: partition.page ?? undefined,
+          priority: partition.priority
+        }
+      } satisfies FetchPagePayload);
+    }
+
+    return {
+      requestedSources: options.sources,
+      queuedPartitions: partitions.length,
+      queuedSources: [...new Set(partitions.map((partition) => this.fromPrismaSource(partition.source)))]
+    };
+  }
+
+  async markInactiveVariants(options: { sources: ListingSource[]; staleHours?: number }) {
+    const enabledSources = await this.filterEnabledSources(options.sources);
+    const staleHours = options.staleHours ?? Number(process.env.CRAWLER_STALE_AFTER_HOURS ?? "48");
+    const cutoff = new Date(Date.now() - staleHours * 60 * 60_000);
+
+    const result = await this.prisma.listingVariant.updateMany({
+      where: {
+        source: {
+          in: enabledSources.map((source) => toPrismaSource(source))
+        },
+        inactiveAt: null,
+        lastSeenAt: {
+          lt: cutoff
+        }
+      },
+      data: {
+        inactiveAt: new Date()
+      }
+    });
+
+    return {
+      sources: enabledSources,
+      cutoff: cutoff.toISOString(),
+      markedInactive: result.count
     };
   }
 
@@ -322,10 +468,15 @@ export class IngestionPipeline {
       }
     });
 
+    if (payload.partitionId) {
+      await this.touchPartitionSuccess(payload.partitionId);
+    }
+
     await this.queues["parse-snapshot"].add(`parse:${payload.source}:${rawSnapshot.id}`, {
       source: payload.source,
       runId: payload.runId,
-      rawSnapshotId: rawSnapshot.id
+      rawSnapshotId: rawSnapshot.id,
+      partitionId: payload.partitionId
     } satisfies ParseSnapshotPayload);
 
     return { rawSnapshotId: rawSnapshot.id, source: payload.source };
@@ -389,7 +540,8 @@ export class IngestionPipeline {
           runId: payload.runId,
           rawSnapshotId: payload.rawSnapshotId,
           candidate,
-          expectedTotal: candidates.length
+          expectedTotal: candidates.length,
+          partitionId: payload.partitionId
         } satisfies NormalizeVariantPayload)
       )
     );
@@ -439,7 +591,10 @@ export class IngestionPipeline {
         publishedAt: normalized.publishedAt ? new Date(normalized.publishedAt) : null,
         extractionConfidence: normalized.extractionConfidence,
         rawFields: enrichment.persistedRawFields,
-        imageUrls: normalized.imageUrls
+        imageUrls: normalized.imageUrls,
+        lastSeenAt: new Date(),
+        lastCrawledAt: new Date(),
+        inactiveAt: null
       },
       create: {
         rawSnapshotId: payload.rawSnapshotId,
@@ -456,7 +611,10 @@ export class IngestionPipeline {
         publishedAt: normalized.publishedAt ? new Date(normalized.publishedAt) : null,
         extractionConfidence: normalized.extractionConfidence,
         rawFields: enrichment.persistedRawFields,
-        imageUrls: normalized.imageUrls
+        imageUrls: normalized.imageUrls,
+        firstSeenAt: new Date(),
+        lastSeenAt: new Date(),
+        lastCrawledAt: new Date()
       }
     });
 
@@ -659,7 +817,7 @@ export class IngestionPipeline {
     };
   }
 
-  async markRunFailed(runId: string | undefined, _message: string) {
+  async markRunFailed(runId: string | undefined, _message: string, partitionId?: string) {
     if (!runId) {
       return;
     }
@@ -674,6 +832,10 @@ export class IngestionPipeline {
         completedAt: new Date()
       }
     });
+
+    if (partitionId) {
+      await this.markPartitionFailure(partitionId);
+    }
 
     await this.syncParserDriftAlarm(runId);
   }
@@ -1413,6 +1575,46 @@ export class IngestionPipeline {
         data: rows
       });
     }
+  }
+
+  private async touchPartitionSuccess(partitionId: string) {
+    const now = new Date();
+    const partition = await this.prisma.sourcePartition.findUnique({
+      where: { id: partitionId }
+    });
+
+    if (!partition) {
+      return;
+    }
+
+    await this.prisma.sourcePartition.update({
+      where: { id: partitionId },
+      data: {
+        lastCrawledAt: now,
+        nextCrawlAt: getNextPartitionCrawlAt(partition.priority, now),
+        failureCount: 0
+      }
+    });
+  }
+
+  private async markPartitionFailure(partitionId: string) {
+    const partition = await this.prisma.sourcePartition.findUnique({
+      where: { id: partitionId }
+    });
+
+    if (!partition) {
+      return;
+    }
+
+    const failures = partition.failureCount + 1;
+    const backoffMinutes = Math.min(12 * 60, 15 * failures);
+    await this.prisma.sourcePartition.update({
+      where: { id: partitionId },
+      data: {
+        failureCount: failures,
+        nextCrawlAt: new Date(Date.now() + backoffMinutes * 60_000)
+      }
+    });
   }
 
   private async markRunProgress(runId: string, rawSnapshotId: string, expectedTotal: number, succeeded: boolean) {

@@ -36,8 +36,12 @@ describe("connector health", () => {
 
   it("parses and normalizes Property Finder fixture data", async () => {
     const connector = new PropertyFinderConnector();
+    const seeds = await connector.discover();
     const parsed = await connector.parse(getParserFixture("property_finder"));
 
+    expect(seeds.length).toBeGreaterThan(1);
+    expect(seeds[0]?.label).toBe("cairo-default-p1");
+    expect(seeds[1]?.page).toBe(2);
     expect(parsed.length).toBeGreaterThan(0);
 
     const normalized = await connector.normalize(parsed[0]);

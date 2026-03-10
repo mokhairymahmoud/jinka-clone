@@ -50,7 +50,16 @@ export class NawyConnector extends BasePlaywrightConnector {
   readonly source = "nawy" as const;
 
   async discover(): Promise<SourceSeed[]> {
-    return [{ url: "https://www.nawy.com/search?purpose=sale&area=new-cairo", label: "new-cairo-sale" }];
+    return [
+      {
+        url: "https://www.nawy.com/search?purpose=sale&area=new-cairo",
+        label: "new-cairo-sale",
+        areaSlug: "new-cairo",
+        purpose: "sale",
+        marketSegment: "off_plan",
+        priority: 30
+      }
+    ];
   }
 
   override async fetch(seed: SourceSeed) {

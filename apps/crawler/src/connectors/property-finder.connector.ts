@@ -76,7 +76,27 @@ export class PropertyFinderConnector extends BasePlaywrightConnector {
   readonly source = "property_finder" as const;
 
   async discover(): Promise<SourceSeed[]> {
-    return [{ url: "https://www.propertyfinder.eg/en/search?l=1864", label: "cairo-default" }];
+    const maxPage = Number(process.env.PROPERTY_FINDER_MAX_DISCOVERY_PAGE ?? "8");
+
+    return Array.from({ length: Math.max(1, maxPage) }, (_, index) => {
+      const page = index + 1;
+      const url = new URL("https://www.propertyfinder.eg/en/search");
+
+      url.searchParams.set("l", "1864");
+      url.searchParams.set("ob", "mr");
+
+      if (page > 1) {
+        url.searchParams.set("page", String(page));
+      }
+
+      return {
+        url: url.toString(),
+        label: `cairo-default-p${page}`,
+        areaSlug: "cairo",
+        page,
+        priority: page === 1 ? 20 : 45
+      };
+    });
   }
 
   override async fetch(seed: SourceSeed) {

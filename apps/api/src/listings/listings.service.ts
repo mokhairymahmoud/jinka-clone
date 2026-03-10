@@ -94,6 +94,9 @@ export class ListingsService {
       include: {
         area: true,
         variants: {
+          where: {
+            inactiveAt: null
+          },
           orderBy: {
             updatedAt: "desc"
           }
@@ -114,11 +117,21 @@ export class ListingsService {
   }
 
   async findOne(id: string) {
-    const cluster = await this.prisma.listingCluster.findUnique({
-      where: { id },
+    const cluster = await this.prisma.listingCluster.findFirst({
+      where: {
+        id,
+        variants: {
+          some: {
+            inactiveAt: null
+          }
+        }
+      },
       include: {
         area: true,
         variants: {
+          where: {
+            inactiveAt: null
+          },
           orderBy: {
             updatedAt: "desc"
           }
@@ -152,11 +165,19 @@ export class ListingsService {
       where: {
         id: {
           in: ids
+        },
+        variants: {
+          some: {
+            inactiveAt: null
+          }
         }
       },
       include: {
         area: true,
         variants: {
+          where: {
+            inactiveAt: null
+          },
           orderBy: {
             updatedAt: "desc"
           }
@@ -174,6 +195,11 @@ export class ListingsService {
 
   private buildWhere(filters: SearchFilters): Prisma.ListingClusterWhereInput {
     const where: Prisma.ListingClusterWhereInput = {
+      variants: {
+        some: {
+          inactiveAt: null
+        }
+      },
       ...(filters.query
         ? {
             OR: [

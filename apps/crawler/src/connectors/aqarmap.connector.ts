@@ -20,7 +20,15 @@ export class AqarmapConnector extends BasePlaywrightConnector {
   readonly source = "aqarmap" as const;
 
   async discover(): Promise<SourceSeed[]> {
-    return [{ url: "https://aqarmap.com.eg/en/for-sale/property-type/cairo", label: "anti-bot-heavy" }];
+    return [
+      {
+        url: "https://aqarmap.com.eg/en/for-sale/property-type/cairo",
+        label: "anti-bot-heavy",
+        areaSlug: "cairo",
+        purpose: "sale",
+        priority: 120
+      }
+    ];
   }
 
   async parse(raw: RawPageResult): Promise<ParsedListingCandidate[]> {

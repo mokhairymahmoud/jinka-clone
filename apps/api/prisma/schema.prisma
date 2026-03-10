@@ -287,6 +287,10 @@ model ListingVariant {
   extractionConfidence Float
   rawFields            Json
   imageUrls            String[]
+  firstSeenAt          DateTime       @default(now())
+  lastSeenAt           DateTime       @default(now())
+  lastCrawledAt        DateTime       @default(now())
+  inactiveAt           DateTime?
   cluster              ListingCluster? @relation(fields: [clusterId], references: [id], onDelete: SetNull)
   rawSnapshot          RawSnapshot     @relation(fields: [rawSnapshotId], references: [id], onDelete: Cascade)
   priceHistory         PriceHistory[]
@@ -294,6 +298,7 @@ model ListingVariant {
   updatedAt            DateTime        @updatedAt
 
   @@unique([source, sourceListingId])
+  @@index([source, inactiveAt, lastSeenAt])
 }
 
 model PriceHistory {
@@ -341,6 +346,28 @@ model Report {
   user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   cluster     ListingCluster  @relation(fields: [clusterId], references: [id], onDelete: Cascade)
   createdAt   DateTime        @default(now())
+}
+
+model SourcePartition {
+  id             String        @id @default(cuid())
+  source         ListingSource
+  label          String
+  seedUrl        String
+  purpose        ListingPurpose?
+  marketSegment  MarketSegment?
+  propertyType   String?
+  areaSlug       String?
+  page           Int?
+  priority       Int           @default(100)
+  isActive       Boolean       @default(true)
+  failureCount   Int           @default(0)
+  lastCrawledAt  DateTime?
+  nextCrawlAt    DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([source, label])
+  @@index([source, isActive, nextCrawlAt])
 }
 
 model IngestionRun {

@@ -13,7 +13,15 @@ export class FacebookConnector extends BasePlaywrightConnector {
   readonly source = "facebook" as const;
 
   async discover(): Promise<SourceSeed[]> {
-    return [{ url: "https://www.facebook.com/marketplace/cairo/propertyrentals", label: "approved-public-surface" }];
+    return [
+      {
+        url: "https://www.facebook.com/marketplace/cairo/propertyrentals",
+        label: "approved-public-surface",
+        areaSlug: "cairo",
+        purpose: "rent",
+        priority: 90
+      }
+    ];
   }
 
   async parse(raw: RawPageResult): Promise<ParsedListingCandidate[]> {

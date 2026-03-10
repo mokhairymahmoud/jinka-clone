@@ -12,6 +12,8 @@
     "launch:drill": "tsx src/launch-readiness.ts",
     "lint": "tsc -p tsconfig.json --noEmit",
     "replay": "tsx src/replay.ts",
+    "schedule": "tsx src/scheduler.ts",
+    "schedule:once": "tsx src/scheduler.ts --once",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "worker": "tsx src/worker.ts"
