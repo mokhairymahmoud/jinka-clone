@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Inject, Param, Post, UseGuards } from "@nestjs/common";
-import { IsArray, IsString } from "class-validator";
+import { IsArray, IsOptional, IsString } from "class-validator";
 
 import type { FraudAssessment } from "@jinka-eg/types";
 import { AdminService } from "./admin.service.js";
@@ -29,6 +29,27 @@ class ResolveReportDto {
   resolutionNote!: string;
 }
 
+class ToggleConnectorDto {
+  @IsOptional()
+  @IsString()
+  reason?: string;
+}
+
+class CreateBlacklistDto {
+  @IsString()
+  source!: string;
+
+  @IsString()
+  matchType!: string;
+
+  @IsString()
+  value!: string;
+
+  @IsOptional()
+  @IsString()
+  reason?: string;
+}
+
 @Controller("admin")
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles("admin", "ops_reviewer")
@@ -38,6 +59,16 @@ export class AdminController {
   @Get("connectors")
   getConnectors() {
     return this.adminService.getConnectorHealth();
+  }
+
+  @Post("connectors/:source/disable")
+  disableConnector(@CurrentUser() user: AuthenticatedUser, @Param("source") source: string, @Body() body: ToggleConnectorDto) {
+    return this.adminService.disableConnector(user.id, source, body.reason);
+  }
+
+  @Post("connectors/:source/enable")
+  enableConnector(@CurrentUser() user: AuthenticatedUser, @Param("source") source: string) {
+    return this.adminService.enableConnector(user.id, source);
   }
 
   @Get("ingestion-runs")
@@ -58,6 +89,16 @@ export class AdminController {
   @Get("reports")
   getReports() {
     return this.adminService.getReports();
+  }
+
+  @Get("blacklists")
+  getBlacklists() {
+    return this.adminService.getBlacklists();
+  }
+
+  @Post("blacklists")
+  createBlacklist(@CurrentUser() user: AuthenticatedUser, @Body() body: CreateBlacklistDto) {
+    return this.adminService.createBlacklist(user.id, body);
   }
 
   @Post("clusters/:id/merge")

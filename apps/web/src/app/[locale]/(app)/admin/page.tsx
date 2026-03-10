@@ -11,6 +11,8 @@ type ConnectorHealth = {
   status: "healthy" | "degraded" | "limited";
   parserCoverage: number;
   lastSuccessAt: string | null;
+  enabled: boolean;
+  disabledReason: string | null;
 };
 
 type IngestionRun = {
@@ -72,6 +74,16 @@ type ReportQueueItem = {
   createdAt: string;
 };
 
+type BlacklistEntry = {
+  id: string;
+  source: string;
+  matchType: string;
+  value: string;
+  reason?: string;
+  createdAt: string;
+  createdBy: string;
+};
+
 async function fetchAdminData() {
   const cookieStore = await cookies();
   const accessToken = cookieStore.get("access_token")?.value;
@@ -82,11 +94,13 @@ async function fetchAdminData() {
       runs: [] as IngestionRun[],
       fraudCases: [] as FraudCase[],
       clusterEdges: [] as ClusterEdge[],
-      reports: [] as ReportQueueItem[]
+      reports: [] as ReportQueueItem[],
+      blacklists: [] as BlacklistEntry[]
     };
   }
 
-  const [connectorsResponse, runsResponse, fraudCasesResponse, clusterEdgesResponse, reportsResponse] = await Promise.all([
+  const [connectorsResponse, runsResponse, fraudCasesResponse, clusterEdgesResponse, reportsResponse, blacklistsResponse] =
+    await Promise.all([
     apiFetch("/v1/admin/connectors", {
       headers: {
         authorization: `Bearer ${accessToken}`
@@ -111,6 +125,11 @@ async function fetchAdminData() {
       headers: {
         authorization: `Bearer ${accessToken}`
       }
+    }),
+    apiFetch("/v1/admin/blacklists", {
+      headers: {
+        authorization: `Bearer ${accessToken}`
+      }
     })
   ]);
 
@@ -119,7 +138,8 @@ async function fetchAdminData() {
     runs: runsResponse.ok ? (((await runsResponse.json()) as IngestionRun[]) ?? []) : [],
     fraudCases: fraudCasesResponse.ok ? (((await fraudCasesResponse.json()) as FraudCase[]) ?? []) : [],
     clusterEdges: clusterEdgesResponse.ok ? (((await clusterEdgesResponse.json()) as ClusterEdge[]) ?? []) : [],
-    reports: reportsResponse.ok ? (((await reportsResponse.json()) as ReportQueueItem[]) ?? []) : []
+    reports: reportsResponse.ok ? (((await reportsResponse.json()) as ReportQueueItem[]) ?? []) : [],
+    blacklists: blacklistsResponse.ok ? (((await blacklistsResponse.json()) as BlacklistEntry[]) ?? []) : []
   };
 }
 
@@ -128,7 +148,7 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
   const safeLocale = resolveLocale(locale);
   const t = getMessages(safeLocale);
   const user = await requireSessionUser(safeLocale);
-  const { connectors, runs, fraudCases, clusterEdges, reports } = await fetchAdminData();
+  const { connectors, runs, fraudCases, clusterEdges, reports, blacklists } = await fetchAdminData();
 
   if (user.role !== "admin" && user.role !== "ops_reviewer") {
     redirect(`/${safeLocale}/account`);
@@ -152,8 +172,15 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
                 <div className="mt-1 text-xs text-stone-500">
                   {connector.lastSuccessAt ? `Last completed ${new Date(connector.lastSuccessAt).toLocaleString()}` : "No runs yet"}
                 </div>
+                {!connector.enabled && connector.disabledReason ? (
+                  <div className="mt-1 text-xs text-stone-500">Disabled: {connector.disabledReason}</div>
+                ) : null}
               </div>
-              <Badge tone={connector.status === "healthy" ? "success" : "danger"}>{connector.status}</Badge>
+              <div className="text-right">
+                <Badge tone={connector.enabled ? (connector.status === "healthy" ? "success" : "danger") : "accent"}>
+                  {connector.enabled ? connector.status : "disabled"}
+                </Badge>
+              </div>
             </div>
           </Card>
         ))}
@@ -254,6 +281,25 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
               <div className="text-right">
                 <Badge tone={report.resolved ? "success" : "danger"}>{report.resolved ? "resolved" : "open"}</Badge>
                 {report.resolutionNote ? <div className="mt-2 text-xs text-stone-500">{report.resolutionNote}</div> : null}
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+      <div className="grid gap-4">
+        {blacklists.map((entry) => (
+          <Card key={entry.id} className="p-5">
+            <div className="flex items-start justify-between gap-6">
+              <div>
+                <div className="text-lg font-semibold text-stone-950">
+                  {entry.source} · {entry.matchType}
+                </div>
+                <div className="mt-1 text-sm text-stone-600">{entry.value}</div>
+                {entry.reason ? <div className="mt-3 text-sm text-stone-600">{entry.reason}</div> : null}
+              </div>
+              <div className="text-right text-xs text-stone-500">
+                <div>{entry.createdBy}</div>
+                <div className="mt-1">{new Date(entry.createdAt).toLocaleString()}</div>
               </div>
             </div>
           </Card>

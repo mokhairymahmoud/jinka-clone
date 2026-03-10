@@ -9,6 +9,8 @@ type ConnectorHealth = {
   status: "healthy" | "degraded" | "limited";
   lastSuccessAt: string | null;
   parserCoverage: number;
+  enabled: boolean;
+  disabledReason: string | null;
 };
 
 type ClusterEdgeReason = {
@@ -27,20 +29,171 @@ export class AdminService {
         startedAt: "desc"
       }
     });
+    const controls = await this.prisma.connectorControl.findMany();
+    const controlMap = new Map(controls.map((control) => [control.source, control]));
 
     return [ListingSource.NAWY, ListingSource.PROPERTY_FINDER, ListingSource.AQARMAP, ListingSource.FACEBOOK].map(
       (source) => {
         const latest = latestRuns.find((run) => run.source === source);
         const extractionRate = latest?.extractionRate ?? 0;
+        const control = controlMap.get(source);
+        const enabled = control?.isEnabled ?? true;
 
         return {
           source: this.fromPrismaSource(source),
-          status: extractionRate >= 0.85 ? "healthy" : extractionRate >= 0.6 ? "degraded" : "limited",
+          status: enabled ? (extractionRate >= 0.85 ? "healthy" : extractionRate >= 0.6 ? "degraded" : "limited") : "limited",
           lastSuccessAt: latest?.completedAt?.toISOString() ?? null,
-          parserCoverage: extractionRate
+          parserCoverage: extractionRate,
+          enabled,
+          disabledReason: control?.disabledReason ?? null
         };
       }
     );
+  }
+
+  async disableConnector(actorId: string, source: string, reason?: string) {
+    const prismaSource = this.toPrismaSource(source);
+    const control = await this.prisma.connectorControl.upsert({
+      where: { source: prismaSource },
+      update: {
+        isEnabled: false,
+        disabledReason: reason ?? "Disabled by operations"
+      },
+      create: {
+        source: prismaSource,
+        isEnabled: false,
+        disabledReason: reason ?? "Disabled by operations"
+      }
+    });
+
+    await this.prisma.adminAuditLog.create({
+      data: {
+        userId: actorId,
+        action: "connector.disable",
+        entityType: "ConnectorControl",
+        entityId: control.id,
+        afterState: {
+          source,
+          isEnabled: false,
+          disabledReason: control.disabledReason
+        }
+      }
+    });
+
+    return {
+      source,
+      enabled: false,
+      disabledReason: control.disabledReason
+    };
+  }
+
+  async enableConnector(actorId: string, source: string) {
+    const prismaSource = this.toPrismaSource(source);
+    const control = await this.prisma.connectorControl.upsert({
+      where: { source: prismaSource },
+      update: {
+        isEnabled: true,
+        disabledReason: null
+      },
+      create: {
+        source: prismaSource,
+        isEnabled: true
+      }
+    });
+
+    await this.prisma.adminAuditLog.create({
+      data: {
+        userId: actorId,
+        action: "connector.enable",
+        entityType: "ConnectorControl",
+        entityId: control.id,
+        afterState: {
+          source,
+          isEnabled: true
+        }
+      }
+    });
+
+    return {
+      source,
+      enabled: true,
+      disabledReason: null
+    };
+  }
+
+  async getBlacklists() {
+    const entries = await this.prisma.sourceBlacklist.findMany({
+      include: {
+        createdBy: true
+      },
+      orderBy: {
+        createdAt: "desc"
+      },
+      take: 100
+    });
+
+    return entries.map((entry) => ({
+      id: entry.id,
+      source: this.fromPrismaSource(entry.source),
+      matchType: entry.matchType,
+      value: entry.value,
+      reason: entry.reason ?? undefined,
+      createdAt: entry.createdAt.toISOString(),
+      createdBy: entry.createdBy.email
+    }));
+  }
+
+  async createBlacklist(
+    actorId: string,
+    payload: {
+      source: string;
+      matchType: string;
+      value: string;
+      reason?: string;
+    }
+  ) {
+    const entry = await this.prisma.sourceBlacklist.upsert({
+      where: {
+        source_matchType_value: {
+          source: this.toPrismaSource(payload.source),
+          matchType: payload.matchType,
+          value: payload.value.trim()
+        }
+      },
+      update: {
+        reason: payload.reason ?? undefined
+      },
+      create: {
+        source: this.toPrismaSource(payload.source),
+        matchType: payload.matchType,
+        value: payload.value.trim(),
+        reason: payload.reason,
+        createdById: actorId
+      }
+    });
+
+    await this.prisma.adminAuditLog.create({
+      data: {
+        userId: actorId,
+        action: "blacklist.create",
+        entityType: "SourceBlacklist",
+        entityId: entry.id,
+        afterState: {
+          source: payload.source,
+          matchType: payload.matchType,
+          value: payload.value.trim(),
+          reason: payload.reason ?? null
+        }
+      }
+    });
+
+    return {
+      id: entry.id,
+      source: payload.source,
+      matchType: entry.matchType,
+      value: entry.value,
+      reason: entry.reason ?? undefined
+    };
   }
 
   async getIngestionRuns() {
@@ -503,6 +656,21 @@ export class AdminService {
         return "aqarmap";
       case ListingSource.FACEBOOK:
         return "facebook";
+    }
+  }
+
+  private toPrismaSource(source: string) {
+    switch (source) {
+      case "nawy":
+        return ListingSource.NAWY;
+      case "property_finder":
+        return ListingSource.PROPERTY_FINDER;
+      case "aqarmap":
+        return ListingSource.AQARMAP;
+      case "facebook":
+        return ListingSource.FACEBOOK;
+      default:
+        throw new BadRequestException("Unsupported connector source");
     }
   }
 

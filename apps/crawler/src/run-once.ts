@@ -70,8 +70,28 @@ async function main() {
   const startedAt = new Date();
   const workers = createWorkers(pipeline);
 
-  await pipeline.enqueueSources(sources);
-  const runs = await waitForRuns(prisma, sources, new Date(startedAt.getTime() - 1000));
+  const queued = await pipeline.enqueueSources(sources);
+
+  if (queued.queuedSources.length === 0) {
+    console.log(
+      JSON.stringify(
+        {
+          requestedSources: sources,
+          queuedSources: [],
+          skippedSources: queued.skippedSources
+        },
+        null,
+        2
+      )
+    );
+    await prisma.$disconnect();
+    await closeWorkers(workers);
+    await closeQueues(queues);
+    await pipeline.close();
+    return;
+  }
+
+  const runs = await waitForRuns(prisma, queued.queuedSources, new Date(startedAt.getTime() - 1000));
 
   console.log(
     JSON.stringify(

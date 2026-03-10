@@ -222,16 +222,36 @@ export class IngestionPipeline {
   }
 
   async enqueueSources(sources: ListingSource[]) {
+    const enabledSources = await this.filterEnabledSources(sources);
+
     await Promise.all(
-      sources.map((source) =>
+      enabledSources.map((source) =>
         this.queues["seed-source"].add(`seed:${source}:${Date.now()}`, {
           source
         } satisfies SeedSourcePayload)
       )
     );
+
+    return {
+      requestedSources: sources,
+      queuedSources: enabledSources,
+      skippedSources: sources.filter((source) => !enabledSources.includes(source))
+    };
   }
 
   async handleSeedSource(payload: SeedSourcePayload) {
+    if (!(await this.isSourceEnabled(payload.source))) {
+      const run = await this.prisma.ingestionRun.create({
+        data: {
+          source: toPrismaSource(payload.source),
+          status: "skipped",
+          completedAt: new Date()
+        }
+      });
+
+      return { runId: run.id, source: payload.source, discoveredSeeds: 0, skipped: true };
+    }
+
     const connector = getConnector(payload.source);
     const run = await this.prisma.ingestionRun.create({
       data: {
@@ -268,6 +288,18 @@ export class IngestionPipeline {
   async handleFetchPage(payload: FetchPagePayload) {
     const connector = getConnector(payload.source);
     const raw = await connector.fetch(payload.seed);
+
+    if (await this.isBlacklisted(payload.source, raw.url, raw.sourceListingId)) {
+      await this.prisma.ingestionRun.update({
+        where: { id: payload.runId },
+        data: {
+          completedAt: new Date(),
+          status: "completed"
+        }
+      });
+
+      return { source: payload.source, skipped: true, reason: "blacklisted_fetch" };
+    }
 
     await this.storage.ensureBucket();
 
@@ -313,7 +345,16 @@ export class IngestionPipeline {
       body,
       fetchedAt: snapshot.fetchedAt.toISOString()
     };
-    const candidates = await connector.parse(raw);
+    const parsedCandidates = await connector.parse(raw);
+    const candidates: ParsedListingCandidate[] = [];
+
+    for (const candidate of parsedCandidates) {
+      if (await this.isBlacklisted(payload.source, candidate.sourceUrl, candidate.sourceListingId)) {
+        continue;
+      }
+
+      candidates.push(candidate);
+    }
 
     await this.prisma.ingestionRun.update({
       where: { id: payload.runId },
@@ -363,6 +404,16 @@ export class IngestionPipeline {
     if (!normalized) {
       await this.markRunProgress(payload.runId, payload.rawSnapshotId, payload.expectedTotal, false);
       return { source: payload.source, normalized: false };
+    }
+
+    if (await this.isBlacklisted(payload.source, normalized.sourceUrl, normalized.sourceListingId)) {
+      await this.markRunProgress(payload.runId, payload.rawSnapshotId, payload.expectedTotal, true);
+      return {
+        source: payload.source,
+        normalized: false,
+        skipped: true,
+        sourceListingId: normalized.sourceListingId
+      };
     }
 
     const enrichment = this.buildNormalizedEnrichment(normalized);
@@ -1399,6 +1450,63 @@ export class IngestionPipeline {
         }
       });
     }
+  }
+
+  private async filterEnabledSources(sources: ListingSource[]) {
+    const controls = await this.prisma.connectorControl.findMany({
+      where: {
+        source: {
+          in: sources.map((source) => toPrismaSource(source))
+        },
+        isEnabled: false
+      }
+    });
+    const disabled = new Set(controls.map((control) => this.fromPrismaSource(control.source)));
+
+    return sources.filter((source) => !disabled.has(source));
+  }
+
+  private async isSourceEnabled(source: ListingSource) {
+    const control = await this.prisma.connectorControl.findUnique({
+      where: {
+        source: toPrismaSource(source)
+      }
+    });
+
+    return control?.isEnabled ?? true;
+  }
+
+  private async isBlacklisted(source: ListingSource, sourceUrl?: string, sourceListingId?: string) {
+    const values = [sourceUrl?.trim(), sourceListingId?.trim()].filter((value): value is string => Boolean(value));
+
+    if (values.length === 0) {
+      return false;
+    }
+
+    const entries = await this.prisma.sourceBlacklist.findMany({
+      where: {
+        source: toPrismaSource(source),
+        value: {
+          in: values
+        }
+      }
+    });
+
+    if (entries.length === 0) {
+      return false;
+    }
+
+    return entries.some((entry) => {
+      if (entry.matchType === "source_url" && sourceUrl) {
+        return entry.value === sourceUrl.trim();
+      }
+
+      if (entry.matchType === "source_listing_id" && sourceListingId) {
+        return entry.value === sourceListingId.trim();
+      }
+
+      return false;
+    });
   }
 
   private fromPrismaSource(source: PrismaListingSource): ListingSource {

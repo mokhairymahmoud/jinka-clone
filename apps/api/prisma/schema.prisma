@@ -57,6 +57,7 @@ model User {
   adminAuditLogs      AdminAuditLog[]
   shortlistComments   ShortlistComment[]
   shortlistItemsAdded ShortlistItem[]
+  sourceBlacklists    SourceBlacklist[]
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
 }
@@ -352,6 +353,28 @@ model IngestionRun {
   extractionRate   Float?
   startedAt        DateTime      @default(now())
   completedAt      DateTime?
+}
+
+model ConnectorControl {
+  id             String        @id @default(cuid())
+  source         ListingSource @unique
+  isEnabled      Boolean       @default(true)
+  disabledReason String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model SourceBlacklist {
+  id          String        @id @default(cuid())
+  source      ListingSource
+  matchType   String
+  value       String
+  reason      String?
+  createdById String
+  createdBy   User          @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt   DateTime      @default(now())
+
+  @@unique([source, matchType, value])
 }
 
 model Notification {

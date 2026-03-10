@@ -19,9 +19,11 @@ async function main() {
   const pipeline = new IngestionPipeline(queues);
   const sources = parseSources(process.argv.slice(2));
 
-  await pipeline.enqueueSources(sources);
+  const result = await pipeline.enqueueSources(sources);
 
-  console.log(`Queued ingestion runs for: ${sources.join(", ")}`);
+  console.log(
+    `Queued ingestion runs for: ${result.queuedSources.join(", ") || "none"}${result.skippedSources.length > 0 ? ` (skipped disabled: ${result.skippedSources.join(", ")})` : ""}`
+  );
 
   await closeQueues(queues);
   await pipeline.close();
