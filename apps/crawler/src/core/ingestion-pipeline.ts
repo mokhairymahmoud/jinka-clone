@@ -37,6 +37,7 @@ type ParseSnapshotPayload = {
   source: ListingSource;
   runId: string;
   rawSnapshotId: string;
+  seed: SourceSeed;
   partitionId?: string;
 };
 
@@ -44,6 +45,7 @@ type NormalizeVariantPayload = {
   source: ListingSource;
   runId: string;
   rawSnapshotId: string;
+  seed: SourceSeed;
   candidate: ParsedListingCandidate;
   expectedTotal: number;
   partitionId?: string;
@@ -358,19 +360,110 @@ export class IngestionPipeline {
     };
   }
 
+  async enqueueDueDetailRefreshes(options: { sources: ListingSource[]; limit?: number }) {
+    const enabledSources = await this.filterEnabledSources(options.sources);
+    const supportedSources = enabledSources.filter((source) => getConnector(source).supportsDetailRefresh());
+
+    if (supportedSources.length === 0) {
+      return {
+        requestedSources: options.sources,
+        queuedVariants: 0,
+        queuedSources: [] as ListingSource[]
+      };
+    }
+
+    const cutoff = new Date(Date.now() - Number(process.env.CRAWLER_DETAIL_REFRESH_MINUTES ?? "180") * 60_000);
+    const variants = await this.prisma.listingVariant.findMany({
+      where: {
+        source: {
+          in: supportedSources.map((source) => toPrismaSource(source))
+        },
+        inactiveAt: null,
+        canonicalUrl: {
+          not: ""
+        },
+        lastCrawledAt: {
+          lt: cutoff
+        }
+      },
+      orderBy: [{ lastCrawledAt: "asc" }, { updatedAt: "asc" }],
+      take: options.limit ?? 50
+    });
+
+    for (const variant of variants) {
+      const source = this.fromPrismaSource(variant.source);
+      const run = await this.prisma.ingestionRun.create({
+        data: {
+          source: variant.source,
+          status: "running"
+        }
+      });
+
+      await this.queues["fetch-page"].add(`refresh:${source}:${variant.id}:${Date.now()}`, {
+        source,
+        runId: run.id,
+        seed: {
+          url: variant.canonicalUrl,
+          label: `detail-${variant.sourceListingId}`,
+          seedKind: "detail_refresh",
+          sourceListingId: variant.sourceListingId,
+          refreshVariantId: variant.id,
+          priority: 35
+        }
+      } satisfies FetchPagePayload);
+    }
+
+    return {
+      requestedSources: options.sources,
+      queuedVariants: variants.length,
+      queuedSources: [...new Set(variants.map((variant) => this.fromPrismaSource(variant.source)))]
+    };
+  }
+
   async markInactiveVariants(options: { sources: ListingSource[]; staleHours?: number }) {
     const enabledSources = await this.filterEnabledSources(options.sources);
     const staleHours = options.staleHours ?? Number(process.env.CRAWLER_STALE_AFTER_HOURS ?? "48");
+    const missThreshold = Number(process.env.CRAWLER_DETAIL_REFRESH_MAX_MISSES ?? "3");
     const cutoff = new Date(Date.now() - staleHours * 60 * 60_000);
+    const supportedSources = enabledSources.filter((source) => getConnector(source).supportsDetailRefresh());
+    const unsupportedSources = enabledSources.filter((source) => !getConnector(source).supportsDetailRefresh());
 
     const result = await this.prisma.listingVariant.updateMany({
       where: {
-        source: {
-          in: enabledSources.map((source) => toPrismaSource(source))
-        },
+        OR: [
+          ...(supportedSources.length > 0
+            ? [
+                {
+                  source: {
+                    in: supportedSources.map((source) => toPrismaSource(source))
+                  },
+                  refreshMissCount: {
+                    gte: missThreshold
+                  }
+                }
+              ]
+            : []),
+          ...(unsupportedSources.length > 0
+            ? [
+                {
+                  source: {
+                    in: unsupportedSources.map((source) => toPrismaSource(source))
+                  },
+                  lastSeenAt: {
+                    lt: cutoff
+                  }
+                }
+              ]
+            : []),
+          {
+            lastSeenAt: {
+              lt: cutoff
+            }
+          }
+        ],
         inactiveAt: null,
-        lastSeenAt: {
-          lt: cutoff
+        clusterId: {
+          not: null
         }
       },
       data: {
@@ -476,6 +569,7 @@ export class IngestionPipeline {
       source: payload.source,
       runId: payload.runId,
       rawSnapshotId: rawSnapshot.id,
+      seed: payload.seed,
       partitionId: payload.partitionId
     } satisfies ParseSnapshotPayload);
 
@@ -491,7 +585,7 @@ export class IngestionPipeline {
     const raw: RawPageResult = {
       source: payload.source,
       url: snapshot.sourceUrl,
-      sourceListingId: snapshot.sourceListingId ?? undefined,
+      sourceListingId: snapshot.sourceListingId ?? payload.seed.sourceListingId ?? undefined,
       payloadType: snapshot.payloadType as "html" | "json",
       body,
       fetchedAt: snapshot.fetchedAt.toISOString()
@@ -530,6 +624,11 @@ export class IngestionPipeline {
           completedAt: new Date()
         }
       });
+
+      if (payload.seed.seedKind === "detail_refresh" && payload.seed.refreshVariantId) {
+        await this.markVariantRefreshMiss(payload.seed.refreshVariantId);
+      }
+
       return { source: payload.source, candidates: 0 };
     }
 
@@ -539,6 +638,7 @@ export class IngestionPipeline {
           source: payload.source,
           runId: payload.runId,
           rawSnapshotId: payload.rawSnapshotId,
+          seed: payload.seed,
           candidate,
           expectedTotal: candidates.length,
           partitionId: payload.partitionId
@@ -554,11 +654,17 @@ export class IngestionPipeline {
     const normalized = await connector.normalize(payload.candidate);
 
     if (!normalized) {
+      if (payload.seed.seedKind === "detail_refresh" && payload.seed.refreshVariantId) {
+        await this.markVariantRefreshMiss(payload.seed.refreshVariantId);
+      }
       await this.markRunProgress(payload.runId, payload.rawSnapshotId, payload.expectedTotal, false);
       return { source: payload.source, normalized: false };
     }
 
     if (await this.isBlacklisted(payload.source, normalized.sourceUrl, normalized.sourceListingId)) {
+      if (payload.seed.seedKind === "detail_refresh" && payload.seed.refreshVariantId) {
+        await this.markVariantRefreshMiss(payload.seed.refreshVariantId);
+      }
       await this.markRunProgress(payload.runId, payload.rawSnapshotId, payload.expectedTotal, true);
       return {
         source: payload.source,
@@ -594,6 +700,7 @@ export class IngestionPipeline {
         imageUrls: normalized.imageUrls,
         lastSeenAt: new Date(),
         lastCrawledAt: new Date(),
+        refreshMissCount: 0,
         inactiveAt: null
       },
       create: {
@@ -614,7 +721,8 @@ export class IngestionPipeline {
         imageUrls: normalized.imageUrls,
         firstSeenAt: new Date(),
         lastSeenAt: new Date(),
-        lastCrawledAt: new Date()
+        lastCrawledAt: new Date(),
+        refreshMissCount: 0
       }
     });
 
@@ -817,7 +925,7 @@ export class IngestionPipeline {
     };
   }
 
-  async markRunFailed(runId: string | undefined, _message: string, partitionId?: string) {
+  async markRunFailed(runId: string | undefined, _message: string, partitionId?: string, refreshVariantId?: string) {
     if (!runId) {
       return;
     }
@@ -835,6 +943,10 @@ export class IngestionPipeline {
 
     if (partitionId) {
       await this.markPartitionFailure(partitionId);
+    }
+
+    if (refreshVariantId) {
+      await this.markVariantRefreshMiss(refreshVariantId);
     }
 
     await this.syncParserDriftAlarm(runId);
@@ -1613,6 +1725,21 @@ export class IngestionPipeline {
       data: {
         failureCount: failures,
         nextCrawlAt: new Date(Date.now() + backoffMinutes * 60_000)
+      }
+    });
+  }
+
+  private async markVariantRefreshMiss(variantId: string) {
+    await this.prisma.listingVariant.updateMany({
+      where: {
+        id: variantId,
+        inactiveAt: null
+      },
+      data: {
+        refreshMissCount: {
+          increment: 1
+        },
+        lastCrawledAt: new Date()
       }
     });
   }

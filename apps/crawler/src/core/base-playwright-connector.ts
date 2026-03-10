@@ -18,6 +18,10 @@ export abstract class BasePlaywrightConnector implements SourceConnector {
 
   abstract normalize(candidate: ParsedListingCandidate): Promise<import("./connector.js").NormalizedListingCandidate | null>;
 
+  supportsDetailRefresh() {
+    return false;
+  }
+
   async fetch(seed: SourceSeed): Promise<RawPageResult> {
     const response = await fetch(seed.url, {
       headers: {
@@ -35,6 +39,7 @@ export abstract class BasePlaywrightConnector implements SourceConnector {
     return {
       source: this.source,
       url: seed.url,
+      sourceListingId: seed.sourceListingId,
       payloadType: contentType.includes("json") ? "json" : "html",
       body: await response.text(),
       fetchedAt: new Date().toISOString()

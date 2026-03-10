@@ -14,6 +14,9 @@ import type {
 export interface SourceSeed {
   url: string;
   label: string;
+  seedKind?: "discovery" | "detail_refresh";
+  sourceListingId?: string;
+  refreshVariantId?: string;
   purpose?: ListingPurpose;
   marketSegment?: MarketSegment;
   propertyType?: PropertyType;
@@ -70,6 +73,7 @@ export interface NormalizedListingCandidate extends ListingVariant {
 export interface SourceConnector {
   readonly source: ListingSource;
   discover(): Promise<SourceSeed[]>;
+  supportsDetailRefresh(): boolean;
   createCrawler(): PlaywrightCrawler;
   fetch(seed: SourceSeed): Promise<RawPageResult>;
   parse(raw: RawPageResult): Promise<ParsedListingCandidate[]>;

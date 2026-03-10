@@ -37,6 +37,10 @@ async function main() {
       sources,
       limit
     });
+    const refreshed = await pipeline.enqueueDueDetailRefreshes({
+      sources,
+      limit: Math.max(10, Math.round(limit / 2))
+    });
     const stale = await pipeline.markInactiveVariants({
       sources
     });
@@ -47,7 +51,8 @@ async function main() {
           at: new Date().toISOString(),
           syncedPartitions: synced.syncedPartitions,
           queuedPartitions: queued.queuedPartitions,
-          queuedSources: queued.queuedSources,
+          queuedDetailRefreshes: refreshed.queuedVariants,
+          queuedSources: [...new Set([...queued.queuedSources, ...refreshed.queuedSources])],
           markedInactive: stale.markedInactive
         },
         null,

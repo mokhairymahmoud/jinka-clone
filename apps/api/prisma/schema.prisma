@@ -290,6 +290,7 @@ model ListingVariant {
   firstSeenAt          DateTime       @default(now())
   lastSeenAt           DateTime       @default(now())
   lastCrawledAt        DateTime       @default(now())
+  refreshMissCount     Int            @default(0)
   inactiveAt           DateTime?
   cluster              ListingCluster? @relation(fields: [clusterId], references: [id], onDelete: SetNull)
   rawSnapshot          RawSnapshot     @relation(fields: [rawSnapshotId], references: [id], onDelete: Cascade)

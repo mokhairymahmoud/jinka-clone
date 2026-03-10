@@ -54,6 +54,7 @@ export class NawyConnector extends BasePlaywrightConnector {
       {
         url: "https://www.nawy.com/search?purpose=sale&area=new-cairo",
         label: "new-cairo-sale",
+        seedKind: "discovery",
         areaSlug: "new-cairo",
         purpose: "sale",
         marketSegment: "off_plan",

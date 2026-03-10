@@ -12,11 +12,16 @@ import { hashImageUrls, localizeText, normalizePrice, normalizePropertyType } fr
 export class FacebookConnector extends BasePlaywrightConnector {
   readonly source = "facebook" as const;
 
+  override supportsDetailRefresh() {
+    return true;
+  }
+
   async discover(): Promise<SourceSeed[]> {
     return [
       {
         url: "https://www.facebook.com/marketplace/cairo/propertyrentals",
         label: "approved-public-surface",
+        seedKind: "discovery",
         areaSlug: "cairo",
         purpose: "rent",
         priority: 90

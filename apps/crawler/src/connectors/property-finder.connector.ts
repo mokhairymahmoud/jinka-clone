@@ -92,6 +92,7 @@ export class PropertyFinderConnector extends BasePlaywrightConnector {
       return {
         url: url.toString(),
         label: `cairo-default-p${page}`,
+        seedKind: "discovery",
         areaSlug: "cairo",
         page,
         priority: page === 1 ? 20 : 45

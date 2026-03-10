@@ -19,6 +19,7 @@ describe("connector health", () => {
 
     expect(health).toHaveLength(4);
     expect(health.map((item) => item.source)).toContain("nawy");
+    expect(connectors.map((connector) => connector.supportsDetailRefresh())).toEqual([false, false, true, true]);
   });
 
   it("parses and normalizes Nawy fixture data", async () => {

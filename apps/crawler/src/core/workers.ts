@@ -27,7 +27,12 @@ export function createWorkers(pipeline: IngestionPipeline) {
 
   for (const worker of workers) {
     worker.on("failed", (job, error) => {
-      void pipeline.markRunFailed(job?.data?.runId, error.message, job?.data?.partitionId);
+      void pipeline.markRunFailed(
+        job?.data?.runId,
+        error.message,
+        job?.data?.partitionId,
+        job?.data?.seed?.refreshVariantId
+      );
     });
   }
 
