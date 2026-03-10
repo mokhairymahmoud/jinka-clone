@@ -674,6 +674,8 @@ export class IngestionPipeline {
         completedAt: new Date()
       }
     });
+
+    await this.syncParserDriftAlarm(runId);
   }
 
   private async persistPriceHistory(variantId: string, clusterId: string, price: NormalizedListingCandidate["price"]) {
@@ -1449,7 +1451,83 @@ export class IngestionPipeline {
           completedAt: new Date()
         }
       });
+      await this.syncParserDriftAlarm(runId);
     }
+  }
+
+  private async syncParserDriftAlarm(runId: string) {
+    const run = await this.prisma.ingestionRun.findUnique({
+      where: { id: runId }
+    });
+
+    if (!run) {
+      return;
+    }
+
+    const threshold = 0.72;
+    const extractionRate = run.extractionRate ?? 0;
+    const severity = run.status === "failed" || extractionRate < 0.45 ? "high" : extractionRate < threshold ? "medium" : null;
+    const openAlarm = await this.prisma.parserDriftAlarm.findFirst({
+      where: {
+        source: run.source,
+        resolvedAt: null
+      },
+      orderBy: {
+        createdAt: "desc"
+      }
+    });
+
+    if (!severity) {
+      if (openAlarm) {
+        await this.prisma.parserDriftAlarm.update({
+          where: { id: openAlarm.id },
+          data: {
+            resolvedAt: new Date(),
+            message: `Recovered on run ${run.id}`
+          }
+        });
+      }
+
+      return;
+    }
+
+    const message =
+      severity === "high"
+        ? `Parser drift alarm: ${this.fromPrismaSource(run.source)} run ${run.id} failed or dropped below the high-risk extraction threshold.`
+        : `Parser drift warning: ${this.fromPrismaSource(run.source)} extraction fell below ${(threshold * 100).toFixed(0)}%.`;
+    const details = {
+      runId: run.id,
+      status: run.status,
+      discoveredCount: run.discoveredCount,
+      parsedCount: run.parsedCount,
+      failedCount: run.failedCount,
+      extractionRate
+    } satisfies Prisma.InputJsonObject;
+
+    if (openAlarm) {
+      await this.prisma.parserDriftAlarm.update({
+        where: { id: openAlarm.id },
+        data: {
+          ingestionRunId: run.id,
+          severity,
+          message,
+          threshold,
+          details
+        }
+      });
+      return;
+    }
+
+    await this.prisma.parserDriftAlarm.create({
+      data: {
+        source: run.source,
+        ingestionRunId: run.id,
+        severity,
+        message,
+        threshold,
+        details
+      }
+    });
   }
 
   private async filterEnabledSources(sources: ListingSource[]) {

@@ -2,6 +2,8 @@ import { Badge, Card } from "@jinka-eg/ui";
 
 import { getMessages, resolveLocale } from "../../../../../i18n/messages";
 import { authenticatedApiFetch } from "../../../../../lib/server-api";
+import { ShareShortlistForm } from "../../../../../components/share-shortlist-form";
+import { ShortlistCommentForm } from "../../../../../components/shortlist-comment-form";
 
 type Shortlist = {
   id: string;
@@ -94,6 +96,10 @@ export default async function ShortlistPage({
             </div>
           </Card>
         ))}
+      </div>
+      <div className="grid gap-6 xl:grid-cols-2">
+        <ShareShortlistForm shortlistId={shortlist.id} />
+        <ShortlistCommentForm shortlistId={shortlist.id} />
       </div>
       <div className="grid gap-4">
         {shortlist.comments.map((comment) => (

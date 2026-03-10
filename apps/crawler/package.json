@@ -9,6 +9,7 @@
     "backfill:phase3": "tsx src/backfill-phase3.ts",
     "ingest": "tsx src/enqueue.ts",
     "ingest:once": "tsx src/run-once.ts",
+    "launch:drill": "tsx src/launch-readiness.ts",
     "lint": "tsc -p tsconfig.json --noEmit",
     "replay": "tsx src/replay.ts",
     "test": "vitest run",

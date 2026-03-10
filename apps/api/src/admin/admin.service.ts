@@ -143,6 +143,76 @@ export class AdminService {
     }));
   }
 
+  async getParserDriftAlarms() {
+    const alarms = await this.prisma.parserDriftAlarm.findMany({
+      include: {
+        ingestionRun: true
+      },
+      orderBy: [{ resolvedAt: "asc" }, { createdAt: "desc" }],
+      take: 50
+    });
+
+    return alarms.map((alarm) => ({
+      id: alarm.id,
+      source: this.fromPrismaSource(alarm.source),
+      severity: alarm.severity,
+      message: alarm.message,
+      threshold: alarm.threshold,
+      resolved: Boolean(alarm.resolvedAt),
+      createdAt: alarm.createdAt.toISOString(),
+      resolvedAt: alarm.resolvedAt?.toISOString() ?? null,
+      run: {
+        id: alarm.ingestionRun.id,
+        status: alarm.ingestionRun.status,
+        extractionRate: alarm.ingestionRun.extractionRate,
+        failedCount: alarm.ingestionRun.failedCount,
+        parsedCount: alarm.ingestionRun.parsedCount
+      }
+    }));
+  }
+
+  async resolveParserDriftAlarm(actorId: string, alarmId: string) {
+    const alarm = await this.prisma.parserDriftAlarm.findUnique({
+      where: { id: alarmId }
+    });
+
+    if (!alarm) {
+      throw new NotFoundException("Parser drift alarm not found");
+    }
+
+    const resolved = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.parserDriftAlarm.update({
+        where: { id: alarmId },
+        data: {
+          resolvedAt: new Date()
+        }
+      });
+
+      await tx.adminAuditLog.create({
+        data: {
+          userId: actorId,
+          action: "parser_drift.resolve",
+          entityType: "ParserDriftAlarm",
+          entityId: alarmId,
+          beforeState: {
+            resolvedAt: alarm.resolvedAt
+          },
+          afterState: {
+            resolvedAt: updated.resolvedAt
+          }
+        }
+      });
+
+      return updated;
+    });
+
+    return {
+      id: resolved.id,
+      resolved: true,
+      resolvedAt: resolved.resolvedAt?.toISOString() ?? null
+    };
+  }
+
   async createBlacklist(
     actorId: string,
     payload: {

@@ -50,6 +50,12 @@ class CreateBlacklistDto {
   reason?: string;
 }
 
+class ResolveParserDriftAlarmDto {
+  @IsOptional()
+  @IsString()
+  note?: string;
+}
+
 @Controller("admin")
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles("admin", "ops_reviewer")
@@ -96,6 +102,11 @@ export class AdminController {
     return this.adminService.getBlacklists();
   }
 
+  @Get("parser-drift-alarms")
+  getParserDriftAlarms() {
+    return this.adminService.getParserDriftAlarms();
+  }
+
   @Post("blacklists")
   createBlacklist(@CurrentUser() user: AuthenticatedUser, @Body() body: CreateBlacklistDto) {
     return this.adminService.createBlacklist(user.id, body);
@@ -119,5 +130,14 @@ export class AdminController {
   @Post("reports/:id/resolve")
   resolveReport(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string, @Body() body: ResolveReportDto) {
     return this.adminService.resolveReport(user.id, id, body.resolutionNote);
+  }
+
+  @Post("parser-drift-alarms/:id/resolve")
+  resolveParserDriftAlarm(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("id") id: string,
+    @Body() _body: ResolveParserDriftAlarmDto
+  ) {
+    return this.adminService.resolveParserDriftAlarm(user.id, id);
   }
 }

@@ -84,6 +84,24 @@ type BlacklistEntry = {
   createdBy: string;
 };
 
+type ParserDriftAlarm = {
+  id: string;
+  source: string;
+  severity: string;
+  message: string;
+  threshold: number;
+  resolved: boolean;
+  createdAt: string;
+  resolvedAt: string | null;
+  run: {
+    id: string;
+    status: string;
+    extractionRate: number | null;
+    failedCount: number;
+    parsedCount: number;
+  };
+};
+
 async function fetchAdminData() {
   const cookieStore = await cookies();
   const accessToken = cookieStore.get("access_token")?.value;
@@ -95,11 +113,12 @@ async function fetchAdminData() {
       fraudCases: [] as FraudCase[],
       clusterEdges: [] as ClusterEdge[],
       reports: [] as ReportQueueItem[],
-      blacklists: [] as BlacklistEntry[]
+      blacklists: [] as BlacklistEntry[],
+      parserDriftAlarms: [] as ParserDriftAlarm[]
     };
   }
 
-  const [connectorsResponse, runsResponse, fraudCasesResponse, clusterEdgesResponse, reportsResponse, blacklistsResponse] =
+  const [connectorsResponse, runsResponse, fraudCasesResponse, clusterEdgesResponse, reportsResponse, blacklistsResponse, parserDriftResponse] =
     await Promise.all([
     apiFetch("/v1/admin/connectors", {
       headers: {
@@ -130,6 +149,11 @@ async function fetchAdminData() {
       headers: {
         authorization: `Bearer ${accessToken}`
       }
+    }),
+    apiFetch("/v1/admin/parser-drift-alarms", {
+      headers: {
+        authorization: `Bearer ${accessToken}`
+      }
     })
   ]);
 
@@ -139,7 +163,8 @@ async function fetchAdminData() {
     fraudCases: fraudCasesResponse.ok ? (((await fraudCasesResponse.json()) as FraudCase[]) ?? []) : [],
     clusterEdges: clusterEdgesResponse.ok ? (((await clusterEdgesResponse.json()) as ClusterEdge[]) ?? []) : [],
     reports: reportsResponse.ok ? (((await reportsResponse.json()) as ReportQueueItem[]) ?? []) : [],
-    blacklists: blacklistsResponse.ok ? (((await blacklistsResponse.json()) as BlacklistEntry[]) ?? []) : []
+    blacklists: blacklistsResponse.ok ? (((await blacklistsResponse.json()) as BlacklistEntry[]) ?? []) : [],
+    parserDriftAlarms: parserDriftResponse.ok ? (((await parserDriftResponse.json()) as ParserDriftAlarm[]) ?? []) : []
   };
 }
 
@@ -148,7 +173,7 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
   const safeLocale = resolveLocale(locale);
   const t = getMessages(safeLocale);
   const user = await requireSessionUser(safeLocale);
-  const { connectors, runs, fraudCases, clusterEdges, reports, blacklists } = await fetchAdminData();
+  const { connectors, runs, fraudCases, clusterEdges, reports, blacklists, parserDriftAlarms } = await fetchAdminData();
 
   if (user.role !== "admin" && user.role !== "ops_reviewer") {
     redirect(`/${safeLocale}/account`);
@@ -232,6 +257,27 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
                 <div className="mt-2 text-xs text-stone-500">
                   {fraudCase.resolved ? "resolved" : "open"}
                 </div>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+      <div className="grid gap-4">
+        {parserDriftAlarms.map((alarm) => (
+          <Card key={alarm.id} className="p-5">
+            <div className="flex items-start justify-between gap-6">
+              <div>
+                <div className="text-lg font-semibold text-stone-950">{alarm.source}</div>
+                <div className="mt-1 text-sm text-stone-600">{alarm.message}</div>
+                <div className="mt-2 text-xs text-stone-500">
+                  run {alarm.run.id} · {Math.round((alarm.run.extractionRate ?? 0) * 100)}% extraction · parsed {alarm.run.parsedCount} · failed {alarm.run.failedCount}
+                </div>
+              </div>
+              <div className="text-right">
+                <Badge tone={alarm.resolved ? "success" : alarm.severity === "high" ? "danger" : "accent"}>
+                  {alarm.resolved ? "resolved" : alarm.severity}
+                </Badge>
+                <div className="mt-2 text-xs text-stone-500">{new Date(alarm.createdAt).toLocaleString()}</div>
               </div>
             </div>
           </Card>

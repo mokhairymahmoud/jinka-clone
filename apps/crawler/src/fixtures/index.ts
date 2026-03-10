@@ -37,5 +37,15 @@ export function getParserFixture(source: ListingSource): RawPageResult {
     };
   }
 
+  if (source === "facebook") {
+    return {
+      source,
+      url: "https://www.facebook.com/marketplace/item/fb-market-12345",
+      payloadType: "html",
+      body: readFileSync(new URL("./facebook.marketplace.html", import.meta.url), "utf8"),
+      fetchedAt: "2026-03-10T00:00:00.000Z"
+    };
+  }
+
   throw new Error(`No parser fixture configured for source ${source}`);
 }

@@ -59,4 +59,18 @@ describe("connector health", () => {
     expect(normalized?.sourceListingId).toBe("987654");
     expect(normalized?.price.amount).toBe(5400000);
   });
+
+  it("parses and normalizes Facebook fixture data", async () => {
+    const connector = new FacebookConnector();
+    const parsed = await connector.parse(getParserFixture("facebook"));
+
+    expect(parsed.length).toBeGreaterThan(0);
+
+    const normalized = await connector.normalize(parsed[0]);
+
+    expect(normalized?.source).toBe("facebook");
+    expect(normalized?.sourceListingId).toBe("fb-market-12345");
+    expect(normalized?.price.amount).toBe(23000);
+    expect(normalized?.areaName).toBe("New Cairo");
+  });
 });

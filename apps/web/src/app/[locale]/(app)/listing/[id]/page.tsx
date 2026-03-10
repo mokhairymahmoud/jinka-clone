@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Badge, Card } from "@jinka-eg/ui";
+import { CreateShortlistForm } from "../../../../../components/create-shortlist-form";
 import { FavoriteButton } from "../../../../../components/favorite-button";
+import { ReportListingForm } from "../../../../../components/report-listing-form";
 import { apiFetch } from "../../../../../lib/api";
 import { resolveLocale } from "../../../../../i18n/messages";
 import { getAccessTokenFromCookies } from "../../../../../lib/server-api";
@@ -99,6 +101,10 @@ export default async function ListingDetailPage({
             </div>
           ))}
         </Card>
+      </div>
+      <div className="grid gap-6 xl:grid-cols-2">
+        <CreateShortlistForm clusterId={listing.id} locale={safeLocale} />
+        <ReportListingForm clusterId={listing.id} />
       </div>
     </div>
   );

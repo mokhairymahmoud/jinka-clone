@@ -12,6 +12,7 @@
 - `Phase 2`: complete as of March 9, 2026.
 - `Phase 3`: complete as of March 9, 2026.
 - `Phase 4`: complete as of March 10, 2026.
+- `Phase 5`: complete as of March 10, 2026.
 - Local verification completed on March 9, 2026:
   - `docker compose up -d postgres redis minio`
   - `pnpm --filter @jinka-eg/api exec prisma migrate deploy`
@@ -43,6 +44,15 @@
   - `pnpm --filter @jinka-eg/crawler backfill:phase3`
   - Prisma verification before and after dedup backfill showing `37 -> 35` `ListingCluster` rows, `0 -> 15` `ClusterEdge` rows, and `10` searchable `Project` rows
   - API smoke test on `http://localhost:4001` for `request-otp -> verify-otp -> GET /v1/admin/cluster-edges -> GET /v1/admin/fraud-cases -> GET /v1/projects`
+  - `pnpm --filter @jinka-eg/api exec prisma generate`
+  - `pnpm --filter @jinka-eg/api exec prisma migrate deploy`
+  - API smoke test on `http://localhost:4001` for shortlist creation, shortlist sharing, shortlist comments, `POST /v1/reports`, `GET /v1/reports`, and `GET /v1/admin/reports`
+  - API smoke test on `http://localhost:4001` for `POST /v1/admin/connectors/facebook/disable`, `POST /v1/admin/blacklists`, `GET /v1/admin/connectors`, `GET /v1/admin/blacklists`, `GET /v1/admin/parser-drift-alarms`, and `POST /v1/admin/parser-drift-alarms/:id/resolve`
+  - `pnpm --filter @jinka-eg/api run load:test -- --base=http://localhost:4001/v1 --requests=24 --concurrency=6`
+  - `pnpm --filter @jinka-eg/api run abuse:drill -- --base=http://localhost:4001/v1`
+  - `pnpm --filter @jinka-eg/crawler run launch:drill -- --base=http://localhost:4001/v1`
+  - `pnpm --filter @jinka-eg/crawler ingest:once -- --source=facebook` returning `queuedSources: []` when the connector was temporarily disabled by ops smoke
+  - direct crawler normalize smoke verifying a blacklisted Facebook `sourceListingId` was skipped and produced `0` persisted variants
 - Phase 1 runtime delivered:
   - Prisma-backed `User`, `OtpChallenge`, and `AuthSession` persistence on PostgreSQL + PostGIS
   - seed-backed admin bootstrap for `demo@example.com`
@@ -71,6 +81,12 @@
   - admin duplicate review queue via `GET /v1/admin/cluster-edges`, alongside live fraud review plus merge and split tooling
   - crawler-side fraud case creation or resolution wired to canonical clusters instead of fixture-only state
   - anti-bot-limited `Aqarmap` structured-data parsing with fixture-backed regression coverage instead of synthetic parser output
+- Phase 5 runtime delivered:
+  - approved-surface `Facebook` marketplace parsing with fixture-backed regression coverage instead of synthetic connector output
+  - Prisma-backed shortlist items, comments, sharing, and listing-level report creation, plus localized browser flows for shortlist creation, sharing, notes, and report submission
+  - admin support queue coverage for user reports, parser drift alarms, connector enable or disable controls, and source blacklists
+  - crawler enforcement of disabled connectors and blacklisted source URLs or listing IDs before variants are persisted
+  - runnable load, abuse, and launch-readiness drill scripts for local launch-hardening verification
 
 ## Product Goals
 - Let users search rentals, resale, and off-plan inventory across multiple sources from one app.
@@ -138,18 +154,30 @@
 - `POST /v1/favorites`
 - `PATCH /v1/favorites/:id`
 - `GET /v1/favorites`
+- `GET /v1/shortlists`
 - `POST /v1/shortlists`
 - `POST /v1/shortlists/:id/share`
+- `POST /v1/shortlists/:id/comments`
+- `GET /v1/shortlists/:id`
 - `POST /v1/reports`
+- `GET /v1/reports`
 - `GET /v1/notifications`
 - `POST /v1/push-subscriptions`
 - `GET /v1/admin/connectors`
+- `POST /v1/admin/connectors/:source/disable`
+- `POST /v1/admin/connectors/:source/enable`
 - `GET /v1/admin/ingestion-runs`
 - `GET /v1/admin/fraud-cases`
 - `GET /v1/admin/cluster-edges`
+- `GET /v1/admin/reports`
+- `GET /v1/admin/blacklists`
+- `POST /v1/admin/blacklists`
+- `GET /v1/admin/parser-drift-alarms`
 - `POST /v1/admin/clusters/:id/merge`
 - `POST /v1/admin/clusters/:id/split`
 - `POST /v1/admin/fraud-cases/:id/resolve`
+- `POST /v1/admin/reports/:id/resolve`
+- `POST /v1/admin/parser-drift-alarms/:id/resolve`
 
 ## Search, Dedup, and Fraud
 - Use PostgreSQL full-text search plus `PostGIS` filtering in v1.
@@ -235,6 +263,15 @@
 - Add approved `Facebook` ingestion surfaces, shared shortlists, notes, reporting flow, blacklists, parser drift alarms, and support tooling.
 - Run load testing, abuse testing, and launch-readiness drills.
 - Exit criteria: operations can handle source failures, fraud review, user reports, and traffic spikes.
+- Status: complete.
+- Completed deliverables:
+  - approved public-surface `Facebook` connector parsing with fixture-backed regression coverage and normalized rent listings
+  - Prisma-backed shortlist items, shortlist comments, shortlist sharing, and user report persistence
+  - localized Next.js shortlist creation, shortlist sharing, shortlist notes, and listing report submission flows
+  - admin report queue, source blacklists, connector enable or disable controls, and parser drift alarm queue
+  - crawler-side enforcement for disabled connectors and blacklisted source URLs or source listing IDs
+  - runnable local load test, abuse drill, and launch-readiness drill scripts committed in the monorepo
+- Exit criteria status: met.
 
 ### Phase 6: Post-Launch Optimization
 - Improve ranking, crawl cadence, fraud coefficients, notification relevance, and area or developer normalization.

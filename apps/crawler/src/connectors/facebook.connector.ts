@@ -7,7 +7,7 @@ import type {
 } from "../core/connector.js";
 
 import { BasePlaywrightConnector } from "../core/base-playwright-connector.js";
-import { hashImageUrls, localizeText, normalizePrice } from "../core/normalization.js";
+import { hashImageUrls, localizeText, normalizePrice, normalizePropertyType } from "../core/normalization.js";
 
 export class FacebookConnector extends BasePlaywrightConnector {
   readonly source = "facebook" as const;
@@ -17,7 +17,18 @@ export class FacebookConnector extends BasePlaywrightConnector {
   }
 
   async parse(raw: RawPageResult): Promise<ParsedListingCandidate[]> {
-    const price = normalizePrice(22000, "EGP", "monthly");
+    const payload = raw.payloadType === "json" ? this.safeParseJson(raw.body) : this.extractPayload(raw.body);
+    const listing = this.extractListing(payload);
+
+    if (!listing) {
+      return [];
+    }
+
+    const price = normalizePrice(
+      this.asNumber(listing.rentPriceMonthly ?? listing.priceAmount ?? listing.price),
+      "EGP",
+      "monthly"
+    );
 
     if (!price) {
       return [];
@@ -26,19 +37,28 @@ export class FacebookConnector extends BasePlaywrightConnector {
     return [
       {
         source: this.source,
-        sourceListingId: raw.sourceListingId ?? "demo-facebook-id",
-        sourceUrl: raw.url,
-        title: localizeText("Parsed from Facebook", "تم التحليل من فيسبوك"),
-        description: localizeText("Public or authorized surface only", "الأسطح العامة أو المصرح بها فقط"),
+        sourceListingId:
+          raw.sourceListingId ?? this.asString(listing.id) ?? this.asString(listing.listingId) ?? this.extractListingId(raw.url) ?? undefined,
+        sourceUrl: this.asString(listing.url) ?? raw.url,
+        title: localizeText(this.asString(listing.title) ?? "Facebook Marketplace listing"),
+        description: localizeText(
+          this.asString(listing.description) ?? "Public or authorized Facebook Marketplace surface"
+        ),
         purpose: "rent",
         marketSegment: "resale",
-        propertyType: "apartment",
+        propertyType: normalizePropertyType(this.asString(listing.propertyType) ?? "apartment"),
         price,
-        imageUrls: [],
-        publishedAt: raw.fetchedAt,
-        extractionConfidence: 0.62,
+        bedrooms: this.asNumber(listing.bedrooms) ?? undefined,
+        bathrooms: this.asNumber(listing.bathrooms) ?? undefined,
+        areaSqm: this.asNumber(listing.areaSqm) ?? this.asNumber(listing.sizeSqm) ?? undefined,
+        areaName: this.asString(listing.areaName) ?? this.asString(listing.locationName) ?? undefined,
+        location: this.toCoordinates(listing.latitude, listing.longitude),
+        imageUrls: this.asStringArray(listing.imageUrls),
+        publishedAt: this.asString(listing.publishedAt) ?? raw.fetchedAt,
+        extractionConfidence: 0.74,
         rawFields: {
-          stub: true
+          sourcePayload: listing,
+          approvedSurface: "facebook_marketplace_public"
         }
       }
     ];
@@ -79,8 +99,70 @@ export class FacebookConnector extends BasePlaywrightConnector {
     return {
       source: this.source,
       status: "limited",
-      parserCoverage: 0.68,
+      parserCoverage: 0.74,
       notes: ["Public or authorized surfaces only", "No unrestricted private-profile scraping"]
     };
+  }
+
+  private extractPayload(body: string) {
+    const scriptMatch = body.match(/<script[^>]+data-marketplace-state[^>]*>([\s\S]*?)<\/script>/i);
+    return this.safeParseJson(scriptMatch?.[1] ?? "");
+  }
+
+  private safeParseJson(value: string) {
+    try {
+      return JSON.parse(value) as Record<string, unknown>;
+    } catch {
+      return null;
+    }
+  }
+
+  private extractListing(payload: Record<string, unknown> | null) {
+    if (!payload) {
+      return null;
+    }
+
+    if (payload.listing && typeof payload.listing === "object") {
+      return payload.listing as Record<string, unknown>;
+    }
+
+    if (Array.isArray(payload.listings) && payload.listings[0] && typeof payload.listings[0] === "object") {
+      return payload.listings[0] as Record<string, unknown>;
+    }
+
+    return payload;
+  }
+
+  private asString(value: unknown) {
+    return typeof value === "string" && value.trim() ? value.trim() : undefined;
+  }
+
+  private asNumber(value: unknown) {
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
+
+    if (typeof value === "string") {
+      const normalized = Number(value.replace(/[^0-9.]+/g, ""));
+      return Number.isFinite(normalized) ? normalized : undefined;
+    }
+
+    return undefined;
+  }
+
+  private asStringArray(value: unknown) {
+    return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === "string" && entry.length > 0) : [];
+  }
+
+  private toCoordinates(latitude: unknown, longitude: unknown) {
+    const lat = this.asNumber(latitude);
+    const lng = this.asNumber(longitude);
+
+    return lat !== undefined && lng !== undefined ? { lat, lng } : undefined;
+  }
+
+  private extractListingId(url: string) {
+    const match = url.match(/(?:listing\/|item\/)([A-Za-z0-9_-]+)/i);
+    return match?.[1];
   }
 }
