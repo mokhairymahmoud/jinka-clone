@@ -40,19 +40,11 @@ async function waitForRuns(prisma: PrismaClient, sources: ListingSource[], since
       }
     });
 
-    const latestBySource = new Map<string, (typeof runs)[number]>();
-
-    for (const run of runs) {
-      if (!latestBySource.has(run.source)) {
-        latestBySource.set(run.source, run);
-      }
-    }
-
     if (
-      sources.every((source) => latestBySource.has(prismaSources[source])) &&
-      [...latestBySource.values()].every((run) => ["completed", "failed"].includes(run.status))
+      sources.every((source) => runs.some((run) => run.source === prismaSources[source])) &&
+      runs.every((run) => ["completed", "failed", "skipped"].includes(run.status))
     ) {
-      return [...latestBySource.values()];
+      return runs;
     }
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -93,20 +85,37 @@ async function main() {
 
   const runs = await waitForRuns(prisma, queued.queuedSources, new Date(startedAt.getTime() - 1000));
 
-  console.log(
-    JSON.stringify(
-      runs.map((run) => ({
-        source: run.source,
-        status: run.status,
-        discoveredCount: run.discoveredCount,
-        parsedCount: run.parsedCount,
-        failedCount: run.failedCount,
-        extractionRate: run.extractionRate
-      })),
-      null,
-      2
+  const summary = Object.values(
+    runs.reduce<Record<string, { source: string; status: string; runs: number; discoveredCount: number; parsedCount: number; failedCount: number; extractionRate: number }>>(
+      (acc, run) => {
+        const entry =
+          acc[run.source] ??
+          (acc[run.source] = {
+            source: run.source,
+            status: run.status,
+            runs: 0,
+            discoveredCount: 0,
+            parsedCount: 0,
+            failedCount: 0,
+            extractionRate: 0
+          });
+
+        entry.runs += 1;
+        entry.discoveredCount += run.discoveredCount;
+        entry.parsedCount += run.parsedCount;
+        entry.failedCount += run.failedCount;
+        entry.extractionRate += run.extractionRate ?? 0;
+        entry.status = entry.status === "failed" || run.status === "failed" ? "failed" : "completed";
+        return acc;
+      },
+      {}
     )
-  );
+  ).map((entry) => ({
+    ...entry,
+    extractionRate: entry.runs === 0 ? 0 : entry.extractionRate / entry.runs
+  }));
+
+  console.log(JSON.stringify(summary, null, 2));
 
   await prisma.$disconnect();
   await closeWorkers(workers);

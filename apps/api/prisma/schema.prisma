@@ -39,6 +39,13 @@ enum FraudLabel {
   HIGH_RISK
 }
 
+enum SourceListingStatus {
+  ACTIVE
+  MISSING
+  REMOVED
+  BLOCKED
+}
+
 model User {
   id                  String             @id @default(cuid())
   email               String             @unique
@@ -291,10 +298,12 @@ model ListingVariant {
   lastSeenAt           DateTime       @default(now())
   lastCrawledAt        DateTime       @default(now())
   refreshMissCount     Int            @default(0)
+  sourceStatus         SourceListingStatus @default(ACTIVE)
   inactiveAt           DateTime?
   cluster              ListingCluster? @relation(fields: [clusterId], references: [id], onDelete: SetNull)
   rawSnapshot          RawSnapshot     @relation(fields: [rawSnapshotId], references: [id], onDelete: Cascade)
   priceHistory         PriceHistory[]
+  partitionMemberships SourcePartitionListing[]
   createdAt            DateTime        @default(now())
   updatedAt            DateTime        @updatedAt
 
@@ -362,13 +371,35 @@ model SourcePartition {
   priority       Int           @default(100)
   isActive       Boolean       @default(true)
   failureCount   Int           @default(0)
+  lastPageCrawled Int?
+  lastDiscoverySignature String?
+  stopReason     String?
   lastCrawledAt  DateTime?
   nextCrawlAt    DateTime      @default(now())
+  listings       SourcePartitionListing[]
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
   @@unique([source, label])
   @@index([source, isActive, nextCrawlAt])
+}
+
+model SourcePartitionListing {
+  id              String         @id @default(cuid())
+  partitionId     String
+  variantId       String?
+  sourceListingId String
+  lastSweepToken  String?
+  missCount       Int            @default(0)
+  firstSeenAt     DateTime       @default(now())
+  lastSeenAt      DateTime       @default(now())
+  partition       SourcePartition @relation(fields: [partitionId], references: [id], onDelete: Cascade)
+  variant         ListingVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@unique([partitionId, sourceListingId])
+  @@index([partitionId, lastSweepToken, missCount])
 }
 
 model IngestionRun {

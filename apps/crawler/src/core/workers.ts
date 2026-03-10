@@ -8,13 +8,13 @@ export function createWorkers(pipeline: IngestionPipeline) {
     new Worker("seed-source", async (job) => pipeline.handleSeedSource(job.data), {
       connection: createRedisConnection()
     }),
-    new Worker("fetch-page", async (job) => pipeline.handleFetchPage(job.data), {
+    new Worker("discover-page", async (job) => pipeline.handleDiscoveryPage(job.data), {
       connection: createRedisConnection()
     }),
-    new Worker("parse-snapshot", async (job) => pipeline.handleParseSnapshot(job.data), {
+    new Worker("fetch-detail", async (job) => pipeline.handleFetchDetail(job.data), {
       connection: createRedisConnection()
     }),
-    new Worker("normalize-variant", async (job) => pipeline.handleNormalizeVariant(job.data), {
+    new Worker("reconcile-variant", async (job) => pipeline.handleReconcileVariant(job.data), {
       connection: createRedisConnection()
     }),
     ...(["score-cluster", "score-fraud", "match-alerts", "send-notification"] as const).map(

@@ -38,12 +38,23 @@ describe("connector health", () => {
   it("parses and normalizes Property Finder fixture data", async () => {
     const connector = new PropertyFinderConnector();
     const seeds = await connector.discover();
-    const parsed = await connector.parse(getParserFixture("property_finder"));
+    const raw = getParserFixture("property_finder");
+    const parsed = await connector.parse(raw);
 
-    expect(seeds.length).toBeGreaterThan(1);
-    expect(seeds[0]?.label).toBe("cairo-default-p1");
-    expect(seeds[1]?.page).toBe(2);
+    expect(seeds.length).toBe(40);
+    expect(seeds[0]?.label).toBe("pf-2-apartment-egypt");
+    expect(seeds[0]?.page).toBe(1);
     expect(parsed.length).toBeGreaterThan(0);
+
+    const controls = connector.getDiscoveryControls(raw, parsed, seeds[0] ?? { url: "", label: "" });
+
+    expect(controls.pageSignature).toBeTruthy();
+    if (controls.nextSeed) {
+      expect(controls.nextSeed.page).toBe(2);
+      expect(controls.nextSeed.url).toContain("page=2");
+    } else {
+      expect(controls.stopReason).toBe("page_count_reached");
+    }
 
     const normalized = await connector.normalize(parsed[0]);
 

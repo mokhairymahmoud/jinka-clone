@@ -1,5 +1,6 @@
 import { BasePlaywrightConnector } from "../core/base-playwright-connector.js";
 import type {
+  DiscoveryControls,
   NormalizedListingCandidate,
   ParsedListingCandidate,
   RawPageResult,
@@ -55,19 +56,47 @@ type PropertyFinderListing = {
   };
 };
 
+type PropertyFinderPageProps = {
+  filtersData?: {
+    filterChoices?: {
+      "filter[property_type_id]"?: Array<{ value?: string; label?: string }>;
+    };
+  };
+  searchResult?: {
+    listings?: PropertyFinderListing[];
+    meta?: {
+      page?: number;
+      page_count?: number;
+      per_page?: number;
+    };
+  };
+};
+
+const propertyFinderAreas = [
+  { label: "egypt", areaSlug: "egypt", locationId: "1864", priority: 20 },
+  { label: "cairo", areaSlug: "cairo", locationId: "2254", priority: 25 },
+  { label: "new-cairo", areaSlug: "new-cairo", locationId: "2255", priority: 25 },
+  { label: "giza", areaSlug: "giza", locationId: "20663", priority: 35 },
+  { label: "sheikh-zayed", areaSlug: "sheikh-zayed-city", locationId: "28683", priority: 35 }
+] as const;
+
+const propertyFinderMatrix = [
+  { categoryId: "2", purpose: "rent" as const, propertyType: "apartment" as const, propertyTypeId: "1" },
+  { categoryId: "2", purpose: "rent" as const, propertyType: "villa" as const, propertyTypeId: "35" },
+  { categoryId: "1", purpose: "sale" as const, propertyType: "apartment" as const, propertyTypeId: "1" },
+  { categoryId: "1", purpose: "sale" as const, propertyType: "villa" as const, propertyTypeId: "35" },
+  { categoryId: "4", purpose: "rent" as const, propertyType: "office" as const, propertyTypeId: "4" },
+  { categoryId: "4", purpose: "rent" as const, propertyType: "retail" as const, propertyTypeId: "27" },
+  { categoryId: "3", purpose: "sale" as const, propertyType: "office" as const, propertyTypeId: "4" },
+  { categoryId: "3", purpose: "sale" as const, propertyType: "retail" as const, propertyTypeId: "27" }
+] as const;
+
 function getPageProps(raw: RawPageResult) {
   const parsed = JSON.parse(raw.body) as {
     props?: {
-      pageProps?: {
-        searchResult?: {
-          listings?: PropertyFinderListing[];
-        };
-      };
+      pageProps?: PropertyFinderPageProps;
     };
-    searchResult?: {
-      listings?: PropertyFinderListing[];
-    };
-  };
+  } & PropertyFinderPageProps;
 
   return parsed.props?.pageProps ?? parsed;
 }
@@ -76,28 +105,56 @@ export class PropertyFinderConnector extends BasePlaywrightConnector {
   readonly source = "property_finder" as const;
 
   async discover(): Promise<SourceSeed[]> {
-    const maxPage = Number(process.env.PROPERTY_FINDER_MAX_DISCOVERY_PAGE ?? "8");
+    return propertyFinderAreas.flatMap((area) =>
+      propertyFinderMatrix.map((entry) => this.buildSeed(area.locationId, area.areaSlug, area.label, area.priority, entry))
+    );
+  }
 
-    return Array.from({ length: Math.max(1, maxPage) }, (_, index) => {
-      const page = index + 1;
-      const url = new URL("https://www.propertyfinder.eg/en/search");
+  override getDiscoveryControls(
+    raw: RawPageResult,
+    candidates: ParsedListingCandidate[],
+    seed: SourceSeed,
+    previousSignature?: string | null
+  ): DiscoveryControls {
+    const pageProps = getPageProps(raw);
+    const meta = pageProps.searchResult?.meta;
+    const currentPage = seed.page ?? meta?.page ?? 1;
+    const pageBudget = Number(process.env.PROPERTY_FINDER_MAX_DISCOVERY_PAGE ?? "6");
+    const pageSignature = candidates
+      .slice(0, 10)
+      .map((candidate) => candidate.sourceListingId ?? candidate.sourceUrl ?? "unknown")
+      .join("|");
 
-      url.searchParams.set("l", "1864");
-      url.searchParams.set("ob", "mr");
-
-      if (page > 1) {
-        url.searchParams.set("page", String(page));
-      }
-
+    if (candidates.length === 0) {
       return {
-        url: url.toString(),
-        label: `cairo-default-p${page}`,
-        seedKind: "discovery",
-        areaSlug: "cairo",
-        page,
-        priority: page === 1 ? 20 : 45
+        pageSignature,
+        stopReason: "no_results"
       };
-    });
+    }
+
+    if (previousSignature && previousSignature === pageSignature) {
+      return {
+        pageSignature,
+        stopReason: "repeated_results"
+      };
+    }
+
+    const pageCount = meta?.page_count ?? currentPage;
+    if (currentPage >= pageBudget || currentPage >= pageCount) {
+      return {
+        pageSignature,
+        stopReason: currentPage >= pageBudget ? "page_budget_reached" : "page_count_reached"
+      };
+    }
+
+    return {
+      pageSignature,
+      nextSeed: {
+        ...seed,
+        url: this.withPage(seed.url, currentPage + 1),
+        page: currentPage + 1
+      }
+    };
   }
 
   override async fetch(seed: SourceSeed) {
@@ -206,5 +263,39 @@ export class PropertyFinderConnector extends BasePlaywrightConnector {
       mediaHashes: hashImageUrls(candidate.imageUrls ?? []),
       rawFields: candidate.rawFields ?? {}
     };
+  }
+
+  private buildSeed(
+    locationId: string,
+    areaSlug: string,
+    areaLabel: string,
+    areaPriority: number,
+    entry: (typeof propertyFinderMatrix)[number]
+  ): SourceSeed {
+    const url = new URL("https://www.propertyfinder.eg/en/search");
+
+    url.searchParams.set("l", locationId);
+    url.searchParams.set("c", entry.categoryId);
+    url.searchParams.set("t", entry.propertyTypeId);
+    url.searchParams.set("ob", "mr");
+
+    return {
+      source: this.source,
+      url: url.toString(),
+      label: `pf-${entry.categoryId}-${entry.propertyType}-${areaLabel}`,
+      seedKind: "discovery",
+      areaSlug,
+      page: 1,
+      purpose: entry.purpose,
+      marketSegment: "resale",
+      propertyType: entry.propertyType,
+      priority: areaPriority + (entry.propertyType === "apartment" || entry.propertyType === "villa" ? 0 : 10)
+    };
+  }
+
+  private withPage(rawUrl: string, page: number) {
+    const url = new URL(rawUrl);
+    url.searchParams.set("page", String(page));
+    return url.toString();
   }
 }

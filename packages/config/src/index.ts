@@ -31,9 +31,9 @@ export const sourceReputation: Record<string, number> = {
 
 export const queueNames = [
   "seed-source",
-  "fetch-page",
-  "parse-snapshot",
-  "normalize-variant",
+  "discover-page",
+  "fetch-detail",
+  "reconcile-variant",
   "score-cluster",
   "score-fraud",
   "match-alerts",

@@ -14,15 +14,23 @@ import type {
 export interface SourceSeed {
   url: string;
   label: string;
+  source?: ListingSource;
   seedKind?: "discovery" | "detail_refresh";
   sourceListingId?: string;
   refreshVariantId?: string;
+  sweepToken?: string;
   purpose?: ListingPurpose;
   marketSegment?: MarketSegment;
   propertyType?: PropertyType;
   areaSlug?: string;
   page?: number;
   priority?: number;
+}
+
+export interface DiscoveryControls {
+  nextSeed?: SourceSeed;
+  pageSignature?: string;
+  stopReason?: string;
 }
 
 export interface RawPageResult {
@@ -74,6 +82,7 @@ export interface SourceConnector {
   readonly source: ListingSource;
   discover(): Promise<SourceSeed[]>;
   supportsDetailRefresh(): boolean;
+  getDiscoveryControls(raw: RawPageResult, candidates: ParsedListingCandidate[], seed: SourceSeed, previousSignature?: string | null): DiscoveryControls;
   createCrawler(): PlaywrightCrawler;
   fetch(seed: SourceSeed): Promise<RawPageResult>;
   parse(raw: RawPageResult): Promise<ParsedListingCandidate[]>;

@@ -13,6 +13,7 @@
 - `Phase 3`: complete as of March 9, 2026.
 - `Phase 4`: complete as of March 10, 2026.
 - `Phase 5`: complete as of March 10, 2026.
+- `Phase 6`: in progress as of March 10, 2026.
 - Local verification completed on March 9, 2026:
   - `docker compose up -d postgres redis minio`
   - `pnpm --filter @jinka-eg/api exec prisma migrate deploy`
@@ -51,6 +52,9 @@
   - `pnpm --filter @jinka-eg/api run load:test -- --base=http://localhost:4001/v1 --requests=24 --concurrency=6`
   - `pnpm --filter @jinka-eg/api run abuse:drill -- --base=http://localhost:4001/v1`
   - `pnpm --filter @jinka-eg/crawler run launch:drill -- --base=http://localhost:4001/v1`
+  - `pnpm --filter @jinka-eg/api exec prisma generate`
+  - `pnpm --filter @jinka-eg/api exec prisma migrate deploy`
+  - `pnpm --filter @jinka-eg/crawler schedule:once -- --source=property_finder` returning `syncedPartitions: 40`, `queuedPartitions: 25`, and `queuedDetailRefreshes: 0`
   - `pnpm --filter @jinka-eg/crawler ingest:once -- --source=facebook` returning `queuedSources: []` when the connector was temporarily disabled by ops smoke
   - direct crawler normalize smoke verifying a blacklisted Facebook `sourceListingId` was skipped and produced `0` persisted variants
 - Phase 1 runtime delivered:
@@ -61,7 +65,7 @@
   - request logging, structured exception logging, Sentry bootstrap, and OpenTelemetry bootstrap hooks
   - reproducible initial Prisma migration history under `apps/api/prisma/migrations`
 - Phase 2 runtime delivered:
-  - BullMQ-backed ingestion stages for `seed-source`, `fetch-page`, `parse-snapshot`, and `normalize-variant`, plus no-op downstream stage workers for later phases
+  - BullMQ-backed ingestion foundation, now running `seed-source`, `discover-page`, `fetch-detail`, and `reconcile-variant` before downstream scoring and notification stages
   - S3-compatible raw snapshot persistence to MinIO with replayable storage keys captured in `RawSnapshot`
   - live `Nawy` and `Property Finder EG` connectors parsing embedded `__NEXT_DATA__` payloads into normalized variants
   - parser fixtures and replay tooling for `Nawy` and `Property Finder EG`
@@ -196,7 +200,7 @@
 - Use `PlaywrightCrawler` for `Nawy` discovery, `Property Finder EG` fallback, `Aqarmap`, and `Facebook`.
 - Downgrade to `HttpCrawler` only when a source exposes stable JSON or SSR content.
 - Persist every fetch into `RawSnapshot` before parsing.
-- Queue stages: `seed-source`, `fetch-page`, `parse-snapshot`, `normalize-variant`, `score-cluster`, `score-fraud`, `match-alerts`, `send-notification`.
+- Queue stages: `seed-source`, `discover-page`, `fetch-detail`, `reconcile-variant`, `score-cluster`, `score-fraud`, `match-alerts`, `send-notification`.
 
 ## Phased Implementation Plan
 ### Phase 0: Product and Compliance Baseline
@@ -276,6 +280,19 @@
 ### Phase 6: Post-Launch Optimization
 - Improve ranking, crawl cadence, fraud coefficients, notification relevance, and area or developer normalization.
 - Reassess the need for OpenSearch only if Postgres becomes the bottleneck.
+- Status: in progress.
+- Crawler optimization checklist:
+  - [x] add richer `SourceSeed` metadata and persisted `SourcePartition` crawl state
+  - [x] add `ListingVariant` freshness fields plus `sourceStatus`
+  - [x] split discovery scheduling from detail refresh scheduling with explicit `discover-page`, `fetch-detail`, and `reconcile-variant` stages
+  - [x] add an internal scheduler for due partitions, due detail refreshes, and stale variant inactivation
+  - [x] add partition-level seen or missing reconciliation through `SourcePartitionListing`
+  - [x] add tiered recrawl cadences for partitions and detail refreshes
+  - [x] expand `Property Finder EG` discovery into a search matrix covering sale or rent, Cairo or New Cairo or Giza or Sheikh Zayed or Egypt-wide seeds, and residential plus commercial property types
+  - [x] add `Property Finder EG` stop conditions for no-result pages, repeated results, page budgets, and source page-count exhaustion
+- Broader Phase 6 follow-up areas after this crawler pass:
+  - multi-area search matrices and stop-condition tuning for the remaining connectors
+  - ranking tuning, fraud coefficient tuning, and notification relevance optimization
 
 ## Acceptance Criteria
 - A user can discover the same unit from multiple sources as one canonical card.

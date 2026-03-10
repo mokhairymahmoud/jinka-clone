@@ -9,7 +9,7 @@ async function main() {
   const pipeline = new IngestionPipeline(queues);
   const workers = createWorkers(pipeline);
 
-  console.log(`Phase 2 ingestion workers listening on queues: ${queueNames.join(", ")}`);
+  console.log(`Crawler workers listening on queues: ${queueNames.join(", ")}`);
 
   const shutdown = async () => {
     await closeWorkers(workers);

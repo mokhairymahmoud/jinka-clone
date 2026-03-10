@@ -3,6 +3,7 @@ import { PlaywrightCrawler } from "crawlee";
 import type { ListingSource } from "@jinka-eg/types";
 import type {
   ConnectorHealth,
+  DiscoveryControls,
   ParsedListingCandidate,
   RawPageResult,
   SourceConnector,
@@ -20,6 +21,12 @@ export abstract class BasePlaywrightConnector implements SourceConnector {
 
   supportsDetailRefresh() {
     return false;
+  }
+
+  getDiscoveryControls(_raw: RawPageResult, _candidates: ParsedListingCandidate[], _seed: SourceSeed): DiscoveryControls {
+    return {
+      stopReason: "single_page_source"
+    };
   }
 
   async fetch(seed: SourceSeed): Promise<RawPageResult> {

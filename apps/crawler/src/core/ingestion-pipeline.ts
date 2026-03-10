@@ -6,7 +6,8 @@ import {
   Prisma,
   ListingSource as PrismaListingSource,
   MarketSegment as PrismaMarketSegment,
-  PrismaClient
+  PrismaClient,
+  SourceListingStatus as PrismaSourceListingStatus
 } from "@prisma/client";
 
 import type { ListingSource } from "@jinka-eg/types";
@@ -48,6 +49,7 @@ type NormalizeVariantPayload = {
   seed: SourceSeed;
   candidate: ParsedListingCandidate;
   expectedTotal: number;
+  finalizeRunOnComplete?: boolean;
   partitionId?: string;
 };
 
@@ -240,6 +242,23 @@ export class IngestionPipeline {
     for (const source of enabledSources) {
       const connector = getConnector(source);
       const seeds = await connector.discover();
+      const labels = seeds.map((seed) => seed.label);
+
+      await this.prisma.sourcePartition.updateMany({
+        where: {
+          source: toPrismaSource(source),
+          ...(labels.length > 0
+            ? {
+                label: {
+                  notIn: labels
+                }
+              }
+            : {})
+        },
+        data: {
+          isActive: false
+        }
+      });
 
       for (const seed of seeds) {
         await this.prisma.sourcePartition.upsert({
@@ -336,18 +355,21 @@ export class IngestionPipeline {
         }
       });
 
-      await this.queues["fetch-page"].add(`fetch:${source}:${run.id}:${partition.label}`, {
+      await this.queues["discover-page"].add(`discover:${source}:${run.id}:${partition.label}`, {
         source,
         runId: run.id,
         partitionId: partition.id,
         seed: {
+          source,
           url: partition.seedUrl,
           label: partition.label,
+          seedKind: "discovery",
+          sweepToken: randomUUID(),
           purpose: partition.purpose ? this.fromPrismaPurpose(partition.purpose) : undefined,
           marketSegment: partition.marketSegment ? this.fromPrismaMarketSegment(partition.marketSegment) : undefined,
           propertyType: partition.propertyType as SourceSeed["propertyType"] | undefined,
           areaSlug: partition.areaSlug ?? undefined,
-          page: partition.page ?? undefined,
+          page: 1,
           priority: partition.priority
         }
       } satisfies FetchPagePayload);
@@ -372,7 +394,12 @@ export class IngestionPipeline {
       };
     }
 
-    const cutoff = new Date(Date.now() - Number(process.env.CRAWLER_DETAIL_REFRESH_MINUTES ?? "180") * 60_000);
+    const now = new Date();
+    const hotRecentCutoff = new Date(now.getTime() - Number(process.env.CRAWLER_DETAIL_HOT_WINDOW_HOURS ?? "12") * 60 * 60_000);
+    const warmRecentCutoff = new Date(now.getTime() - Number(process.env.CRAWLER_DETAIL_WARM_WINDOW_HOURS ?? "72") * 60 * 60_000);
+    const hotRefreshCutoff = new Date(now.getTime() - Number(process.env.CRAWLER_DETAIL_HOT_REFRESH_MINUTES ?? "30") * 60_000);
+    const warmRefreshCutoff = new Date(now.getTime() - Number(process.env.CRAWLER_DETAIL_WARM_REFRESH_MINUTES ?? "180") * 60_000);
+    const coldRefreshCutoff = new Date(now.getTime() - Number(process.env.CRAWLER_DETAIL_COLD_REFRESH_MINUTES ?? "720") * 60_000);
     const variants = await this.prisma.listingVariant.findMany({
       where: {
         source: {
@@ -382,9 +409,33 @@ export class IngestionPipeline {
         canonicalUrl: {
           not: ""
         },
-        lastCrawledAt: {
-          lt: cutoff
-        }
+        OR: [
+          {
+            lastSeenAt: {
+              gte: hotRecentCutoff
+            },
+            lastCrawledAt: {
+              lt: hotRefreshCutoff
+            }
+          },
+          {
+            lastSeenAt: {
+              lt: hotRecentCutoff,
+              gte: warmRecentCutoff
+            },
+            lastCrawledAt: {
+              lt: warmRefreshCutoff
+            }
+          },
+          {
+            lastSeenAt: {
+              lt: warmRecentCutoff
+            },
+            lastCrawledAt: {
+              lt: coldRefreshCutoff
+            }
+          }
+        ]
       },
       orderBy: [{ lastCrawledAt: "asc" }, { updatedAt: "asc" }],
       take: options.limit ?? 50
@@ -399,10 +450,11 @@ export class IngestionPipeline {
         }
       });
 
-      await this.queues["fetch-page"].add(`refresh:${source}:${variant.id}:${Date.now()}`, {
+      await this.queues["fetch-detail"].add(`detail:${source}:${variant.id}:${Date.now()}`, {
         source,
         runId: run.id,
         seed: {
+          source,
           url: variant.canonicalUrl,
           label: `detail-${variant.sourceListingId}`,
           seedKind: "detail_refresh",
@@ -427,104 +479,115 @@ export class IngestionPipeline {
     const cutoff = new Date(Date.now() - staleHours * 60 * 60_000);
     const supportedSources = enabledSources.filter((source) => getConnector(source).supportsDetailRefresh());
     const unsupportedSources = enabledSources.filter((source) => !getConnector(source).supportsDetailRefresh());
+    let markedInactive = 0;
 
-    const result = await this.prisma.listingVariant.updateMany({
-      where: {
-        OR: [
-          ...(supportedSources.length > 0
-            ? [
-                {
-                  source: {
-                    in: supportedSources.map((source) => toPrismaSource(source))
-                  },
-                  refreshMissCount: {
-                    gte: missThreshold
-                  }
-                }
-              ]
-            : []),
-          ...(unsupportedSources.length > 0
-            ? [
-                {
-                  source: {
-                    in: unsupportedSources.map((source) => toPrismaSource(source))
-                  },
-                  lastSeenAt: {
-                    lt: cutoff
-                  }
-                }
-              ]
-            : []),
-          {
-            lastSeenAt: {
-              lt: cutoff
-            }
+    if (supportedSources.length > 0) {
+      const result = await this.prisma.listingVariant.updateMany({
+        where: {
+          source: {
+            in: supportedSources.map((source) => toPrismaSource(source))
+          },
+          refreshMissCount: {
+            gte: missThreshold
+          },
+          inactiveAt: null,
+          clusterId: {
+            not: null
+          },
+          sourceStatus: {
+            not: PrismaSourceListingStatus.BLOCKED
           }
-        ],
-        inactiveAt: null,
-        clusterId: {
-          not: null
+        },
+        data: {
+          inactiveAt: new Date(),
+          sourceStatus: PrismaSourceListingStatus.REMOVED
         }
-      },
-      data: {
-        inactiveAt: new Date()
-      }
-    });
+      });
+      markedInactive += result.count;
+    }
+
+    if (unsupportedSources.length > 0) {
+      const result = await this.prisma.listingVariant.updateMany({
+        where: {
+          source: {
+            in: unsupportedSources.map((source) => toPrismaSource(source))
+          },
+          lastSeenAt: {
+            lt: cutoff
+          },
+          inactiveAt: null,
+          clusterId: {
+            not: null
+          },
+          sourceStatus: {
+            not: PrismaSourceListingStatus.BLOCKED
+          }
+        },
+        data: {
+          inactiveAt: new Date(),
+          sourceStatus: PrismaSourceListingStatus.MISSING
+        }
+      });
+      markedInactive += result.count;
+    }
 
     return {
       sources: enabledSources,
       cutoff: cutoff.toISOString(),
-      markedInactive: result.count
+      markedInactive
     };
   }
 
   async handleSeedSource(payload: SeedSourcePayload) {
     if (!(await this.isSourceEnabled(payload.source))) {
-      const run = await this.prisma.ingestionRun.create({
-        data: {
-          source: toPrismaSource(payload.source),
-          status: "skipped",
-          completedAt: new Date()
-        }
-      });
-
-      return { runId: run.id, source: payload.source, discoveredSeeds: 0, skipped: true };
+      return { source: payload.source, discoveredSeeds: 0, skipped: true };
     }
 
     const connector = getConnector(payload.source);
-    const run = await this.prisma.ingestionRun.create({
-      data: {
-        source: toPrismaSource(payload.source),
-        status: "running"
-      }
-    });
     const seeds = await connector.discover();
 
     if (seeds.length === 0) {
-      await this.prisma.ingestionRun.update({
-        where: { id: run.id },
-        data: {
-          status: "completed",
-          completedAt: new Date()
-        }
-      });
-      return { runId: run.id, source: payload.source, discoveredSeeds: 0 };
+      return { source: payload.source, discoveredSeeds: 0 };
     }
 
+    const partitions = await this.prisma.sourcePartition.findMany({
+      where: {
+        source: toPrismaSource(payload.source),
+        label: {
+          in: seeds.map((seed) => seed.label)
+        }
+      }
+    });
+    const partitionIdsByLabel = new Map(partitions.map((partition) => [partition.label, partition.id]));
+
     await Promise.all(
-      seeds.map((seed) =>
-        this.queues["fetch-page"].add(`fetch:${payload.source}:${run.id}:${seed.label}`, {
+      seeds.map(async (seed) => {
+        const run = await this.prisma.ingestionRun.create({
+          data: {
+            source: toPrismaSource(payload.source),
+            status: "running"
+          }
+        });
+
+        return this.queues["discover-page"].add(`discover:${payload.source}:${run.id}:${seed.label}`, {
           source: payload.source,
           runId: run.id,
-          seed
-        } satisfies FetchPagePayload)
-      )
+          partitionId: partitionIdsByLabel.get(seed.label),
+          seed: {
+            ...seed,
+            source: payload.source,
+            seedKind: "discovery",
+            sweepToken: randomUUID(),
+            page: seed.page ?? 1
+          }
+        } satisfies FetchPagePayload);
+      })
     );
 
-    return { runId: run.id, source: payload.source, discoveredSeeds: seeds.length };
+    return { source: payload.source, discoveredSeeds: seeds.length };
   }
 
-  async handleFetchPage(payload: FetchPagePayload) {
+  async handleDiscoveryPage(payload: FetchPagePayload) {
     const connector = getConnector(payload.source);
     const raw = await connector.fetch(payload.seed);
 
@@ -537,69 +600,191 @@ export class IngestionPipeline {
         }
       });
 
-      return { source: payload.source, skipped: true, reason: "blacklisted_fetch" };
+      if (payload.partitionId) {
+        await this.updatePartitionDiscoveryState(payload.partitionId, payload.seed.page ?? 1, null, "blacklisted_seed", true);
+      }
+
+      return { source: payload.source, skipped: true, reason: "blacklisted_discovery" };
     }
 
-    await this.storage.ensureBucket();
+    const rawSnapshot = await this.persistRawSnapshot(payload.source, payload.runId, payload.seed, raw);
+    const candidates = await this.parseCandidates(payload.source, rawSnapshot.id, payload.seed);
+    const partition = payload.partitionId
+      ? await this.prisma.sourcePartition.findUnique({
+          where: { id: payload.partitionId }
+        })
+      : null;
+    const controls = connector.getDiscoveryControls(raw, candidates, payload.seed, partition?.lastDiscoverySignature ?? null);
 
-    const storageKey = buildStorageKey(payload.source, payload.runId, payload.seed.label, raw.payloadType);
-    await this.storage.putObject(
-      storageKey,
-      raw.body,
-      raw.payloadType === "json" ? "application/json" : "text/html; charset=utf-8"
-    );
-
-    const rawSnapshot = await this.prisma.rawSnapshot.create({
+    await this.prisma.ingestionRun.update({
+      where: { id: payload.runId },
       data: {
-        source: toPrismaSource(payload.source),
-        sourceListingId: raw.sourceListingId,
-        sourceUrl: raw.url,
-        payloadType: raw.payloadType,
-        storageKey,
-        parserVersion: "phase-3",
-        fetchedAt: new Date(raw.fetchedAt)
+        discoveredCount: {
+          increment: candidates.length
+        }
       }
     });
 
-    if (payload.partitionId) {
-      await this.touchPartitionSuccess(payload.partitionId);
+    if (payload.partitionId && payload.seed.sweepToken) {
+      await this.recordPartitionSeenListings(payload.partitionId, payload.source, payload.seed.sweepToken, candidates);
+      await this.updatePartitionDiscoveryState(
+        payload.partitionId,
+        payload.seed.page ?? 1,
+        controls.pageSignature ?? null,
+        controls.stopReason ?? null,
+        !controls.nextSeed
+      );
     }
 
-    await this.queues["parse-snapshot"].add(`parse:${payload.source}:${rawSnapshot.id}`, {
-      source: payload.source,
-      runId: payload.runId,
-      rawSnapshotId: rawSnapshot.id,
-      seed: payload.seed,
-      partitionId: payload.partitionId
-    } satisfies ParseSnapshotPayload);
+    if (controls.nextSeed && payload.partitionId) {
+      await this.queues["discover-page"].add(`discover:${payload.source}:${payload.runId}:${controls.nextSeed.label}:p${controls.nextSeed.page ?? 1}`, {
+        source: payload.source,
+        runId: payload.runId,
+        partitionId: payload.partitionId,
+        seed: {
+          ...controls.nextSeed,
+          source: payload.source,
+          seedKind: "discovery",
+          sweepToken: payload.seed.sweepToken
+        }
+      } satisfies FetchPagePayload);
+    }
 
-    return { rawSnapshotId: rawSnapshot.id, source: payload.source };
+    if (candidates.length === 0) {
+      await this.prisma.rawSnapshot.update({
+        where: { id: rawSnapshot.id },
+        data: {
+          extractionCoverage: 0
+        }
+      });
+
+      if (!controls.nextSeed) {
+        if (payload.partitionId && payload.seed.sweepToken) {
+          await this.reconcilePartitionMisses(payload.partitionId, payload.seed.sweepToken);
+        }
+
+        await this.prisma.ingestionRun.update({
+          where: { id: payload.runId },
+          data: {
+            status: "completed",
+            extractionRate: 0,
+            completedAt: new Date()
+          }
+        });
+        await this.syncParserDriftAlarm(payload.runId);
+      }
+
+      return { source: payload.source, candidates: 0, stopReason: controls.stopReason ?? "no_results" };
+    }
+
+    await Promise.all(
+      candidates.map((candidate, index) =>
+        this.queues["reconcile-variant"].add(`reconcile:${payload.source}:${rawSnapshot.id}:${index}`, {
+          source: payload.source,
+          runId: payload.runId,
+          rawSnapshotId: rawSnapshot.id,
+          seed: payload.seed,
+          candidate,
+          expectedTotal: candidates.length,
+          finalizeRunOnComplete: !controls.nextSeed,
+          partitionId: payload.partitionId
+        } satisfies NormalizeVariantPayload)
+      )
+    );
+
+    if (!controls.nextSeed && payload.partitionId && payload.seed.sweepToken) {
+      await this.reconcilePartitionMisses(payload.partitionId, payload.seed.sweepToken);
+    }
+
+    return {
+      source: payload.source,
+      candidates: candidates.length,
+      nextPage: controls.nextSeed?.page,
+      stopReason: controls.stopReason
+    };
+  }
+
+  async handleFetchDetail(payload: FetchPagePayload) {
+    const raw = await getConnector(payload.source).fetch(payload.seed);
+
+    if (await this.isBlacklisted(payload.source, raw.url, raw.sourceListingId)) {
+      if (payload.seed.refreshVariantId) {
+        await this.markVariantBlocked(payload.seed.refreshVariantId);
+      }
+
+      await this.prisma.ingestionRun.update({
+        where: { id: payload.runId },
+        data: {
+          completedAt: new Date(),
+          status: "completed"
+        }
+      });
+
+      return { source: payload.source, skipped: true, reason: "blacklisted_detail" };
+    }
+
+    const rawSnapshot = await this.persistRawSnapshot(payload.source, payload.runId, payload.seed, raw);
+    const candidates = await this.parseCandidates(payload.source, rawSnapshot.id, payload.seed);
+
+    await this.prisma.ingestionRun.update({
+      where: { id: payload.runId },
+      data: {
+        discoveredCount: {
+          increment: candidates.length
+        }
+      }
+    });
+
+    if (candidates.length === 0) {
+      await this.prisma.rawSnapshot.update({
+        where: { id: rawSnapshot.id },
+        data: {
+          extractionCoverage: 0
+        }
+      });
+
+      if (payload.seed.refreshVariantId) {
+        await this.markVariantRefreshMiss(payload.seed.refreshVariantId);
+      }
+
+      await this.prisma.ingestionRun.update({
+        where: { id: payload.runId },
+        data: {
+          status: "completed",
+          extractionRate: 0,
+          completedAt: new Date()
+        }
+      });
+      await this.syncParserDriftAlarm(payload.runId);
+
+      return { source: payload.source, candidates: 0 };
+    }
+
+    await Promise.all(
+      candidates.map((candidate, index) =>
+        this.queues["reconcile-variant"].add(`reconcile-detail:${payload.source}:${rawSnapshot.id}:${index}`, {
+          source: payload.source,
+          runId: payload.runId,
+          rawSnapshotId: rawSnapshot.id,
+          seed: payload.seed,
+          candidate,
+          expectedTotal: candidates.length,
+          finalizeRunOnComplete: true
+        } satisfies NormalizeVariantPayload)
+      )
+    );
+
+    return { source: payload.source, candidates: candidates.length };
+  }
+
+  async handleFetchPage(payload: FetchPagePayload) {
+    return payload.seed.seedKind === "detail_refresh"
+      ? this.handleFetchDetail(payload)
+      : this.handleDiscoveryPage(payload);
   }
 
   async handleParseSnapshot(payload: ParseSnapshotPayload) {
-    const connector = getConnector(payload.source);
-    const snapshot = await this.prisma.rawSnapshot.findUniqueOrThrow({
-      where: { id: payload.rawSnapshotId }
-    });
-    const body = await this.storage.getObject(snapshot.storageKey);
-    const raw: RawPageResult = {
-      source: payload.source,
-      url: snapshot.sourceUrl,
-      sourceListingId: snapshot.sourceListingId ?? payload.seed.sourceListingId ?? undefined,
-      payloadType: snapshot.payloadType as "html" | "json",
-      body,
-      fetchedAt: snapshot.fetchedAt.toISOString()
-    };
-    const parsedCandidates = await connector.parse(raw);
-    const candidates: ParsedListingCandidate[] = [];
-
-    for (const candidate of parsedCandidates) {
-      if (await this.isBlacklisted(payload.source, candidate.sourceUrl, candidate.sourceListingId)) {
-        continue;
-      }
-
-      candidates.push(candidate);
-    }
+    const candidates = await this.parseCandidates(payload.source, payload.rawSnapshotId, payload.seed);
 
     await this.prisma.ingestionRun.update({
       where: { id: payload.runId },
@@ -629,18 +814,20 @@ export class IngestionPipeline {
         await this.markVariantRefreshMiss(payload.seed.refreshVariantId);
       }
 
+      await this.syncParserDriftAlarm(payload.runId);
       return { source: payload.source, candidates: 0 };
     }
 
     await Promise.all(
       candidates.map((candidate, index) =>
-        this.queues["normalize-variant"].add(`normalize:${payload.source}:${payload.rawSnapshotId}:${index}`, {
+        this.queues["reconcile-variant"].add(`reconcile:${payload.source}:${payload.rawSnapshotId}:${index}`, {
           source: payload.source,
           runId: payload.runId,
           rawSnapshotId: payload.rawSnapshotId,
           seed: payload.seed,
           candidate,
           expectedTotal: candidates.length,
+          finalizeRunOnComplete: true,
           partitionId: payload.partitionId
         } satisfies NormalizeVariantPayload)
       )
@@ -649,7 +836,7 @@ export class IngestionPipeline {
     return { source: payload.source, candidates: candidates.length };
   }
 
-  async handleNormalizeVariant(payload: NormalizeVariantPayload) {
+  async handleReconcileVariant(payload: NormalizeVariantPayload) {
     const connector = getConnector(payload.source);
     const normalized = await connector.normalize(payload.candidate);
 
@@ -657,15 +844,27 @@ export class IngestionPipeline {
       if (payload.seed.seedKind === "detail_refresh" && payload.seed.refreshVariantId) {
         await this.markVariantRefreshMiss(payload.seed.refreshVariantId);
       }
-      await this.markRunProgress(payload.runId, payload.rawSnapshotId, payload.expectedTotal, false);
+      await this.markRunProgress(
+        payload.runId,
+        payload.rawSnapshotId,
+        payload.expectedTotal,
+        false,
+        payload.finalizeRunOnComplete ?? true
+      );
       return { source: payload.source, normalized: false };
     }
 
     if (await this.isBlacklisted(payload.source, normalized.sourceUrl, normalized.sourceListingId)) {
       if (payload.seed.seedKind === "detail_refresh" && payload.seed.refreshVariantId) {
-        await this.markVariantRefreshMiss(payload.seed.refreshVariantId);
+        await this.markVariantBlocked(payload.seed.refreshVariantId);
       }
-      await this.markRunProgress(payload.runId, payload.rawSnapshotId, payload.expectedTotal, true);
+      await this.markRunProgress(
+        payload.runId,
+        payload.rawSnapshotId,
+        payload.expectedTotal,
+        true,
+        payload.finalizeRunOnComplete ?? true
+      );
       return {
         source: payload.source,
         normalized: false,
@@ -701,6 +900,7 @@ export class IngestionPipeline {
         lastSeenAt: new Date(),
         lastCrawledAt: new Date(),
         refreshMissCount: 0,
+        sourceStatus: PrismaSourceListingStatus.ACTIVE,
         inactiveAt: null
       },
       create: {
@@ -722,14 +922,36 @@ export class IngestionPipeline {
         firstSeenAt: new Date(),
         lastSeenAt: new Date(),
         lastCrawledAt: new Date(),
-        refreshMissCount: 0
+        refreshMissCount: 0,
+        sourceStatus: PrismaSourceListingStatus.ACTIVE
       }
     });
+
+    if (payload.partitionId) {
+      await this.prisma.sourcePartitionListing.updateMany({
+        where: {
+          partitionId: payload.partitionId,
+          sourceListingId: normalized.sourceListingId
+        },
+        data: {
+          variantId: variant.id,
+          lastSeenAt: new Date(),
+          lastSweepToken: payload.seed.sweepToken ?? undefined,
+          missCount: 0
+        }
+      });
+    }
 
     const clusterSync = await this.syncClusterForVariant(variant.id, normalized, areaRecord?.id ?? null);
     await this.syncProjectForCluster(clusterSync.clusterId, normalized, areaRecord?.id ?? null);
     await this.persistPriceHistory(variant.id, clusterSync.clusterId, normalized.price);
-    await this.markRunProgress(payload.runId, payload.rawSnapshotId, payload.expectedTotal, true);
+    await this.markRunProgress(
+      payload.runId,
+      payload.rawSnapshotId,
+      payload.expectedTotal,
+      true,
+      payload.finalizeRunOnComplete ?? true
+    );
 
     if (clusterSync.eventType) {
       await this.queues["score-cluster"].add(`score-cluster:${payload.source}:${clusterSync.clusterId}:${Date.now()}`, {
@@ -748,6 +970,10 @@ export class IngestionPipeline {
       clusterId: clusterSync.clusterId,
       eventType: clusterSync.eventType
     };
+  }
+
+  async handleNormalizeVariant(payload: NormalizeVariantPayload) {
+    return this.handleReconcileVariant(payload);
   }
 
   async handleNoopStage(payload: PipelineStagePayload) {
@@ -1689,6 +1915,238 @@ export class IngestionPipeline {
     }
   }
 
+  private async persistRawSnapshot(source: ListingSource, runId: string, seed: SourceSeed, raw: RawPageResult) {
+    await this.storage.ensureBucket();
+
+    const storageKey = buildStorageKey(source, runId, seed.label, raw.payloadType);
+    await this.storage.putObject(
+      storageKey,
+      raw.body,
+      raw.payloadType === "json" ? "application/json" : "text/html; charset=utf-8"
+    );
+
+    return this.prisma.rawSnapshot.create({
+      data: {
+        source: toPrismaSource(source),
+        sourceListingId: raw.sourceListingId,
+        sourceUrl: raw.url,
+        payloadType: raw.payloadType,
+        storageKey,
+        parserVersion: "phase-6",
+        fetchedAt: new Date(raw.fetchedAt)
+      }
+    });
+  }
+
+  private async parseCandidates(source: ListingSource, rawSnapshotId: string, seed: SourceSeed) {
+    const connector = getConnector(source);
+    const snapshot = await this.prisma.rawSnapshot.findUniqueOrThrow({
+      where: { id: rawSnapshotId }
+    });
+    const body = await this.storage.getObject(snapshot.storageKey);
+    const raw: RawPageResult = {
+      source,
+      url: snapshot.sourceUrl,
+      sourceListingId: snapshot.sourceListingId ?? seed.sourceListingId ?? undefined,
+      payloadType: snapshot.payloadType as "html" | "json",
+      body,
+      fetchedAt: snapshot.fetchedAt.toISOString()
+    };
+    const parsedCandidates = await connector.parse(raw);
+    const candidates: ParsedListingCandidate[] = [];
+
+    for (const candidate of parsedCandidates) {
+      if (await this.isBlacklisted(source, candidate.sourceUrl, candidate.sourceListingId)) {
+        continue;
+      }
+
+      candidates.push(candidate);
+    }
+
+    return candidates;
+  }
+
+  private async recordPartitionSeenListings(
+    partitionId: string,
+    source: ListingSource,
+    sweepToken: string,
+    candidates: ParsedListingCandidate[]
+  ) {
+    const sourceListingIds = [...new Set(candidates.map((candidate) => candidate.sourceListingId).filter(Boolean))] as string[];
+
+    if (sourceListingIds.length === 0) {
+      return;
+    }
+
+    const existingVariants = await this.prisma.listingVariant.findMany({
+      where: {
+        source: toPrismaSource(source),
+        sourceListingId: {
+          in: sourceListingIds
+        }
+      },
+      select: {
+        id: true,
+        sourceListingId: true
+      }
+    });
+    const variantIdBySourceListingId = new Map(
+      existingVariants.map((variant) => [variant.sourceListingId, variant.id] as const)
+    );
+    const now = new Date();
+
+    await Promise.all(
+      sourceListingIds.map((sourceListingId) =>
+        this.prisma.sourcePartitionListing.upsert({
+          where: {
+            partitionId_sourceListingId: {
+              partitionId,
+              sourceListingId
+            }
+          },
+          update: {
+            variantId: variantIdBySourceListingId.get(sourceListingId),
+            lastSweepToken: sweepToken,
+            missCount: 0,
+            lastSeenAt: now
+          },
+          create: {
+            partitionId,
+            variantId: variantIdBySourceListingId.get(sourceListingId),
+            sourceListingId,
+            lastSweepToken: sweepToken,
+            missCount: 0,
+            firstSeenAt: now,
+            lastSeenAt: now
+          }
+        })
+      )
+    );
+  }
+
+  private async updatePartitionDiscoveryState(
+    partitionId: string,
+    page: number,
+    pageSignature?: string | null,
+    stopReason?: string | null,
+    completed = false
+  ) {
+    const partition = await this.prisma.sourcePartition.findUnique({
+      where: { id: partitionId }
+    });
+
+    if (!partition) {
+      return;
+    }
+
+    const now = new Date();
+    await this.prisma.sourcePartition.update({
+      where: { id: partitionId },
+      data: {
+        lastPageCrawled: page,
+        lastDiscoverySignature: pageSignature ?? null,
+        stopReason: stopReason ?? null,
+        ...(completed
+          ? {
+              lastCrawledAt: now,
+              nextCrawlAt: getNextPartitionCrawlAt(partition.priority, now),
+              failureCount: 0
+            }
+          : {})
+      }
+    });
+  }
+
+  private async reconcilePartitionMisses(partitionId: string, sweepToken: string) {
+    const unseenRows = await this.prisma.sourcePartitionListing.findMany({
+      where: {
+        partitionId,
+        OR: [{ lastSweepToken: null }, { lastSweepToken: { not: sweepToken } }]
+      },
+      select: {
+        id: true,
+        variantId: true,
+        missCount: true
+      }
+    });
+
+    if (unseenRows.length === 0) {
+      return;
+    }
+
+    const now = new Date();
+    const missThreshold = Number(process.env.CRAWLER_PARTITION_MISS_THRESHOLD ?? "2");
+    const membershipIds = unseenRows.map((row) => row.id);
+
+    await this.prisma.sourcePartitionListing.updateMany({
+      where: {
+        id: {
+          in: membershipIds
+        }
+      },
+      data: {
+        missCount: {
+          increment: 1
+        }
+      }
+    });
+
+    const missingVariantIds = unseenRows
+      .filter((row) => row.variantId && row.missCount + 1 < missThreshold)
+      .map((row) => row.variantId as string);
+    const removedVariantIds = unseenRows
+      .filter((row) => row.variantId && row.missCount + 1 >= missThreshold)
+      .map((row) => row.variantId as string);
+
+    if (missingVariantIds.length > 0) {
+      await this.prisma.listingVariant.updateMany({
+        where: {
+          id: {
+            in: missingVariantIds
+          },
+          sourceStatus: {
+            not: PrismaSourceListingStatus.BLOCKED
+          }
+        },
+        data: {
+          sourceStatus: PrismaSourceListingStatus.MISSING,
+          lastCrawledAt: now
+        }
+      });
+    }
+
+    if (removedVariantIds.length > 0) {
+      await this.prisma.listingVariant.updateMany({
+        where: {
+          id: {
+            in: removedVariantIds
+          },
+          sourceStatus: {
+            not: PrismaSourceListingStatus.BLOCKED
+          }
+        },
+        data: {
+          sourceStatus: PrismaSourceListingStatus.REMOVED,
+          inactiveAt: now,
+          lastCrawledAt: now
+        }
+      });
+    }
+  }
+
+  private async markVariantBlocked(variantId: string) {
+    await this.prisma.listingVariant.updateMany({
+      where: {
+        id: variantId
+      },
+      data: {
+        sourceStatus: PrismaSourceListingStatus.BLOCKED,
+        inactiveAt: new Date(),
+        lastCrawledAt: new Date()
+      }
+    });
+  }
+
   private async touchPartitionSuccess(partitionId: string) {
     const now = new Date();
     const partition = await this.prisma.sourcePartition.findUnique({
@@ -1704,7 +2162,8 @@ export class IngestionPipeline {
       data: {
         lastCrawledAt: now,
         nextCrawlAt: getNextPartitionCrawlAt(partition.priority, now),
-        failureCount: 0
+        failureCount: 0,
+        stopReason: null
       }
     });
   }
@@ -1724,7 +2183,8 @@ export class IngestionPipeline {
       where: { id: partitionId },
       data: {
         failureCount: failures,
-        nextCrawlAt: new Date(Date.now() + backoffMinutes * 60_000)
+        nextCrawlAt: new Date(Date.now() + backoffMinutes * 60_000),
+        stopReason: "partition_failure"
       }
     });
   }
@@ -1739,12 +2199,19 @@ export class IngestionPipeline {
         refreshMissCount: {
           increment: 1
         },
-        lastCrawledAt: new Date()
+        lastCrawledAt: new Date(),
+        sourceStatus: PrismaSourceListingStatus.MISSING
       }
     });
   }
 
-  private async markRunProgress(runId: string, rawSnapshotId: string, expectedTotal: number, succeeded: boolean) {
+  private async markRunProgress(
+    runId: string,
+    rawSnapshotId: string,
+    expectedTotal: number,
+    succeeded: boolean,
+    finalizeRun = true
+  ) {
     await this.prisma.ingestionRun.update({
       where: { id: runId },
       data: succeeded
@@ -1764,19 +2231,21 @@ export class IngestionPipeline {
       where: { id: runId }
     });
     const processed = run.parsedCount + run.failedCount;
+    const extractionRate = run.discoveredCount === 0 ? 0 : run.parsedCount / run.discoveredCount;
 
-    if (processed >= expectedTotal) {
-      await this.prisma.rawSnapshot.update({
-        where: { id: rawSnapshotId },
-        data: {
-          extractionCoverage: expectedTotal === 0 ? 0 : run.parsedCount / expectedTotal
-        }
-      });
+    await this.prisma.rawSnapshot.update({
+      where: { id: rawSnapshotId },
+      data: {
+        extractionCoverage: expectedTotal === 0 ? 0 : Math.min(1, processed / expectedTotal)
+      }
+    });
+
+    if (finalizeRun && processed >= run.discoveredCount) {
       await this.prisma.ingestionRun.update({
         where: { id: runId },
         data: {
           status: run.failedCount > 0 && run.parsedCount === 0 ? "failed" : "completed",
-          extractionRate: expectedTotal === 0 ? 0 : run.parsedCount / expectedTotal,
+          extractionRate,
           completedAt: new Date()
         }
       });
