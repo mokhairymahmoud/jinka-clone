@@ -23,6 +23,18 @@ export class AqarmapConnector extends BasePlaywrightConnector {
     return true;
   }
 
+  protected override usesBrowserFetch() {
+    return true;
+  }
+
+  protected override browserFetchReadySelector() {
+    return "script[type='application/ld+json']";
+  }
+
+  protected override browserFetchSettleMs() {
+    return 1_500;
+  }
+
   async discover(): Promise<SourceSeed[]> {
     return [
       {

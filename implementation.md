@@ -13,7 +13,7 @@
 - `Phase 3`: complete as of March 9, 2026.
 - `Phase 4`: complete as of March 10, 2026.
 - `Phase 5`: complete as of March 10, 2026.
-- `Phase 6`: in progress as of March 10, 2026.
+- `Phase 6`: in progress as of March 11, 2026.
 - Local verification completed on March 9, 2026:
   - `docker compose up -d postgres redis minio`
   - `pnpm --filter @jinka-eg/api exec prisma migrate deploy`
@@ -57,6 +57,11 @@
   - `pnpm --filter @jinka-eg/crawler schedule:once -- --source=property_finder` returning `syncedPartitions: 40`, `queuedPartitions: 25`, and `queuedDetailRefreshes: 0`
   - `pnpm --filter @jinka-eg/crawler ingest:once -- --source=facebook` returning `queuedSources: []` when the connector was temporarily disabled by ops smoke
   - direct crawler normalize smoke verifying a blacklisted Facebook `sourceListingId` was skipped and produced `0` persisted variants
+- Additional local verification completed on March 11, 2026:
+  - `pnpm --filter @jinka-eg/crawler typecheck`
+  - `pnpm --filter @jinka-eg/crawler test`
+  - `pnpm --filter @jinka-eg/crawler build`
+  - one-off browser-backed `Nawy` fetch smoke returning `label: nawy-new-cairo-sale`, `payloadType: json`, and a live extracted `__NEXT_DATA__` body through the connector runtime
 - Phase 1 runtime delivered:
   - Prisma-backed `User`, `OtpChallenge`, and `AuthSession` persistence on PostgreSQL + PostGIS
   - seed-backed admin bootstrap for `demo@example.com`
@@ -91,6 +96,10 @@
   - admin support queue coverage for user reports, parser drift alarms, connector enable or disable controls, and source blacklists
   - crawler enforcement of disabled connectors and blacklisted source URLs or listing IDs before variants are persisted
   - runnable load, abuse, and launch-readiness drill scripts for local launch-hardening verification
+- Phase 6 crawler runtime delivered so far:
+  - Playwright-backed browser fetch mode for anti-bot-sensitive connectors while keeping lighter HTTP fetches for stable SSR or JSON sources
+  - expanded `Nawy` discovery partitions across multiple Egypt area slugs instead of a single hard-coded seed
+  - `Nawy` page-based stop conditions using result signatures, source page counts, and page budgets
 
 ## Product Goals
 - Let users search rentals, resale, and off-plan inventory across multiple sources from one app.
@@ -197,8 +206,8 @@
 
 ## Crawler Architecture
 - Each source implements `discover`, `fetch`, `parse`, `normalize`, and `healthcheck`.
-- Use `PlaywrightCrawler` for `Nawy` discovery, `Property Finder EG` fallback, `Aqarmap`, and `Facebook`.
-- Downgrade to `HttpCrawler` only when a source exposes stable JSON or SSR content.
+- Use Playwright-backed browser fetches for anti-bot-sensitive sources such as `Nawy`, `Aqarmap`, and `Facebook`.
+- Use lighter HTTP fetches only when a source exposes stable JSON or SSR content, such as the current `Property Finder EG` flow.
 - Persist every fetch into `RawSnapshot` before parsing.
 - Queue stages: `seed-source`, `discover-page`, `fetch-detail`, `reconcile-variant`, `score-cluster`, `score-fraud`, `match-alerts`, `send-notification`.
 
@@ -288,10 +297,12 @@
   - [x] add an internal scheduler for due partitions, due detail refreshes, and stale variant inactivation
   - [x] add partition-level seen or missing reconciliation through `SourcePartitionListing`
   - [x] add tiered recrawl cadences for partitions and detail refreshes
+  - [x] add browser-backed fetch support for anti-bot-sensitive connectors
   - [x] expand `Property Finder EG` discovery into a search matrix covering sale or rent, Cairo or New Cairo or Giza or Sheikh Zayed or Egypt-wide seeds, and residential plus commercial property types
   - [x] add `Property Finder EG` stop conditions for no-result pages, repeated results, page budgets, and source page-count exhaustion
+  - [x] expand `Nawy` discovery into multiple area partitions with page-aware stop conditions
 - Broader Phase 6 follow-up areas after this crawler pass:
-  - multi-area search matrices and stop-condition tuning for the remaining connectors
+  - multi-area search matrices and stop-condition tuning for `Aqarmap` and `Facebook`
   - ranking tuning, fraud coefficient tuning, and notification relevance optimization
 
 ## Acceptance Criteria

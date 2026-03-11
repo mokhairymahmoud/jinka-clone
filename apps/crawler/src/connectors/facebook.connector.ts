@@ -16,6 +16,18 @@ export class FacebookConnector extends BasePlaywrightConnector {
     return true;
   }
 
+  protected override usesBrowserFetch() {
+    return true;
+  }
+
+  protected override browserFetchReadySelector() {
+    return "script[data-marketplace-state]";
+  }
+
+  protected override browserFetchSettleMs() {
+    return 1_500;
+  }
+
   async discover(): Promise<SourceSeed[]> {
     return [
       {

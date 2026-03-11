@@ -24,9 +24,20 @@ describe("connector health", () => {
 
   it("parses and normalizes Nawy fixture data", async () => {
     const connector = new NawyConnector();
-    const parsed = await connector.parse(getParserFixture("nawy"));
+    const seeds = await connector.discover();
+    const raw = getParserFixture("nawy");
+    const parsed = await connector.parse(raw);
+
+    expect(seeds.length).toBe(8);
+    expect(seeds[0]?.label).toBe("nawy-new-cairo-sale");
+    expect(seeds[0]?.page).toBe(1);
 
     expect(parsed.length).toBeGreaterThan(0);
+
+    const controls = connector.getDiscoveryControls(raw, parsed, seeds[0] ?? { url: "", label: "" });
+    expect(controls.pageSignature).toBeTruthy();
+    expect(controls.nextSeed).toBeUndefined();
+    expect(controls.stopReason).toBe("page_count_reached");
 
     const normalized = await connector.normalize(parsed[0]);
 

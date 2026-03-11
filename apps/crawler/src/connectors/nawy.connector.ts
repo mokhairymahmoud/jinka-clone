@@ -1,5 +1,6 @@
 import { BasePlaywrightConnector } from "../core/base-playwright-connector.js";
 import type {
+  DiscoveryControls,
   NormalizedListingCandidate,
   ParsedListingCandidate,
   RawPageResult,
@@ -29,18 +30,32 @@ type NawyResult = {
   };
 };
 
+type NawyPageProps = {
+  loadedSearchResultsSSR?: {
+    page?: number;
+    pageSize?: number;
+    total?: number;
+    results?: NawyResult[];
+  };
+};
+
+const nawyAreas = [
+  { areaSlug: "new-cairo", label: "new-cairo", priority: 25 },
+  { areaSlug: "el-sheikh-zayed", label: "el-sheikh-zayed", priority: 30 },
+  { areaSlug: "6th-of-october-city", label: "6th-of-october-city", priority: 30 },
+  { areaSlug: "new-capital-city", label: "new-capital-city", priority: 35 },
+  { areaSlug: "mostakbal-city", label: "mostakbal-city", priority: 35 },
+  { areaSlug: "ain-sokhna", label: "ain-sokhna", priority: 55 },
+  { areaSlug: "ras-el-hekma", label: "ras-el-hekma", priority: 60 },
+  { areaSlug: "north-coast-sahel", label: "north-coast-sahel", priority: 60 }
+] as const;
+
 function getPageProps(raw: RawPageResult) {
   const parsed = JSON.parse(raw.body) as {
     props?: {
-      pageProps?: {
-        loadedSearchResultsSSR?: {
-          results?: NawyResult[];
-        };
-      };
+      pageProps?: NawyPageProps;
     };
-    loadedSearchResultsSSR?: {
-      results?: NawyResult[];
-    };
+    loadedSearchResultsSSR?: NawyPageProps["loadedSearchResultsSSR"];
   };
 
   return parsed.props?.pageProps ?? parsed;
@@ -50,17 +65,67 @@ export class NawyConnector extends BasePlaywrightConnector {
   readonly source = "nawy" as const;
 
   async discover(): Promise<SourceSeed[]> {
-    return [
-      {
-        url: "https://www.nawy.com/search?purpose=sale&area=new-cairo",
-        label: "new-cairo-sale",
-        seedKind: "discovery",
-        areaSlug: "new-cairo",
-        purpose: "sale",
-        marketSegment: "off_plan",
-        priority: 30
+    return nawyAreas.map((area) => this.buildSeed(area.areaSlug, area.label, area.priority));
+  }
+
+  override getDiscoveryControls(
+    raw: RawPageResult,
+    candidates: ParsedListingCandidate[],
+    seed: SourceSeed,
+    previousSignature?: string | null
+  ): DiscoveryControls {
+    const pageProps = getPageProps(raw);
+    const currentPage = seed.page ?? pageProps.loadedSearchResultsSSR?.page ?? 1;
+    const pageSize = pageProps.loadedSearchResultsSSR?.pageSize ?? Math.max(candidates.length, 1);
+    const total = pageProps.loadedSearchResultsSSR?.total ?? candidates.length;
+    const pageCount = Math.max(1, Math.ceil(total / Math.max(pageSize, 1)));
+    const pageBudget = Number(process.env.NAWY_MAX_DISCOVERY_PAGE ?? "5");
+    const pageSignature = candidates
+      .slice(0, 10)
+      .map((candidate) => candidate.sourceListingId ?? candidate.sourceUrl ?? "unknown")
+      .join("|");
+
+    if (candidates.length === 0) {
+      return {
+        pageSignature,
+        stopReason: "no_results"
+      };
+    }
+
+    if (previousSignature && previousSignature === pageSignature) {
+      return {
+        pageSignature,
+        stopReason: "repeated_results"
+      };
+    }
+
+    if (currentPage >= pageBudget || currentPage >= pageCount) {
+      return {
+        pageSignature,
+        stopReason: currentPage >= pageBudget ? "page_budget_reached" : "page_count_reached"
+      };
+    }
+
+    return {
+      pageSignature,
+      nextSeed: {
+        ...seed,
+        url: this.withPage(seed.url, currentPage + 1),
+        page: currentPage + 1
       }
-    ];
+    };
+  }
+
+  protected override usesBrowserFetch() {
+    return true;
+  }
+
+  protected override browserFetchReadySelector() {
+    return "script#__NEXT_DATA__";
+  }
+
+  protected override browserFetchSettleMs() {
+    return 750;
   }
 
   override async fetch(seed: SourceSeed) {
@@ -159,5 +224,29 @@ export class NawyConnector extends BasePlaywrightConnector {
       mediaHashes: hashImageUrls(candidate.imageUrls ?? []),
       rawFields: candidate.rawFields ?? {}
     };
+  }
+
+  private buildSeed(areaSlug: string, label: string, priority: number): SourceSeed {
+    const url = new URL("https://www.nawy.com/search");
+    url.searchParams.set("purpose", "sale");
+    url.searchParams.set("area", areaSlug);
+
+    return {
+      source: this.source,
+      url: url.toString(),
+      label: `nawy-${label}-sale`,
+      seedKind: "discovery",
+      areaSlug,
+      page: 1,
+      purpose: "sale",
+      marketSegment: "off_plan",
+      priority
+    };
+  }
+
+  private withPage(rawUrl: string, page: number) {
+    const url = new URL(rawUrl);
+    url.searchParams.set("page", String(page));
+    return url.toString();
   }
 }
