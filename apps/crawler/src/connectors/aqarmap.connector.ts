@@ -1,5 +1,6 @@
 import type {
   ConnectorHealth,
+  DiscoveryControls,
   NormalizedListingCandidate,
   ParsedListingCandidate,
   RawPageResult,
@@ -16,6 +17,13 @@ import {
   normalizePurpose
 } from "../core/normalization.js";
 
+const aqarmapAreas = [
+  { label: "greater-cairo", path: ["cairo"], areaSlug: "cairo", priority: 95 },
+  { label: "new-cairo", path: ["cairo", "new-cairo"], areaSlug: "new-cairo", priority: 80 },
+  { label: "6th-of-october", path: ["cairo", "6th-of-october"], areaSlug: "6th-of-october", priority: 85 },
+  { label: "el-sheikh-zayed-city", path: ["cairo", "el-sheikh-zayed-city"], areaSlug: "el-sheikh-zayed-city", priority: 85 }
+] as const;
+
 export class AqarmapConnector extends BasePlaywrightConnector {
   readonly source = "aqarmap" as const;
 
@@ -28,7 +36,7 @@ export class AqarmapConnector extends BasePlaywrightConnector {
   }
 
   protected override browserFetchReadySelector() {
-    return "script[type='application/ld+json']";
+    return "article.listing-card, script[type='application/ld+json']";
   }
 
   protected override browserFetchSettleMs() {
@@ -36,19 +44,71 @@ export class AqarmapConnector extends BasePlaywrightConnector {
   }
 
   async discover(): Promise<SourceSeed[]> {
-    return [
-      {
-        url: "https://aqarmap.com.eg/en/for-sale/property-type/cairo",
-        label: "anti-bot-heavy",
-        seedKind: "discovery",
-        areaSlug: "cairo",
-        purpose: "sale",
-        priority: 120
+    return aqarmapAreas.flatMap((area) => [
+      this.buildSeed("sale", area.path, area.areaSlug, area.label, area.priority),
+      this.buildSeed("rent", area.path, area.areaSlug, area.label, area.priority + 5)
+    ]);
+  }
+
+  override getDiscoveryControls(
+    raw: RawPageResult,
+    candidates: ParsedListingCandidate[],
+    seed: SourceSeed,
+    previousSignature?: string | null
+  ): DiscoveryControls {
+    const pageSignature = candidates
+      .slice(0, 10)
+      .map((candidate) => candidate.sourceListingId ?? candidate.sourceUrl ?? "unknown")
+      .join("|");
+    const currentPage = seed.page ?? this.extractPage(raw.url) ?? 1;
+    const pageBudget = Number(process.env.AQARMAP_MAX_DISCOVERY_PAGE ?? "5");
+    const nextUrl = this.extractNextPageUrl(raw.body);
+
+    if (candidates.length === 0) {
+      return {
+        pageSignature,
+        stopReason: "no_results"
+      };
+    }
+
+    if (previousSignature && previousSignature === pageSignature) {
+      return {
+        pageSignature,
+        stopReason: "repeated_results"
+      };
+    }
+
+    if (currentPage >= pageBudget) {
+      return {
+        pageSignature,
+        stopReason: "page_budget_reached"
+      };
+    }
+
+    if (!nextUrl) {
+      return {
+        pageSignature,
+        stopReason: "page_count_reached"
+      };
+    }
+
+    return {
+      pageSignature,
+      nextSeed: {
+        ...seed,
+        url: nextUrl,
+        page: currentPage + 1
       }
-    ];
+    };
   }
 
   async parse(raw: RawPageResult): Promise<ParsedListingCandidate[]> {
+    const searchCandidates = this.parseSearchCards(raw);
+
+    if (searchCandidates.length > 0) {
+      return searchCandidates;
+    }
+
     const document = raw.payloadType === "json" ? this.safeParseJson(raw.body) : null;
     const structuredData = raw.payloadType === "html" ? this.extractStructuredData(raw.body) : [];
     const title = this.resolveTitle(raw.body, structuredData, document);
@@ -140,6 +200,76 @@ export class AqarmapConnector extends BasePlaywrightConnector {
       parserCoverage: 0.73,
       notes: ["Requires residential proxies", "Fallback to operator alerts on parser drift"]
     };
+  }
+
+  private parseSearchCards(raw: RawPageResult): ParsedListingCandidate[] {
+    if (!raw.body.includes("listing-card")) {
+      return [];
+    }
+
+    const cards = [...raw.body.matchAll(/<article class="listing-card[\s\S]*?<\/article>/g)];
+    const candidates: ParsedListingCandidate[] = [];
+    const seen = new Set<string>();
+
+    for (const cardMatch of cards) {
+      const card = cardMatch[0];
+      const href = card.match(/href="(\/en\/listing\/[^"]+)"/)?.[1];
+
+      if (!href) {
+        continue;
+      }
+
+      const sourceUrl = new URL(href, "https://aqarmap.com.eg").toString();
+      if (seen.has(sourceUrl)) {
+        continue;
+      }
+      seen.add(sourceUrl);
+
+      const sourceListingId = this.extractListingId(sourceUrl);
+      const title = this.cleanText(card.match(/<h2[^>]+title="([^"]+)"/)?.[1]);
+      const location = this.cleanText(card.match(/<address[\s\S]*?title="([^"]+)"/)?.[1]);
+      const priceAmount = this.asNumber(card.match(/<data value="([0-9]+)"/)?.[1]);
+      const imageUrls = [...card.matchAll(/<img[^>]+src="([^"]+)"/g)].map((match) => match[1]).filter(Boolean);
+      const detailValues = [...card.matchAll(/<span class="text-caption-1 text-gray__dark_2">([^<]+)<\/span>/g)].map((match) =>
+        this.cleanText(match[1]) ?? ""
+      );
+      const price = normalizePrice(priceAmount, "EGP", raw.url.includes("/for-rent/") ? "monthly" : "total");
+      const areaSqm = this.asNumber(detailValues.find((value) => value.includes("m²")));
+      const bareNumbers = detailValues.map((value) => this.asNumber(value)).filter((value): value is number => value !== undefined);
+      const bedrooms = bareNumbers[1];
+      const bathrooms = bareNumbers[2];
+
+      if (!sourceListingId || !title || !price) {
+        continue;
+      }
+
+      candidates.push({
+        source: this.source,
+        sourceListingId,
+        sourceUrl,
+        title: localizeText(title),
+        description: localizeText(location ? `${title} - ${location}` : title),
+        purpose: normalizePurpose(raw.url.includes("/for-rent/") ? "rent" : "sale"),
+        marketSegment: "resale",
+        propertyType: normalizePropertyType(title),
+        price,
+        bedrooms,
+        bathrooms,
+        areaSqm,
+        areaName: location ?? undefined,
+        imageUrls: imageUrls.slice(0, 5),
+        publishedAt: raw.fetchedAt,
+        extractionConfidence: 0.72,
+        rawFields: {
+          sourcePayload: {
+            discoveryCard: true,
+            location
+          }
+        }
+      });
+    }
+
+    return candidates;
   }
 
   private extractStructuredData(body: string) {
@@ -236,17 +366,7 @@ export class AqarmapConnector extends BasePlaywrightConnector {
     paths: string[]
   ) {
     const value = this.resolveUnknown(structuredData, document, paths);
-
-    if (typeof value === "number" && Number.isFinite(value)) {
-      return value;
-    }
-
-    if (typeof value === "string") {
-      const numeric = Number(value.replace(/[^0-9.]+/g, ""));
-      return Number.isFinite(numeric) ? numeric : undefined;
-    }
-
-    return undefined;
+    return this.asNumber(value);
   }
 
   private resolveUnknown(
@@ -294,7 +414,65 @@ export class AqarmapConnector extends BasePlaywrightConnector {
   }
 
   private extractListingId(url: string) {
-    const match = url.match(/(?:\/|=)(\d{4,})(?:\/|$|\?)/);
+    const match = url.match(/(?:\/|=)(\d{4,})(?:-|\/|$|\?)/);
     return match?.[1];
+  }
+
+  private buildSeed(
+    purpose: "sale" | "rent",
+    pathSegments: readonly string[],
+    areaSlug: string,
+    areaLabel: string,
+    priority: number
+  ): SourceSeed {
+    return {
+      source: this.source,
+      url: `https://aqarmap.com.eg/en/for-${purpose}/property-type/${pathSegments.join("/")}/`,
+      label: `aqarmap-${purpose}-${areaLabel}`,
+      seedKind: "discovery",
+      areaSlug,
+      purpose,
+      priority
+    };
+  }
+
+  private extractNextPageUrl(body: string) {
+    const match = body.match(/<(?:link|a)[^>]+rel="next"[^>]+href="([^"]+)"/i);
+
+    if (!match?.[1]) {
+      return undefined;
+    }
+
+    return new URL(match[1], "https://aqarmap.com.eg").toString();
+  }
+
+  private extractPage(url: string) {
+    const value = new URL(url).searchParams.get("page");
+    return value ? Number(value) : undefined;
+  }
+
+  private cleanText(value?: string) {
+    if (!value) {
+      return undefined;
+    }
+
+    return value
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  private asNumber(value: unknown) {
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
+
+    if (typeof value === "string") {
+      const numeric = Number(value.replace(/[^0-9.]+/g, ""));
+      return Number.isFinite(numeric) ? numeric : undefined;
+    }
+
+    return undefined;
   }
 }

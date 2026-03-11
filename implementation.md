@@ -62,6 +62,8 @@
   - `pnpm --filter @jinka-eg/crawler test`
   - `pnpm --filter @jinka-eg/crawler build`
   - one-off browser-backed `Nawy` fetch smoke returning `label: nawy-new-cairo-sale`, `payloadType: json`, and a live extracted `__NEXT_DATA__` body through the connector runtime
+  - one-off browser-backed `Aqarmap` discovery smoke returning `label: aqarmap-sale-greater-cairo`, `parsedCount: 20`, `firstId: 6821540`, and `nextPage: 2`
+  - one-off browser-backed `Facebook` discovery smoke returning `label: facebook-cairo-rent`, `parsedCount: 1`, and a live extracted item ID from marketplace HTML cards
 - Phase 1 runtime delivered:
   - Prisma-backed `User`, `OtpChallenge`, and `AuthSession` persistence on PostgreSQL + PostGIS
   - seed-backed admin bootstrap for `demo@example.com`
@@ -100,6 +102,8 @@
   - Playwright-backed browser fetch mode for anti-bot-sensitive connectors while keeping lighter HTTP fetches for stable SSR or JSON sources
   - expanded `Nawy` discovery partitions across multiple Egypt area slugs instead of a single hard-coded seed
   - `Nawy` page-based stop conditions using result signatures, source page counts, and page budgets
+  - `Aqarmap` search-result parsing for discovery pages, with multi-area sale or rent seeds and real next-page pagination support
+  - `Facebook` public marketplace search-card parsing for approved discovery surfaces across multiple city seeds
 
 ## Product Goals
 - Let users search rentals, resale, and off-plan inventory across multiple sources from one app.
@@ -301,8 +305,11 @@
   - [x] expand `Property Finder EG` discovery into a search matrix covering sale or rent, Cairo or New Cairo or Giza or Sheikh Zayed or Egypt-wide seeds, and residential plus commercial property types
   - [x] add `Property Finder EG` stop conditions for no-result pages, repeated results, page budgets, and source page-count exhaustion
   - [x] expand `Nawy` discovery into multiple area partitions with page-aware stop conditions
+  - [x] expand `Aqarmap` discovery into multi-area sale or rent seeds with search-card parsing and next-page stop conditions
+  - [x] expand `Facebook` approved public-surface discovery into multiple city seeds with HTML card parsing
 - Broader Phase 6 follow-up areas after this crawler pass:
-  - multi-area search matrices and stop-condition tuning for `Aqarmap` and `Facebook`
+  - deeper Facebook pagination or cursor handling beyond the current first-page approved public surfaces
+  - broader property-type matrices and anti-bot tuning for `Aqarmap`
   - ranking tuning, fraud coefficient tuning, and notification relevance optimization
 
 ## Acceptance Criteria

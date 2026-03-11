@@ -1,5 +1,6 @@
 import type {
   ConnectorHealth,
+  DiscoveryControls,
   NormalizedListingCandidate,
   ParsedListingCandidate,
   RawPageResult,
@@ -8,6 +9,12 @@ import type {
 
 import { BasePlaywrightConnector } from "../core/base-playwright-connector.js";
 import { hashImageUrls, localizeText, normalizePrice, normalizePropertyType } from "../core/normalization.js";
+
+const facebookAreas = [
+  { areaSlug: "cairo", label: "cairo", priority: 90 },
+  { areaSlug: "giza", label: "giza", priority: 95 },
+  { areaSlug: "alexandria", label: "alexandria", priority: 100 }
+] as const;
 
 export class FacebookConnector extends BasePlaywrightConnector {
   readonly source = "facebook" as const;
@@ -20,8 +27,12 @@ export class FacebookConnector extends BasePlaywrightConnector {
     return true;
   }
 
-  protected override browserFetchReadySelector() {
-    return "script[data-marketplace-state]";
+  protected override browserFetchReadySelector(seed: SourceSeed) {
+    if (seed.seedKind === "detail_refresh" || seed.url.includes("/marketplace/item/")) {
+      return undefined;
+    }
+
+    return "a[href*='/marketplace/item/']";
   }
 
   protected override browserFetchSettleMs() {
@@ -29,64 +40,120 @@ export class FacebookConnector extends BasePlaywrightConnector {
   }
 
   async discover(): Promise<SourceSeed[]> {
-    return [
-      {
-        url: "https://www.facebook.com/marketplace/cairo/propertyrentals",
-        label: "approved-public-surface",
-        seedKind: "discovery",
-        areaSlug: "cairo",
-        purpose: "rent",
-        priority: 90
+    return facebookAreas.map((area) => ({
+      source: this.source,
+      url: `https://www.facebook.com/marketplace/${area.areaSlug}/propertyrentals`,
+      label: `facebook-${area.label}-rent`,
+      seedKind: "discovery",
+      areaSlug: area.areaSlug,
+      purpose: "rent",
+      priority: area.priority
+    }));
+  }
+
+  override getDiscoveryControls(
+    raw: RawPageResult,
+    candidates: ParsedListingCandidate[],
+    seed: SourceSeed,
+    previousSignature?: string | null
+  ): DiscoveryControls {
+    const pageSignature = candidates
+      .slice(0, 10)
+      .map((candidate) => candidate.sourceListingId ?? candidate.sourceUrl ?? "unknown")
+      .join("|");
+    const nextUrl = this.extractNextPageUrl(raw.body);
+    const currentPage = seed.page ?? 1;
+    const pageBudget = Number(process.env.FACEBOOK_MAX_DISCOVERY_PAGE ?? "1");
+
+    if (candidates.length === 0) {
+      const blocked = /log in to facebook|connectez-vous à facebook|marketplace isn't available/i.test(raw.body);
+      return {
+        pageSignature,
+        stopReason: blocked ? "authorized_surface_required" : "no_results"
+      };
+    }
+
+    if (previousSignature && previousSignature === pageSignature) {
+      return {
+        pageSignature,
+        stopReason: "repeated_results"
+      };
+    }
+
+    if (currentPage >= pageBudget) {
+      return {
+        pageSignature,
+        stopReason: "page_budget_reached"
+      };
+    }
+
+    if (!nextUrl) {
+      return {
+        pageSignature,
+        stopReason: "page_count_reached"
+      };
+    }
+
+    return {
+      pageSignature,
+      nextSeed: {
+        ...seed,
+        url: nextUrl,
+        page: currentPage + 1
       }
-    ];
+    };
   }
 
   async parse(raw: RawPageResult): Promise<ParsedListingCandidate[]> {
     const payload = raw.payloadType === "json" ? this.safeParseJson(raw.body) : this.extractPayload(raw.body);
     const listing = this.extractListing(payload);
 
-    if (!listing) {
-      return [];
-    }
+    if (listing) {
+      const price = normalizePrice(
+        this.asNumber(listing.rentPriceMonthly ?? listing.priceAmount ?? listing.price),
+        "EGP",
+        "monthly"
+      );
 
-    const price = normalizePrice(
-      this.asNumber(listing.rentPriceMonthly ?? listing.priceAmount ?? listing.price),
-      "EGP",
-      "monthly"
-    );
-
-    if (!price) {
-      return [];
-    }
-
-    return [
-      {
-        source: this.source,
-        sourceListingId:
-          raw.sourceListingId ?? this.asString(listing.id) ?? this.asString(listing.listingId) ?? this.extractListingId(raw.url) ?? undefined,
-        sourceUrl: this.asString(listing.url) ?? raw.url,
-        title: localizeText(this.asString(listing.title) ?? "Facebook Marketplace listing"),
-        description: localizeText(
-          this.asString(listing.description) ?? "Public or authorized Facebook Marketplace surface"
-        ),
-        purpose: "rent",
-        marketSegment: "resale",
-        propertyType: normalizePropertyType(this.asString(listing.propertyType) ?? "apartment"),
-        price,
-        bedrooms: this.asNumber(listing.bedrooms) ?? undefined,
-        bathrooms: this.asNumber(listing.bathrooms) ?? undefined,
-        areaSqm: this.asNumber(listing.areaSqm) ?? this.asNumber(listing.sizeSqm) ?? undefined,
-        areaName: this.asString(listing.areaName) ?? this.asString(listing.locationName) ?? undefined,
-        location: this.toCoordinates(listing.latitude, listing.longitude),
-        imageUrls: this.asStringArray(listing.imageUrls),
-        publishedAt: this.asString(listing.publishedAt) ?? raw.fetchedAt,
-        extractionConfidence: 0.74,
-        rawFields: {
-          sourcePayload: listing,
-          approvedSurface: "facebook_marketplace_public"
-        }
+      if (!price) {
+        return [];
       }
-    ];
+
+      return [
+        {
+          source: this.source,
+          sourceListingId:
+            raw.sourceListingId ??
+            this.asString(listing.id) ??
+            this.asString(listing.listingId) ??
+            this.extractListingId(raw.url) ??
+            undefined,
+          sourceUrl: this.asString(listing.url) ?? raw.url,
+          title: localizeText(this.asString(listing.title) ?? "Facebook Marketplace listing"),
+          description: localizeText(
+            this.asString(listing.description) ?? "Public or authorized Facebook Marketplace surface"
+          ),
+          purpose: this.inferPurpose(this.asString(listing.title), raw.url),
+          marketSegment: "resale",
+          propertyType: normalizePropertyType(this.asString(listing.propertyType) ?? "apartment"),
+          price,
+          bedrooms: this.asNumber(listing.bedrooms) ?? undefined,
+          bathrooms: this.asNumber(listing.bathrooms) ?? undefined,
+          areaSqm: this.asNumber(listing.areaSqm) ?? this.asNumber(listing.sizeSqm) ?? undefined,
+          areaName: this.asString(listing.areaName) ?? this.asString(listing.locationName) ?? undefined,
+          location: this.toCoordinates(listing.latitude, listing.longitude),
+          imageUrls: this.asStringArray(listing.imageUrls),
+          publishedAt: this.asString(listing.publishedAt) ?? raw.fetchedAt,
+          extractionConfidence: 0.74,
+          rawFields: {
+            sourcePayload: listing,
+            approvedSurface: "facebook_marketplace_public"
+          }
+        }
+      ];
+    }
+
+    return this.parseSearchCards(raw);
   }
 
   async normalize(candidate: ParsedListingCandidate): Promise<NormalizedListingCandidate | null> {
@@ -129,6 +196,75 @@ export class FacebookConnector extends BasePlaywrightConnector {
     };
   }
 
+  private parseSearchCards(raw: RawPageResult): ParsedListingCandidate[] {
+    const hrefMatches = [...raw.body.matchAll(/href="(\/marketplace\/item\/[^"]+)"/g)];
+
+    if (hrefMatches.length === 0) {
+      return [];
+    }
+
+    const candidates: ParsedListingCandidate[] = [];
+    const seen = new Set<string>();
+
+    for (let index = 0; index < hrefMatches.length; index += 1) {
+      const href = hrefMatches[index]?.[1];
+
+      if (!href) {
+        continue;
+      }
+
+      const nextIndex = hrefMatches[index + 1]?.index ?? Math.min(raw.body.length, (hrefMatches[index]?.index ?? 0) + 5000);
+      const start = hrefMatches[index]?.index ?? 0;
+      const block = raw.body.slice(start, nextIndex);
+      const sourceUrl = `https://www.facebook.com${this.decodeHtml(href).split("&")[0]}`;
+
+      if (seen.has(sourceUrl)) {
+        continue;
+      }
+      seen.add(sourceUrl);
+
+      const sourceListingId = this.extractListingId(sourceUrl);
+      const imageUrl = block.match(/<img[^>]+src="([^"]+)"/)?.[1];
+      const texts = [...block.matchAll(/dir="auto">([^<]+)<\/span>/g)]
+        .map((match) => this.cleanText(match[1]))
+        .filter((value): value is string => Boolean(value));
+      const priceText = texts.find((value) => /£EG|EGP|ج\.?م/i.test(value));
+      const title = texts.find((value) => value !== priceText);
+      const areaName = texts.find((value) => value !== priceText && value !== title);
+      const purpose = this.inferPurpose(title, raw.url);
+      const price = normalizePrice(this.asNumber(priceText), "EGP", purpose === "rent" ? "monthly" : "total");
+
+      if (!sourceListingId || !title || !price) {
+        continue;
+      }
+
+      candidates.push({
+        source: this.source,
+        sourceListingId,
+        sourceUrl,
+        title: localizeText(title),
+        description: localizeText(areaName ? `${title} - ${areaName}` : title),
+        purpose,
+        marketSegment: "resale",
+        propertyType: normalizePropertyType(title),
+        price,
+        areaName: areaName ?? undefined,
+        imageUrls: imageUrl ? [imageUrl] : [],
+        publishedAt: raw.fetchedAt,
+        extractionConfidence: 0.61,
+        rawFields: {
+          sourcePayload: {
+            discoveryCard: true,
+            areaName
+          },
+          approvedSurface: "facebook_marketplace_public"
+        }
+      });
+    }
+
+    return candidates;
+  }
+
   private extractPayload(body: string) {
     const scriptMatch = body.match(/<script[^>]+data-marketplace-state[^>]*>([\s\S]*?)<\/script>/i);
     return this.safeParseJson(scriptMatch?.[1] ?? "");
@@ -155,7 +291,39 @@ export class FacebookConnector extends BasePlaywrightConnector {
       return payload.listings[0] as Record<string, unknown>;
     }
 
-    return payload;
+    return null;
+  }
+
+  private extractNextPageUrl(body: string) {
+    const match = body.match(/href="([^"]*marketplace\/[^"]*(?:cursor|page|after)=[^"]+)"/i);
+
+    if (!match?.[1]) {
+      return undefined;
+    }
+
+    return `https://www.facebook.com${this.decodeHtml(match[1])}`;
+  }
+
+  private inferPurpose(title: string | undefined, url: string) {
+    const haystack = `${title ?? ""} ${url}`.toLowerCase();
+
+    if (/(for sale|للبيع|à vendre|propertyforsale|sale)/i.test(haystack)) {
+      return "sale" as const;
+    }
+
+    return "rent" as const;
+  }
+
+  private cleanText(value: string) {
+    return this.decodeHtml(value).replace(/\s+/g, " ").trim();
+  }
+
+  private decodeHtml(value: string) {
+    return value
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&#039;/g, "'")
+      .replace(/&quot;/g, "\"");
   }
 
   private asString(value: unknown) {
@@ -168,7 +336,7 @@ export class FacebookConnector extends BasePlaywrightConnector {
     }
 
     if (typeof value === "string") {
-      const normalized = Number(value.replace(/[^0-9.]+/g, ""));
+      const normalized = Number(this.decodeHtml(value).replace(/[^0-9.]+/g, ""));
       return Number.isFinite(normalized) ? normalized : undefined;
     }
 

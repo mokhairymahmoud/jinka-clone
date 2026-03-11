@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
 import { getParserFixture } from "../fixtures/index.js";
@@ -87,6 +89,28 @@ describe("connector health", () => {
     expect(normalized?.price.amount).toBe(5400000);
   });
 
+  it("parses Aqarmap search discovery pages and paginates", async () => {
+    const connector = new AqarmapConnector();
+    const raw = {
+      source: "aqarmap" as const,
+      url: "https://aqarmap.com.eg/en/for-sale/property-type/cairo/",
+      payloadType: "html" as const,
+      body: readFileSync(new URL("../fixtures/aqarmap.search.html", import.meta.url), "utf8"),
+      fetchedAt: "2026-03-11T00:00:00.000Z"
+    };
+    const seeds = await connector.discover();
+    const parsed = await connector.parse(raw);
+
+    expect(seeds.length).toBe(8);
+    expect(parsed.length).toBe(2);
+    expect(parsed[0]?.sourceListingId).toBe("6821540");
+    expect(parsed[0]?.price?.amount).toBe(13800000);
+
+    const controls = connector.getDiscoveryControls(raw, parsed, seeds[0] ?? { url: "", label: "" });
+    expect(controls.nextSeed?.url).toContain("page=2");
+    expect(controls.nextSeed?.page).toBe(2);
+  });
+
   it("parses and normalizes Facebook fixture data", async () => {
     const connector = new FacebookConnector();
     const parsed = await connector.parse(getParserFixture("facebook"));
@@ -99,5 +123,30 @@ describe("connector health", () => {
     expect(normalized?.sourceListingId).toBe("fb-market-12345");
     expect(normalized?.price.amount).toBe(23000);
     expect(normalized?.areaName).toBe("New Cairo");
+  });
+
+  it("parses Facebook marketplace search pages from public HTML cards", async () => {
+    const connector = new FacebookConnector();
+    const raw = {
+      source: "facebook" as const,
+      url: "https://www.facebook.com/marketplace/cairo/propertyrentals",
+      payloadType: "html" as const,
+      body: readFileSync(new URL("../fixtures/facebook.marketplace.search.html", import.meta.url), "utf8"),
+      fetchedAt: "2026-03-11T00:00:00.000Z"
+    };
+    const seeds = await connector.discover();
+    const parsed = await connector.parse(raw);
+
+    expect(seeds.length).toBe(3);
+    expect(seeds[0]?.label).toBe("facebook-cairo-rent");
+    expect(parsed.length).toBe(2);
+    expect(parsed[0]?.sourceListingId).toBe("1219697629543252");
+    expect(parsed[0]?.price?.amount).toBe(6000000);
+    expect(parsed[1]?.purpose).toBe("rent");
+
+    const controls = connector.getDiscoveryControls(raw, parsed, seeds[0] ?? { url: "", label: "" });
+    expect(controls.pageSignature).toBeTruthy();
+    expect(controls.nextSeed).toBeUndefined();
+    expect(controls.stopReason).toBe("page_budget_reached");
   });
 });
