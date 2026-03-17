@@ -3,6 +3,7 @@ import { FraudLabel, ListingSource, Prisma } from "@prisma/client";
 
 import type { FraudAssessment } from "@jinka-eg/types";
 import { PrismaService as AppPrismaService } from "../common/prisma.service.js";
+import { SearchDocumentsService } from "../common/search-documents.service.js";
 
 type ConnectorHealth = {
   source: string;
@@ -21,7 +22,10 @@ type ClusterEdgeReason = {
 
 @Injectable()
 export class AdminService {
-  constructor(@Inject(AppPrismaService) private readonly prisma: AppPrismaService) {}
+  constructor(
+    @Inject(AppPrismaService) private readonly prisma: AppPrismaService,
+    @Inject(SearchDocumentsService) private readonly searchDocuments: SearchDocumentsService
+  ) {}
 
   async getConnectorHealth(): Promise<ConnectorHealth[]> {
     const latestRuns = await this.prisma.ingestionRun.findMany({
@@ -557,6 +561,8 @@ export class AdminService {
       });
     });
 
+    await this.searchDocuments.refreshAllSafely("cluster merge");
+
     return {
       mergedFrom: sourceClusterId,
       mergedInto: targetClusterId,
@@ -655,6 +661,8 @@ export class AdminService {
 
       return cluster;
     });
+
+    await this.searchDocuments.refreshAllSafely("cluster split");
 
     return {
       sourceClusterId,

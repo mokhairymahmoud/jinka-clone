@@ -39,7 +39,7 @@ export function FavoriteButton({
       type="button"
       onClick={handleSave}
       disabled={saved || loading}
-      className="rounded-full border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
+      className="rounded-full border border-[var(--jinka-border)] bg-[var(--jinka-surface)] px-4 py-2 text-sm font-semibold text-[var(--jinka-text)] disabled:cursor-not-allowed disabled:opacity-60"
     >
       {saved ? "Saved" : loading ? "Saving..." : "Save favorite"}
     </button>

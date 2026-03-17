@@ -1,0 +1,1244 @@
+{
+  "generatedAt": "2026-03-16T18:53:37.939Z",
+  "seed": {
+    "label": "pf-2-villa-new-cairo-city-al-narges",
+    "url": "https://www.propertyfinder.eg/en/search?l=2258&c=2&t=35&ob=mr",
+    "purpose": "rent",
+    "propertyType": "villa",
+    "areaSlug": "new-cairo-city-al-narges",
+    "priority": 35,
+    "discoveredFrom": "pf-2-villa-root"
+  },
+  "pageCount": 1,
+  "listingCount": 5,
+  "pages": [
+    {
+      "pageNumber": 1,
+      "seedUrl": "https://www.propertyfinder.eg/en/search?l=2258&c=2&t=35&ob=mr",
+      "fetchedUrl": "https://www.propertyfinder.eg/en/search?l=2258&c=2&t=35&ob=mr",
+      "fetchedAt": "2026-03-16T18:53:37.936Z",
+      "parsedCount": 5,
+      "stopReason": "page_count_reached",
+      "nextPage": null
+    }
+  ],
+  "listings": [
+    {
+      "pageNumber": 1,
+      "indexOnPage": 0,
+      "source": "property_finder",
+      "sourceListingId": "58002333",
+      "sourceUrl": "https://www.propertyfinder.eg/en/plp/rent/villa-for-rent-cairo-new-cairo-city-al-narges-al-diyar-2Q5OXhPDINU.html",
+      "title": {
+        "en": "7bed villa in Al Diyar open view with kitchen ACs",
+        "ar": "7bed villa in Al Diyar open view with kitchen ACs"
+      },
+      "description": {
+        "en": "Standalone villa for rent in Diyar El Mokhabarat\nFifth Settlement\n\nArea 1150 m\nGarden 1200 m\n5 bedrooms \n7 bathrooms \n--------------------------------------\nabout dyar \n\nDiyar Real Estate, a subsidiary of the Armed Forces, is a major player in the real estate world, enjoying unparalleled trust and credibility in Egypt. This has helped the company deliver a greater number of projects and accomplishments, with the primary goal of developing the real estate market in Egypt and introducing new projects that serve citizens and contribute to providing a stable life and world-class services for your family's comfort.\n--------\nProperties for Rent in the Fifth Settlement\nApartments for Rent in the Fifth Settlement\nDuplexes for Rent in the Fifth Settlement\n4-Bedroom Villas for Rent in the Fifth Settlement\nVillas for Rent in the Fifth Settlement\nStandalone Villas for Rent in the Fifth Settlement\n5-Bedroom Villas for Rent in the Fifth Settlement\n3-Bedroom Villas for Rent in the Fifth Settlement\n6-Bedroom Villas for Rent in the Fifth Settlement\n7-Bedroom Villas for Rent in the Fifth Settlement\n2-Bedroom Villas for Rent in the Fifth Settlement\n\n---------\nERE is committed to helping clients find or sell their properties in New Cairo. We specialize in properties located in upscale residential compounds such as Cairo Festival City, Mivida, Emaar, Mountain View, Hyde Park, Katameya Dunes, and many more. With a proven track record and commitment to excellence spanning over 20 years, we guarantee our clients a truly memorable experience.",
+        "ar": "Standalone villa for rent in Diyar El Mokhabarat\nFifth Settlement\n\nArea 1150 m\nGarden 1200 m\n5 bedrooms \n7 bathrooms \n--------------------------------------\nabout dyar \n\nDiyar Real Estate, a subsidiary of the Armed Forces, is a major player in the real estate world, enjoying unparalleled trust and credibility in Egypt. This has helped the company deliver a greater number of projects and accomplishments, with the primary goal of developing the real estate market in Egypt and introducing new projects that serve citizens and contribute to providing a stable life and world-class services for your family's comfort.\n--------\nProperties for Rent in the Fifth Settlement\nApartments for Rent in the Fifth Settlement\nDuplexes for Rent in the Fifth Settlement\n4-Bedroom Villas for Rent in the Fifth Settlement\nVillas for Rent in the Fifth Settlement\nStandalone Villas for Rent in the Fifth Settlement\n5-Bedroom Villas for Rent in the Fifth Settlement\n3-Bedroom Villas for Rent in the Fifth Settlement\n6-Bedroom Villas for Rent in the Fifth Settlement\n7-Bedroom Villas for Rent in the Fifth Settlement\n2-Bedroom Villas for Rent in the Fifth Settlement\n\n---------\nERE is committed to helping clients find or sell their properties in New Cairo. We specialize in properties located in upscale residential compounds such as Cairo Festival City, Mivida, Emaar, Mountain View, Hyde Park, Katameya Dunes, and many more. With a proven track record and commitment to excellence spanning over 20 years, we guarantee our clients a truly memorable experience."
+      },
+      "purpose": "rent",
+      "marketSegment": "resale",
+      "propertyType": "villa",
+      "price": {
+        "amount": 160000,
+        "currency": "EGP",
+        "period": "monthly"
+      },
+      "bedrooms": 7,
+      "bathrooms": 7,
+      "areaSqm": 1150,
+      "compoundName": null,
+      "developerName": {
+        "en": "ERE",
+        "ar": "ERE"
+      },
+      "location": {
+        "lat": 30.01941680908203,
+        "lng": 31.47112464904785
+      },
+      "imageUrls": [
+        "https://static.shared.propertyfinder.eg/media/images/listing/FVR5KZS7NP6WWAXD07B79KE9B8/83292fa0-1fdf-41bc-afd5-20a7816451eb/668x452.jpg"
+      ],
+      "publishedAt": "2026-03-11T14:35:48Z",
+      "extractionConfidence": 0.97,
+      "areaName": "Cairo, New Cairo City, Al Narges",
+      "rawFields": {
+        "reference": "A---AD2022-1",
+        "sourcePayload": {
+          "id": "58002333",
+          "category_id": 2,
+          "property_type": "Villa",
+          "price": {
+            "value": 160000,
+            "currency": "EGP",
+            "period": "monthly",
+            "is_hidden": false
+          },
+          "title": "7bed villa in Al Diyar open view with kitchen ACs",
+          "location": {
+            "id": "2259",
+            "full_name": "Al Diyar, Al Narges, New Cairo City, Cairo",
+            "coordinates": {
+              "lat": 30.01941680908203,
+              "lon": 31.47112464904785
+            },
+            "slug": "new-cairo-city-al-narges-al-diyar",
+            "path": "2254.2255.2258.2259",
+            "type": "COMPOUND",
+            "name": "Al Diyar",
+            "path_name": "Cairo, New Cairo City, Al Narges"
+          },
+          "images": [
+            {
+              "small": "https://static.shared.propertyfinder.eg/media/images/listing/FVR5KZS7NP6WWAXD07B79KE9B8/83292fa0-1fdf-41bc-afd5-20a7816451eb/416x272.jpg",
+              "medium": "https://static.shared.propertyfinder.eg/media/images/listing/FVR5KZS7NP6WWAXD07B79KE9B8/83292fa0-1fdf-41bc-afd5-20a7816451eb/668x452.jpg",
+              "classification_label": ""
+            }
+          ],
+          "agent": {
+            "id": "18594",
+            "image": "https://www.propertyfinder.eg/images/pf_agent/picture/c0eaa1419b876cdc9c21f9f2ef1051d916419316/desktop",
+            "is_super_agent": false,
+            "name": "Abdallah mohamed",
+            "user_id": 14625,
+            "email": "a.alsagher@er-estate.com",
+            "languages": [
+              "English",
+              "Arabic"
+            ],
+            "slug": "abdallah-mohamed"
+          },
+          "broker": {
+            "id": "1780",
+            "logo": "https://www.propertyfinder.eg/broker/0/178/98/MODE/da571e/1780-4b1dfo.jpg?ctr=eg",
+            "name": "ERE",
+            "address": "Office 1, Building 39, New Cairo City, . Mouse Ibn Naseer al-Haq al-Haq -Nasr city, Cairo, ",
+            "email": "abdallah.alsagher@gmail.com",
+            "phone": "+201008059598",
+            "slug": "ere-1780"
+          },
+          "is_verified": false,
+          "is_direct_from_developer": false,
+          "is_new_construction": false,
+          "is_available": true,
+          "is_featured": false,
+          "is_premium": true,
+          "is_new_insert": false,
+          "utilities_price_type": "notSelected",
+          "live_viewing": null,
+          "is_community_expert": false,
+          "is_cts": false,
+          "bedrooms": "7",
+          "bathrooms": "7",
+          "size": {
+            "value": 1150,
+            "unit": "sqm"
+          },
+          "share_url": "https://www.propertyfinder.eg/en/plp/rent/villa-for-rent-cairo-new-cairo-city-al-narges-al-diyar-2Q5OXhPDINU.html",
+          "reference": "A---AD2022-1",
+          "listed_date": "2026-03-11T14:35:48Z",
+          "contact_options": [
+            {
+              "type": "email",
+              "value": "a.alsagher@er-estate.com",
+              "link": "mailto:a.alsagher@er-estate.com",
+              "is_did": false
+            },
+            {
+              "type": "phone",
+              "value": "+201008059598",
+              "link": "tel:+201008059598",
+              "is_did": false
+            },
+            {
+              "type": "whatsapp",
+              "value": "+20221257340",
+              "link": "https://api.whatsapp.com/send?phone=+20221257340&text=Hello%2C%0AI+would+like+to+get+more+information+about+this+property%3A+%0A+%0AReference%3A+A---AD2022-1%0AType%3A+Villa%0APrice%3A+160%2C000+EGP%2Fmonth+%0ALocation%3A+Al+Diyar+%0ALink%3A+https%3A%2F%2Fwww.propertyfinder.eg%2Fto%2F58002333%2Fen+%0A+%0AAny+changes+made+to+this+message+will+result+in+the+enquiry+not+being+sent+to+the+agent.",
+              "is_did": false
+            }
+          ],
+          "images_count": 13,
+          "amenities": [
+            "BA",
+            "BW",
+            "AC",
+            "BK",
+            "CP",
+            "MR",
+            "CO",
+            "BL",
+            "LB",
+            "WC",
+            "SY",
+            "SS",
+            "SE",
+            "ST",
+            "VW",
+            "SP",
+            "PP",
+            "PG"
+          ],
+          "completion_status": "",
+          "furnished": "",
+          "property_type_id": 35,
+          "has_view_360": false,
+          "rsp": 96.80391,
+          "rss": 96.80391,
+          "qs": 100,
+          "is_exclusive": false,
+          "is_broker_project_property": false,
+          "rera": "",
+          "offering_type": "Residential for Rent",
+          "video_url": "",
+          "is_smart_ad": false,
+          "is_spotlight_listing": false,
+          "is_claimed_by_agent": false,
+          "is_under_offer_by_competitor": false,
+          "listing_level": "premium",
+          "listing_level_label": "premium",
+          "location_tree": [
+            {
+              "id": "2254",
+              "name": "Cairo",
+              "type": "CITY",
+              "slug": "cairo",
+              "slug_en": "cairo",
+              "level": "0"
+            },
+            {
+              "id": "2255",
+              "name": "New Cairo City",
+              "type": "TOWN",
+              "slug": "new-cairo-city",
+              "slug_en": "new-cairo-city",
+              "level": "1"
+            },
+            {
+              "id": "2258",
+              "name": "Al Narges",
+              "type": "DISTRICT",
+              "slug": "new-cairo-city-al-narges",
+              "slug_en": "new-cairo-city-al-narges",
+              "level": "2"
+            },
+            {
+              "id": "2259",
+              "name": "Al Diyar",
+              "type": "COMPOUND",
+              "slug": "new-cairo-city-al-narges-al-diyar",
+              "slug_en": "new-cairo-city-al-narges-al-diyar",
+              "level": "3"
+            }
+          ],
+          "description": "Standalone villa for rent in Diyar El Mokhabarat\nFifth Settlement\n\nArea 1150 m\nGarden 1200 m\n5 bedrooms \n7 bathrooms \n--------------------------------------\nabout dyar \n\nDiyar Real Estate, a subsidiary of the Armed Forces, is a major player in the real estate world, enjoying unparalleled trust and credibility in Egypt. This has helped the company deliver a greater number of projects and accomplishments, with the primary goal of developing the real estate market in Egypt and introducing new projects that serve citizens and contribute to providing a stable life and world-class services for your family's comfort.\n--------\nProperties for Rent in the Fifth Settlement\nApartments for Rent in the Fifth Settlement\nDuplexes for Rent in the Fifth Settlement\n4-Bedroom Villas for Rent in the Fifth Settlement\nVillas for Rent in the Fifth Settlement\nStandalone Villas for Rent in the Fifth Settlement\n5-Bedroom Villas for Rent in the Fifth Settlement\n3-Bedroom Villas for Rent in the Fifth Settlement\n6-Bedroom Villas for Rent in the Fifth Settlement\n7-Bedroom Villas for Rent in the Fifth Settlement\n2-Bedroom Villas for Rent in the Fifth Settlement\n\n---------\nERE is committed to helping clients find or sell their properties in New Cairo. We specialize in properties located in upscale residential compounds such as Cairo Festival City, Mivida, Emaar, Mountain View, Hyde Park, Katameya Dunes, and many more. With a proven track record and commitment to excellence spanning over 20 years, we guarantee our clients a truly memorable experience.",
+          "amenity_names": [
+            "Balcony",
+            "Built in Wardrobes",
+            "Central A/C",
+            "Kitchen Appliances",
+            "Covered Parking",
+            "Maids Room",
+            "Children's Pool",
+            "View of Landmark",
+            "Lobby in Building",
+            "Walk-in Closet",
+            "Shared Gym",
+            "Shared Spa",
+            "Security",
+            "Study",
+            "View of Water",
+            "Shared Pool",
+            "Private Pool",
+            "Private Garden"
+          ],
+          "payment_method": [],
+          "lead_value": 100,
+          "details_path": "/en/plp/rent/villa-for-rent-cairo-new-cairo-city-al-narges-al-diyar-2Q5OXhPDINU.html",
+          "rank_score": 96.80390930175781,
+          "bedrooms_value": 7,
+          "bathrooms_value": 7,
+          "ranking_factors": "nGCuF9uqfLyPMtNZ4qAuZ9qDuSSTHTe3k0PyxOi65jA0nujiAu9RHQbz9imX3c7HB6I3ES8gHLk07KLwCP5WVEwFlabc4Z/ZW/4y4kW5dn8qOuGwx4UUyBvy4oQqiH23KBEp1a97FCC4XEQ=",
+          "is_pf_exclusive": false,
+          "listing_id": "FVR5KZS7NP6WWAXD07B79KE9B8",
+          "client": {
+            "id": "1780",
+            "logo": "https://www.propertyfinder.eg/broker/0/178/98/MODE/da571e/1780-4b1dfo.jpg?ctr=eg",
+            "name": "ERE",
+            "address": "Office 1, Building 39, New Cairo City, . Mouse Ibn Naseer al-Haq al-Haq -Nasr city, Cairo, ",
+            "email": "abdallah.alsagher@gmail.com",
+            "phone": "+201008059598",
+            "slug": "ere-1780"
+          },
+          "is_fhm": false,
+          "travel_time_tags": [],
+          "floor_plans": [],
+          "mortgage_cashback": 0,
+          "price_per_area": null
+        }
+      }
+    },
+    {
+      "pageNumber": 1,
+      "indexOnPage": 1,
+      "source": "property_finder",
+      "sourceListingId": "58002208",
+      "sourceUrl": "https://www.propertyfinder.eg/en/plp/rent/villa-for-rent-cairo-new-cairo-city-al-narges-al-diyar-2Q5ODaFRjUm.html",
+      "title": {
+        "en": "Villa in Diyar Al-Mukhabarat, 5 bedrooms, for rent",
+        "ar": "Villa in Diyar Al-Mukhabarat, 5 bedrooms, for rent"
+      },
+      "description": {
+        "en": "For Rent: A Distinctive Villa in Diyar Al-Mukhabarat\n\nA Model C villa in a prime sea-facing location within one of the most prestigious residential compounds.\n\nVilla Features:\n\nLand Area: 750 sq m\n\nBuilt-up Area: 650 sq m\n\nBasement, Ground Floor, First Floor, and Roof\n\nA detached villa with a practical design and spacious layout\n\nSea-facing, providing excellent natural light and ventilation\n\nHigh level of privacy\n\nCompound Features:\n\nA sophisticated and well-organized compound\n\n24-hour security and surveillance\n\nWide streets and green spaces\n\nA tranquil environment suitable for family living\n\nLocation Advantages:\n\nInside Diyar Al-Mukhabarat\n\nClose to main roads\n\nEasy access to vital areas\n\nCompound Services:\n\nSecurity and surveillance\n\nRegular maintenance\n\nIntegrated management\n\nGreen spaces\n\nRent: 90,000 EGP per month",
+        "ar": "For Rent: A Distinctive Villa in Diyar Al-Mukhabarat\n\nA Model C villa in a prime sea-facing location within one of the most prestigious residential compounds.\n\nVilla Features:\n\nLand Area: 750 sq m\n\nBuilt-up Area: 650 sq m\n\nBasement, Ground Floor, First Floor, and Roof\n\nA detached villa with a practical design and spacious layout\n\nSea-facing, providing excellent natural light and ventilation\n\nHigh level of privacy\n\nCompound Features:\n\nA sophisticated and well-organized compound\n\n24-hour security and surveillance\n\nWide streets and green spaces\n\nA tranquil environment suitable for family living\n\nLocation Advantages:\n\nInside Diyar Al-Mukhabarat\n\nClose to main roads\n\nEasy access to vital areas\n\nCompound Services:\n\nSecurity and surveillance\n\nRegular maintenance\n\nIntegrated management\n\nGreen spaces\n\nRent: 90,000 EGP per month"
+      },
+      "purpose": "rent",
+      "marketSegment": "resale",
+      "propertyType": "villa",
+      "price": {
+        "amount": 90000,
+        "currency": "EGP",
+        "period": "monthly"
+      },
+      "bedrooms": 5,
+      "bathrooms": 6,
+      "areaSqm": 650,
+      "compoundName": null,
+      "developerName": {
+        "en": "ERE",
+        "ar": "ERE"
+      },
+      "location": {
+        "lat": 30.01941680908203,
+        "lng": 31.47112464904785
+      },
+      "imageUrls": [
+        "https://static.shared.propertyfinder.eg/media/images/listing/K8CA6C2Y5EENXTSWRVMV3AJS30/576f6088-0356-415d-b0b1-d5bffbf151c8/668x452.jpg"
+      ],
+      "publishedAt": "2026-03-11T14:31:10Z",
+      "extractionConfidence": 0.97,
+      "areaName": "Cairo, New Cairo City, Al Narges",
+      "rawFields": {
+        "reference": "a-AD2016-1",
+        "sourcePayload": {
+          "id": "58002208",
+          "category_id": 2,
+          "property_type": "Villa",
+          "price": {
+            "value": 90000,
+            "currency": "EGP",
+            "period": "monthly",
+            "is_hidden": false
+          },
+          "title": "Villa in Diyar Al-Mukhabarat, 5 bedrooms, for rent",
+          "location": {
+            "id": "2259",
+            "full_name": "Al Diyar, Al Narges, New Cairo City, Cairo",
+            "coordinates": {
+              "lat": 30.01941680908203,
+              "lon": 31.47112464904785
+            },
+            "slug": "new-cairo-city-al-narges-al-diyar",
+            "path": "2254.2255.2258.2259",
+            "type": "COMPOUND",
+            "name": "Al Diyar",
+            "path_name": "Cairo, New Cairo City, Al Narges"
+          },
+          "images": [
+            {
+              "small": "https://static.shared.propertyfinder.eg/media/images/listing/K8CA6C2Y5EENXTSWRVMV3AJS30/576f6088-0356-415d-b0b1-d5bffbf151c8/416x272.jpg",
+              "medium": "https://static.shared.propertyfinder.eg/media/images/listing/K8CA6C2Y5EENXTSWRVMV3AJS30/576f6088-0356-415d-b0b1-d5bffbf151c8/668x452.jpg",
+              "classification_label": ""
+            }
+          ],
+          "agent": {
+            "id": "18594",
+            "image": "https://www.propertyfinder.eg/images/pf_agent/picture/c0eaa1419b876cdc9c21f9f2ef1051d916419316/desktop",
+            "is_super_agent": false,
+            "name": "Abdallah mohamed",
+            "user_id": 14625,
+            "email": "a.alsagher@er-estate.com",
+            "languages": [
+              "English",
+              "Arabic"
+            ],
+            "slug": "abdallah-mohamed"
+          },
+          "broker": {
+            "id": "1780",
+            "logo": "https://www.propertyfinder.eg/broker/0/178/98/MODE/da571e/1780-4b1dfo.jpg?ctr=eg",
+            "name": "ERE",
+            "address": "Office 1, Building 39, New Cairo City, . Mouse Ibn Naseer al-Haq al-Haq -Nasr city, Cairo, ",
+            "email": "abdallah.alsagher@gmail.com",
+            "phone": "+201008059598",
+            "slug": "ere-1780"
+          },
+          "is_verified": false,
+          "is_direct_from_developer": false,
+          "is_new_construction": false,
+          "is_available": true,
+          "is_featured": false,
+          "is_premium": true,
+          "is_new_insert": false,
+          "utilities_price_type": "notSelected",
+          "live_viewing": null,
+          "is_community_expert": false,
+          "is_cts": false,
+          "bedrooms": "5",
+          "bathrooms": "6",
+          "size": {
+            "value": 650,
+            "unit": "sqm"
+          },
+          "share_url": "https://www.propertyfinder.eg/en/plp/rent/villa-for-rent-cairo-new-cairo-city-al-narges-al-diyar-2Q5ODaFRjUm.html",
+          "reference": "a-AD2016-1",
+          "listed_date": "2026-03-11T14:31:10Z",
+          "contact_options": [
+            {
+              "type": "email",
+              "value": "a.alsagher@er-estate.com",
+              "link": "mailto:a.alsagher@er-estate.com",
+              "is_did": false
+            },
+            {
+              "type": "phone",
+              "value": "+201008059598",
+              "link": "tel:+201008059598",
+              "is_did": false
+            },
+            {
+              "type": "whatsapp",
+              "value": "+20221257340",
+              "link": "https://api.whatsapp.com/send?phone=+20221257340&text=Hello%2C%0AI+would+like+to+get+more+information+about+this+property%3A+%0A+%0AReference%3A+a-AD2016-1%0AType%3A+Villa%0APrice%3A+90%2C000+EGP%2Fmonth+%0ALocation%3A+Al+Diyar+%0ALink%3A+https%3A%2F%2Fwww.propertyfinder.eg%2Fto%2F58002208%2Fen+%0A+%0AAny+changes+made+to+this+message+will+result+in+the+enquiry+not+being+sent+to+the+agent.",
+              "is_did": false
+            }
+          ],
+          "images_count": 11,
+          "amenities": [
+            "BA",
+            "BW",
+            "AC",
+            "CP",
+            "BK",
+            "MR",
+            "PG",
+            "PP",
+            "SP",
+            "ST",
+            "VW",
+            "SE",
+            "SS",
+            "SY"
+          ],
+          "completion_status": "",
+          "furnished": "NO",
+          "property_type_id": 35,
+          "has_view_360": false,
+          "rsp": 96.80227,
+          "rss": 96.80227,
+          "qs": 100,
+          "is_exclusive": false,
+          "is_broker_project_property": false,
+          "rera": "",
+          "offering_type": "Residential for Rent",
+          "video_url": "",
+          "is_smart_ad": false,
+          "is_spotlight_listing": false,
+          "is_claimed_by_agent": false,
+          "is_under_offer_by_competitor": false,
+          "listing_level": "premium",
+          "listing_level_label": "premium",
+          "location_tree": [
+            {
+              "id": "2254",
+              "name": "Cairo",
+              "type": "CITY",
+              "slug": "cairo",
+              "slug_en": "cairo",
+              "level": "0"
+            },
+            {
+              "id": "2255",
+              "name": "New Cairo City",
+              "type": "TOWN",
+              "slug": "new-cairo-city",
+              "slug_en": "new-cairo-city",
+              "level": "1"
+            },
+            {
+              "id": "2258",
+              "name": "Al Narges",
+              "type": "DISTRICT",
+              "slug": "new-cairo-city-al-narges",
+              "slug_en": "new-cairo-city-al-narges",
+              "level": "2"
+            },
+            {
+              "id": "2259",
+              "name": "Al Diyar",
+              "type": "COMPOUND",
+              "slug": "new-cairo-city-al-narges-al-diyar",
+              "slug_en": "new-cairo-city-al-narges-al-diyar",
+              "level": "3"
+            }
+          ],
+          "description": "For Rent: A Distinctive Villa in Diyar Al-Mukhabarat\n\nA Model C villa in a prime sea-facing location within one of the most prestigious residential compounds.\n\nVilla Features:\n\nLand Area: 750 sq m\n\nBuilt-up Area: 650 sq m\n\nBasement, Ground Floor, First Floor, and Roof\n\nA detached villa with a practical design and spacious layout\n\nSea-facing, providing excellent natural light and ventilation\n\nHigh level of privacy\n\nCompound Features:\n\nA sophisticated and well-organized compound\n\n24-hour security and surveillance\n\nWide streets and green spaces\n\nA tranquil environment suitable for family living\n\nLocation Advantages:\n\nInside Diyar Al-Mukhabarat\n\nClose to main roads\n\nEasy access to vital areas\n\nCompound Services:\n\nSecurity and surveillance\n\nRegular maintenance\n\nIntegrated management\n\nGreen spaces\n\nRent: 90,000 EGP per month",
+          "amenity_names": [
+            "Balcony",
+            "Built in Wardrobes",
+            "Central A/C",
+            "Covered Parking",
+            "Kitchen Appliances",
+            "Maids Room",
+            "Private Garden",
+            "Private Pool",
+            "Shared Pool",
+            "Study",
+            "View of Water",
+            "Security",
+            "Shared Spa",
+            "Shared Gym"
+          ],
+          "payment_method": [],
+          "lead_value": 100,
+          "details_path": "/en/plp/rent/villa-for-rent-cairo-new-cairo-city-al-narges-al-diyar-2Q5ODaFRjUm.html",
+          "rank_score": 96.8022689819336,
+          "bedrooms_value": 5,
+          "bathrooms_value": 6,
+          "ranking_factors": "S3Ezb839v33ZT1mdw2zxAj2qgh4hYSRCJ1alyf8H5KoxsJPCUhw4EurlK+1UvGbUZMnZuZPpX8091/I08qVJf+TDSjtGzmr9OTqBy85JXr8f0sCqycml7srdzouC6qsPChuHl3FkuIHdHGQKdQ==",
+          "is_pf_exclusive": false,
+          "listing_id": "K8CA6C2Y5EENXTSWRVMV3AJS30",
+          "client": {
+            "id": "1780",
+            "logo": "https://www.propertyfinder.eg/broker/0/178/98/MODE/da571e/1780-4b1dfo.jpg?ctr=eg",
+            "name": "ERE",
+            "address": "Office 1, Building 39, New Cairo City, . Mouse Ibn Naseer al-Haq al-Haq -Nasr city, Cairo, ",
+            "email": "abdallah.alsagher@gmail.com",
+            "phone": "+201008059598",
+            "slug": "ere-1780"
+          },
+          "is_fhm": false,
+          "travel_time_tags": [],
+          "floor_plans": [],
+          "mortgage_cashback": 0,
+          "price_per_area": null
+        }
+      }
+    },
+    {
+      "pageNumber": 1,
+      "indexOnPage": 2,
+      "source": "property_finder",
+      "sourceListingId": "59235693",
+      "sourceUrl": "https://www.propertyfinder.eg/en/plp/rent/villa-for-rent-cairo-new-cairo-city-al-narges-al-narges-1-badr-khan-ali-st-59235693.html",
+      "title": {
+        "en": "Villa for Rent in Narges Villas New Cairo 700m",
+        "ar": "Villa for Rent in Narges Villas New Cairo 700m"
+      },
+      "description": {
+        "en": "Villa for rent in Narges Villas, New Cairo\nPrime location with garden view and open front view.\nFully equipped with air conditioners and heaters.\nLand area 700 sqm.\nThe villa consists of\nBasement with swimming pool\nGround floor\nFirst floor\nSecond repeated floor\nRoof\nTotal rooms 18\nTotal bathrooms 16\nEach floor apartment includes\n3 bedrooms including 1 master bedroom\n3 bathrooms\nLiving room\nLarge kitchen\nReception 4 pieces\nRent\n250,000 EGP per month\nResidential use only\nAd Code\nطرف41097\nContact\n01044251012\nH\nAbout MSKM:\nMSKM is a real estate consultancy based in Egypt, that aims to provide comprehensive services for your real estate needs. If you are willing to invest or are interested in buying a residential or a commercial property, we are here to help transform your plans into reality.\nMSKM aims to provide our customers with almost all the needs you would need, Residential or Commercial. East Wing offers offices and Retails available in nearly every district in Egypt like New Cairo, Heliopolis, Nasr City, 6th of October, Zayed, New Zayed, North Coast, and New Capital.",
+        "ar": "Villa for rent in Narges Villas, New Cairo\nPrime location with garden view and open front view.\nFully equipped with air conditioners and heaters.\nLand area 700 sqm.\nThe villa consists of\nBasement with swimming pool\nGround floor\nFirst floor\nSecond repeated floor\nRoof\nTotal rooms 18\nTotal bathrooms 16\nEach floor apartment includes\n3 bedrooms including 1 master bedroom\n3 bathrooms\nLiving room\nLarge kitchen\nReception 4 pieces\nRent\n250,000 EGP per month\nResidential use only\nAd Code\nطرف41097\nContact\n01044251012\nH\nAbout MSKM:\nMSKM is a real estate consultancy based in Egypt, that aims to provide comprehensive services for your real estate needs. If you are willing to invest or are interested in buying a residential or a commercial property, we are here to help transform your plans into reality.\nMSKM aims to provide our customers with almost all the needs you would need, Residential or Commercial. East Wing offers offices and Retails available in nearly every district in Egypt like New Cairo, Heliopolis, Nasr City, 6th of October, Zayed, New Zayed, North Coast, and New Capital."
+      },
+      "purpose": "rent",
+      "marketSegment": "resale",
+      "propertyType": "villa",
+      "price": {
+        "amount": 250000,
+        "currency": "EGP",
+        "period": "monthly"
+      },
+      "bedrooms": null,
+      "bathrooms": null,
+      "areaSqm": 700,
+      "compoundName": null,
+      "developerName": {
+        "en": "M.S.K Real Estate",
+        "ar": "M.S.K Real Estate"
+      },
+      "location": {
+        "lat": 30.02347183227539,
+        "lng": 31.4609432220459
+      },
+      "imageUrls": [
+        "https://static.shared.propertyfinder.eg/media/images/listing/ZQK6125RS9225ETKJTWC91TPT4/f70a9c79-e126-4574-b6bd-d383de96cd28/668x452.jpg"
+      ],
+      "publishedAt": "2026-03-16T09:12:22Z",
+      "extractionConfidence": 0.97,
+      "areaName": "Cairo, New Cairo City, Al Narges, Al Narges 1",
+      "rawFields": {
+        "reference": "16-3-2-1-H",
+        "sourcePayload": {
+          "id": "59235693",
+          "category_id": 2,
+          "property_type": "Villa",
+          "price": {
+            "value": 250000,
+            "currency": "EGP",
+            "period": "monthly",
+            "is_hidden": false
+          },
+          "title": "Villa for Rent in Narges Villas New Cairo 700m",
+          "location": {
+            "id": "2261",
+            "full_name": "Badr Khan Ali St., Al Narges 1, Al Narges, New Cairo City, Cairo",
+            "coordinates": {
+              "lat": 30.02347183227539,
+              "lon": 31.4609432220459
+            },
+            "slug": "new-cairo-city-al-narges-al-narges-1-badr-khan-ali-st",
+            "path": "2254.2255.2258.2260.2261",
+            "type": "STREET",
+            "name": "Badr Khan Ali St.",
+            "path_name": "Cairo, New Cairo City, Al Narges, Al Narges 1"
+          },
+          "images": [
+            {
+              "small": "https://static.shared.propertyfinder.eg/media/images/listing/ZQK6125RS9225ETKJTWC91TPT4/f70a9c79-e126-4574-b6bd-d383de96cd28/416x272.jpg",
+              "medium": "https://static.shared.propertyfinder.eg/media/images/listing/ZQK6125RS9225ETKJTWC91TPT4/f70a9c79-e126-4574-b6bd-d383de96cd28/668x452.jpg",
+              "classification_label": ""
+            }
+          ],
+          "agent": {
+            "id": "70202",
+            "image": "",
+            "is_super_agent": false,
+            "name": "Shahenda Tork",
+            "user_id": 0,
+            "email": "shahenda.tork97@gmail.com",
+            "languages": [],
+            "slug": "shahenda-tork"
+          },
+          "broker": {
+            "id": "6354",
+            "logo": "https://www.propertyfinder.eg/client/0/178/98/MODE/8f9e0d/6354-f1f5fo.jpg?ctr=eg",
+            "name": "M.S.K Real Estate",
+            "address": "Office 2, Building Villa 27, New Cairo City, 4th District, Cairo, ",
+            "email": "ahmed42007003@gmail.com",
+            "phone": "01097817070",
+            "slug": "m-s-k-real-estate-v2-6354"
+          },
+          "is_verified": false,
+          "is_direct_from_developer": false,
+          "is_new_construction": false,
+          "is_available": true,
+          "is_featured": false,
+          "is_premium": false,
+          "is_new_insert": true,
+          "utilities_price_type": "notSelected",
+          "live_viewing": null,
+          "is_community_expert": false,
+          "is_cts": false,
+          "bedrooms": "7+",
+          "bathrooms": "7+",
+          "size": {
+            "value": 700,
+            "unit": "sqm"
+          },
+          "share_url": "https://www.propertyfinder.eg/en/plp/rent/villa-for-rent-cairo-new-cairo-city-al-narges-al-narges-1-badr-khan-ali-st-59235693.html",
+          "reference": "16-3-2-1-H",
+          "listed_date": "2026-03-16T09:12:22Z",
+          "contact_options": [
+            {
+              "type": "email",
+              "value": "shahenda.tork97@gmail.com",
+              "link": "mailto:shahenda.tork97@gmail.com",
+              "is_did": false
+            },
+            {
+              "type": "phone",
+              "value": "+201044251012",
+              "link": "tel:+201044251012",
+              "is_did": false
+            },
+            {
+              "type": "whatsapp",
+              "value": "+20221257340",
+              "link": "https://api.whatsapp.com/send?phone=+20221257340&text=Hello%2C%0AI+would+like+to+get+more+information+about+this+property%3A+%0A+%0AReference%3A+16-3-2-1-H%0AType%3A+Villa%0APrice%3A+250%2C000+EGP%2Fmonth+%0ALocation%3A+Badr+Khan+Ali+St.+%0ALink%3A+https%3A%2F%2Fwww.propertyfinder.eg%2Fto%2F59235693%2Fen+%0A+%0AAny+changes+made+to+this+message+will+result+in+the+enquiry+not+being+sent+to+the+agent.",
+              "is_did": false
+            }
+          ],
+          "images_count": 10,
+          "amenities": [
+            "BA",
+            "BW",
+            "AC",
+            "CP",
+            "BK",
+            "MR",
+            "PG",
+            "PP",
+            "ST",
+            "SE",
+            "WC",
+            "BL",
+            "LB"
+          ],
+          "completion_status": "",
+          "furnished": "NO",
+          "property_type_id": 35,
+          "has_view_360": false,
+          "rsp": 99.72932,
+          "rss": 99.72932,
+          "qs": 100,
+          "is_exclusive": false,
+          "is_broker_project_property": false,
+          "rera": "",
+          "offering_type": "Residential for Rent",
+          "video_url": "",
+          "is_smart_ad": false,
+          "is_spotlight_listing": false,
+          "is_claimed_by_agent": false,
+          "is_under_offer_by_competitor": false,
+          "listing_level": "standard",
+          "listing_level_label": "standard",
+          "location_tree": [
+            {
+              "id": "2254",
+              "name": "Cairo",
+              "type": "CITY",
+              "slug": "cairo",
+              "slug_en": "cairo",
+              "level": "0"
+            },
+            {
+              "id": "2255",
+              "name": "New Cairo City",
+              "type": "TOWN",
+              "slug": "new-cairo-city",
+              "slug_en": "new-cairo-city",
+              "level": "1"
+            },
+            {
+              "id": "2258",
+              "name": "Al Narges",
+              "type": "DISTRICT",
+              "slug": "new-cairo-city-al-narges",
+              "slug_en": "new-cairo-city-al-narges",
+              "level": "2"
+            },
+            {
+              "id": "2260",
+              "name": "Al Narges 1",
+              "type": "SUBDISTRICT",
+              "slug": "new-cairo-city-al-narges-al-narges-1",
+              "slug_en": "new-cairo-city-al-narges-al-narges-1",
+              "level": "3"
+            },
+            {
+              "id": "2261",
+              "name": "Badr Khan Ali St.",
+              "type": "STREET",
+              "slug": "new-cairo-city-al-narges-al-narges-1-badr-khan-ali-st",
+              "slug_en": "new-cairo-city-al-narges-al-narges-1-badr-khan-ali-st",
+              "level": "4"
+            }
+          ],
+          "description": "Villa for rent in Narges Villas, New Cairo\nPrime location with garden view and open front view.\nFully equipped with air conditioners and heaters.\nLand area 700 sqm.\nThe villa consists of\nBasement with swimming pool\nGround floor\nFirst floor\nSecond repeated floor\nRoof\nTotal rooms 18\nTotal bathrooms 16\nEach floor apartment includes\n3 bedrooms including 1 master bedroom\n3 bathrooms\nLiving room\nLarge kitchen\nReception 4 pieces\nRent\n250,000 EGP per month\nResidential use only\nAd Code\nطرف41097\nContact\n01044251012\nH\nAbout MSKM:\nMSKM is a real estate consultancy based in Egypt, that aims to provide comprehensive services for your real estate needs. If you are willing to invest or are interested in buying a residential or a commercial property, we are here to help transform your plans into reality.\nMSKM aims to provide our customers with almost all the needs you would need, Residential or Commercial. East Wing offers offices and Retails available in nearly every district in Egypt like New Cairo, Heliopolis, Nasr City, 6th of October, Zayed, New Zayed, North Coast, and New Capital.",
+          "amenity_names": [
+            "Balcony",
+            "Built in Wardrobes",
+            "Central A/C",
+            "Covered Parking",
+            "Kitchen Appliances",
+            "Maids Room",
+            "Private Garden",
+            "Private Pool",
+            "Study",
+            "Security",
+            "Walk-in Closet",
+            "View of Landmark",
+            "Lobby in Building"
+          ],
+          "payment_method": [],
+          "lead_value": 100,
+          "details_path": "/en/plp/rent/villa-for-rent-cairo-new-cairo-city-al-narges-al-narges-1-badr-khan-ali-st-59235693.html",
+          "rank_score": 99.72931671142578,
+          "bedrooms_value": 18,
+          "bathrooms_value": 16,
+          "ranking_factors": "Bo95NRwoEVG7fkhQJtg/y/7IQ/07b/F+zBCKN0nY2UaEmjfZNYtC7bKZK5sN6WJKDFGvK9obCdL7Vn7ZtRzt7xckUKCR8/Yptm9XaVRdCr4mEnjbsgjIjTSDSvQm46dW+vhe6dxHtEDkaiBg",
+          "is_pf_exclusive": false,
+          "listing_id": "ZQK6125RS9225ETKJTWC91TPT4",
+          "client": {
+            "id": "6354",
+            "logo": "https://www.propertyfinder.eg/client/0/178/98/MODE/8f9e0d/6354-f1f5fo.jpg?ctr=eg",
+            "name": "M.S.K Real Estate",
+            "address": "Office 2, Building Villa 27, New Cairo City, 4th District, Cairo, ",
+            "email": "ahmed42007003@gmail.com",
+            "phone": "01097817070",
+            "slug": "m-s-k-real-estate-v2-6354"
+          },
+          "is_fhm": false,
+          "travel_time_tags": [],
+          "floor_plans": [],
+          "mortgage_cashback": 0,
+          "price_per_area": null
+        }
+      }
+    },
+    {
+      "pageNumber": 1,
+      "indexOnPage": 3,
+      "source": "property_finder",
+      "sourceListingId": "8696709",
+      "sourceUrl": "https://www.propertyfinder.eg/en/plp/rent/villa-for-rent-cairo-new-cairo-city-al-narges-al-diyar-8696709.html",
+      "title": {
+        "en": "villa 3bed furnished under market price for rent",
+        "ar": "villa 3bed furnished under market price for rent"
+      },
+      "description": {
+        "en": "villa Model b for Rent in Diyar Al Mokhabarat\n3 bedrooms, 2 living rooms, and a nanny room\n5 bathrooms\nLand area 680 m2\nBuilding area 850 m2\n------------------------------------------\nAbout Diyar Compound:\n----\nThe compound is located just minutes away from major facilities and vital locations, such as 90th Street, one of the most popular areas in the Fifth Settlement, which offers many services, including Downtown Mall, Cairo Festival Mall, and Concord Plaza Mall.\nDiyar Real Estate was able to choose a distinct strategic location for Diyar Al Mokhabarat Compound in the heart of the Fifth Settlement, near 90th Street. Therefore, it is close to all major roads and axes that connect the compound to many of the neighboring new cities, such as Shorouk City, Obour City, Badr City, and the New Administrative Capital.\n\nProperties for rent in The 5th Settlement\nApartments for rent in The 5th Settlement\nDuplexes for rent in The 5th Settlement\n4 bedroom Villas for rent in The 5th Settlement\nFurnished Villas for rent in The 5th Settlement\nTownhouses for rent in The 5th Settlement\nTwin Houses for rent in The 5th Settlement\n5 bedroom Villas for rent in The 5th Settlement\n3 bedroom Villas for rent in The 5th Settlement\n6 bedroom Villas for rent in The 5th Settlement\n7 bedroom Villas for rent in The 5th Settlement\n2 bedroom Villas for rent in The 5th Settlement\n--------------------------------------\nERE is committed to helping clients find or sell their properties in New Cairo. We specialize in properties in upscale residential compounds such as Cairo Festival City, Mivida, Emaar, Mountain View, Hyde Park, Katameya Dunes, and many more. With over 20 years of proven track record and commitment to excellence, we ensure a seamless real estate experience. We offer expert guidance to make buying and selling easier in some of Cairo's most sought-after locations.",
+        "ar": "villa Model b for Rent in Diyar Al Mokhabarat\n3 bedrooms, 2 living rooms, and a nanny room\n5 bathrooms\nLand area 680 m2\nBuilding area 850 m2\n------------------------------------------\nAbout Diyar Compound:\n----\nThe compound is located just minutes away from major facilities and vital locations, such as 90th Street, one of the most popular areas in the Fifth Settlement, which offers many services, including Downtown Mall, Cairo Festival Mall, and Concord Plaza Mall.\nDiyar Real Estate was able to choose a distinct strategic location for Diyar Al Mokhabarat Compound in the heart of the Fifth Settlement, near 90th Street. Therefore, it is close to all major roads and axes that connect the compound to many of the neighboring new cities, such as Shorouk City, Obour City, Badr City, and the New Administrative Capital.\n\nProperties for rent in The 5th Settlement\nApartments for rent in The 5th Settlement\nDuplexes for rent in The 5th Settlement\n4 bedroom Villas for rent in The 5th Settlement\nFurnished Villas for rent in The 5th Settlement\nTownhouses for rent in The 5th Settlement\nTwin Houses for rent in The 5th Settlement\n5 bedroom Villas for rent in The 5th Settlement\n3 bedroom Villas for rent in The 5th Settlement\n6 bedroom Villas for rent in The 5th Settlement\n7 bedroom Villas for rent in The 5th Settlement\n2 bedroom Villas for rent in The 5th Settlement\n--------------------------------------\nERE is committed to helping clients find or sell their properties in New Cairo. We specialize in properties in upscale residential compounds such as Cairo Festival City, Mivida, Emaar, Mountain View, Hyde Park, Katameya Dunes, and many more. With over 20 years of proven track record and commitment to excellence, we ensure a seamless real estate experience. We offer expert guidance to make buying and selling easier in some of Cairo's most sought-after locations."
+      },
+      "purpose": "rent",
+      "marketSegment": "resale",
+      "propertyType": "villa",
+      "price": {
+        "amount": 125000,
+        "currency": "EGP",
+        "period": "monthly"
+      },
+      "bedrooms": 3,
+      "bathrooms": 5,
+      "areaSqm": 850,
+      "compoundName": null,
+      "developerName": {
+        "en": "ERE",
+        "ar": "ERE"
+      },
+      "location": {
+        "lat": 30.01941680908203,
+        "lng": 31.47112464904785
+      },
+      "imageUrls": [
+        "https://static.shared.propertyfinder.eg/media/images/listing/S07XT6P3TCH0Y2W1SN8QK5AES4/987d72e5-31a5-405a-99e5-a72cf5e6cf0f/668x452.jpg"
+      ],
+      "publishedAt": "2026-02-11T13:43:00Z",
+      "extractionConfidence": 0.97,
+      "areaName": "Cairo, New Cairo City, Al Narges",
+      "rawFields": {
+        "reference": "a-AD2023",
+        "sourcePayload": {
+          "id": "8696709",
+          "category_id": 2,
+          "property_type": "Villa",
+          "price": {
+            "value": 125000,
+            "currency": "EGP",
+            "period": "monthly",
+            "is_hidden": false
+          },
+          "title": "villa 3bed furnished under market price for rent",
+          "location": {
+            "id": "2259",
+            "full_name": "Al Diyar, Al Narges, New Cairo City, Cairo",
+            "coordinates": {
+              "lat": 30.01941680908203,
+              "lon": 31.47112464904785
+            },
+            "slug": "new-cairo-city-al-narges-al-diyar",
+            "path": "2254.2255.2258.2259",
+            "type": "COMPOUND",
+            "name": "Al Diyar",
+            "path_name": "Cairo, New Cairo City, Al Narges"
+          },
+          "images": [
+            {
+              "small": "https://static.shared.propertyfinder.eg/media/images/listing/S07XT6P3TCH0Y2W1SN8QK5AES4/987d72e5-31a5-405a-99e5-a72cf5e6cf0f/416x272.jpg",
+              "medium": "https://static.shared.propertyfinder.eg/media/images/listing/S07XT6P3TCH0Y2W1SN8QK5AES4/987d72e5-31a5-405a-99e5-a72cf5e6cf0f/668x452.jpg",
+              "classification_label": ""
+            }
+          ],
+          "agent": {
+            "id": "18594",
+            "image": "https://www.propertyfinder.eg/images/pf_agent/picture/c0eaa1419b876cdc9c21f9f2ef1051d916419316/desktop",
+            "is_super_agent": false,
+            "name": "Abdallah mohamed",
+            "user_id": 14625,
+            "email": "a.alsagher@er-estate.com",
+            "languages": [
+              "English",
+              "Arabic"
+            ],
+            "slug": "abdallah-mohamed"
+          },
+          "broker": {
+            "id": "1780",
+            "logo": "https://www.propertyfinder.eg/broker/0/178/98/MODE/da571e/1780-4b1dfo.jpg?ctr=eg",
+            "name": "ERE",
+            "address": "Office 1, Building 39, New Cairo City, . Mouse Ibn Naseer al-Haq al-Haq -Nasr city, Cairo, ",
+            "email": "abdallah.alsagher@gmail.com",
+            "phone": "+201008059598",
+            "slug": "ere-1780"
+          },
+          "is_verified": false,
+          "is_direct_from_developer": false,
+          "is_new_construction": false,
+          "is_available": true,
+          "is_featured": false,
+          "is_premium": false,
+          "is_new_insert": false,
+          "utilities_price_type": "notSelected",
+          "live_viewing": null,
+          "is_community_expert": false,
+          "is_cts": false,
+          "bedrooms": "3",
+          "bathrooms": "5",
+          "size": {
+            "value": 850,
+            "unit": "sqm"
+          },
+          "share_url": "https://www.propertyfinder.eg/en/plp/rent/villa-for-rent-cairo-new-cairo-city-al-narges-al-diyar-8696709.html",
+          "reference": "a-AD2023",
+          "listed_date": "2026-02-11T13:43:00Z",
+          "contact_options": [
+            {
+              "type": "email",
+              "value": "a.alsagher@er-estate.com",
+              "link": "mailto:a.alsagher@er-estate.com",
+              "is_did": false
+            },
+            {
+              "type": "phone",
+              "value": "+201008059598",
+              "link": "tel:+201008059598",
+              "is_did": false
+            },
+            {
+              "type": "whatsapp",
+              "value": "+20221257340",
+              "link": "https://api.whatsapp.com/send?phone=+20221257340&text=Hello%2C%0AI+would+like+to+get+more+information+about+this+property%3A+%0A+%0AReference%3A+a-AD2023%0AType%3A+Villa%0APrice%3A+125%2C000+EGP%2Fmonth+%0ALocation%3A+Al+Diyar+%0ALink%3A+https%3A%2F%2Fwww.propertyfinder.eg%2Fto%2F8696709%2Fen+%0A+%0AAny+changes+made+to+this+message+will+result+in+the+enquiry+not+being+sent+to+the+agent.",
+              "is_did": false
+            }
+          ],
+          "images_count": 27,
+          "amenities": [
+            "BA",
+            "BW",
+            "AC",
+            "CP",
+            "MR",
+            "PG",
+            "SE",
+            "SY",
+            "WC"
+          ],
+          "completion_status": "",
+          "furnished": "NO",
+          "property_type_id": 35,
+          "has_view_360": false,
+          "rsp": 90.83338,
+          "rss": 90.83338,
+          "qs": 100,
+          "is_exclusive": false,
+          "is_broker_project_property": false,
+          "rera": "",
+          "offering_type": "Residential for Rent",
+          "video_url": "",
+          "is_smart_ad": false,
+          "is_spotlight_listing": false,
+          "is_claimed_by_agent": false,
+          "is_under_offer_by_competitor": false,
+          "listing_level": "standard",
+          "listing_level_label": "standard",
+          "location_tree": [
+            {
+              "id": "2254",
+              "name": "Cairo",
+              "type": "CITY",
+              "slug": "cairo",
+              "slug_en": "cairo",
+              "level": "0"
+            },
+            {
+              "id": "2255",
+              "name": "New Cairo City",
+              "type": "TOWN",
+              "slug": "new-cairo-city",
+              "slug_en": "new-cairo-city",
+              "level": "1"
+            },
+            {
+              "id": "2258",
+              "name": "Al Narges",
+              "type": "DISTRICT",
+              "slug": "new-cairo-city-al-narges",
+              "slug_en": "new-cairo-city-al-narges",
+              "level": "2"
+            },
+            {
+              "id": "2259",
+              "name": "Al Diyar",
+              "type": "COMPOUND",
+              "slug": "new-cairo-city-al-narges-al-diyar",
+              "slug_en": "new-cairo-city-al-narges-al-diyar",
+              "level": "3"
+            }
+          ],
+          "description": "villa Model b for Rent in Diyar Al Mokhabarat\n3 bedrooms, 2 living rooms, and a nanny room\n5 bathrooms\nLand area 680 m2\nBuilding area 850 m2\n------------------------------------------\nAbout Diyar Compound:\n----\nThe compound is located just minutes away from major facilities and vital locations, such as 90th Street, one of the most popular areas in the Fifth Settlement, which offers many services, including Downtown Mall, Cairo Festival Mall, and Concord Plaza Mall.\nDiyar Real Estate was able to choose a distinct strategic location for Diyar Al Mokhabarat Compound in the heart of the Fifth Settlement, near 90th Street. Therefore, it is close to all major roads and axes that connect the compound to many of the neighboring new cities, such as Shorouk City, Obour City, Badr City, and the New Administrative Capital.\n\nProperties for rent in The 5th Settlement\nApartments for rent in The 5th Settlement\nDuplexes for rent in The 5th Settlement\n4 bedroom Villas for rent in The 5th Settlement\nFurnished Villas for rent in The 5th Settlement\nTownhouses for rent in The 5th Settlement\nTwin Houses for rent in The 5th Settlement\n5 bedroom Villas for rent in The 5th Settlement\n3 bedroom Villas for rent in The 5th Settlement\n6 bedroom Villas for rent in The 5th Settlement\n7 bedroom Villas for rent in The 5th Settlement\n2 bedroom Villas for rent in The 5th Settlement\n--------------------------------------\nERE is committed to helping clients find or sell their properties in New Cairo. We specialize in properties in upscale residential compounds such as Cairo Festival City, Mivida, Emaar, Mountain View, Hyde Park, Katameya Dunes, and many more. With over 20 years of proven track record and commitment to excellence, we ensure a seamless real estate experience. We offer expert guidance to make buying and selling easier in some of Cairo's most sought-after locations.",
+          "amenity_names": [
+            "Balcony",
+            "Built in Wardrobes",
+            "Central A/C",
+            "Covered Parking",
+            "Maids Room",
+            "Private Garden",
+            "Security",
+            "Shared Gym",
+            "Walk-in Closet"
+          ],
+          "payment_method": [],
+          "lead_value": 100,
+          "details_path": "/en/plp/rent/villa-for-rent-cairo-new-cairo-city-al-narges-al-diyar-8696709.html",
+          "rank_score": 90.83338165283203,
+          "bedrooms_value": 3,
+          "bathrooms_value": 5,
+          "ranking_factors": "dXbLoHbIl95s1yKJMuFIPdm6/fcEAgP9+fLTBx25MZhzFFUFVVmEOmXylHB7hy6n2uLT6OC+2eSXtUd6TuiF9djqpN8dQzqhDJotypFwusXQqHfgwVO4Vj2IVLPbVPC5ixy1vkCPvStwzZAc",
+          "is_pf_exclusive": false,
+          "listing_id": "S07XT6P3TCH0Y2W1SN8QK5AES4",
+          "client": {
+            "id": "1780",
+            "logo": "https://www.propertyfinder.eg/broker/0/178/98/MODE/da571e/1780-4b1dfo.jpg?ctr=eg",
+            "name": "ERE",
+            "address": "Office 1, Building 39, New Cairo City, . Mouse Ibn Naseer al-Haq al-Haq -Nasr city, Cairo, ",
+            "email": "abdallah.alsagher@gmail.com",
+            "phone": "+201008059598",
+            "slug": "ere-1780"
+          },
+          "is_fhm": false,
+          "travel_time_tags": [],
+          "floor_plans": [],
+          "mortgage_cashback": 0,
+          "price_per_area": null
+        }
+      }
+    },
+    {
+      "pageNumber": 1,
+      "indexOnPage": 4,
+      "source": "property_finder",
+      "sourceListingId": "57498342",
+      "sourceUrl": "https://www.propertyfinder.eg/en/plp/rent/villa-for-rent-cairo-new-cairo-city-al-narges-al-narges-1-beram-al-tunsi-st-2Q22pux3weG.html",
+      "title": {
+        "en": "Prime villa available for rent in Al Narges Villa",
+        "ar": "Prime villa available for rent in Al Narges Villa"
+      },
+      "description": {
+        "en": "Villa for Rent – Residential Only\n\nPrime villa available for rent in the prestigious Al Narges Villas area, located in New Cairo. The villa enjoys a garden view and a north-facing façade, providing excellent natural light and ventilation.\n\nProperty Details:\n\nLand Area: 700 sqm\n\nTotal Rooms: 18\n\nTotal Bathrooms: 16\n\nEach Floor Area: 300 sqm\n\nVilla Layout:\n\nBasement: Includes a swimming pool\n\nGround Floor\n\nFirst Floor\n\nSecond Floor (Typical Floor)\n\nRoof Floor\n\nRoof Features:\n\n3 Bedrooms (including 1 Master Bedroom)\n\n3 Bathrooms\n\nLiving Area\n\nLarge Kitchen\n\nReception (4 pieces)\n\nAdditional Features:\n\nAir conditioners installed\n\nWater heaters installed\n\nGarden view\n\nNorth-facing façade\n\n Located in Al Narges Villas – Fifth Settlement\nUsage: Residential Only\n Asking Price: 250,000 EGP per month for the entire villa",
+        "ar": "Villa for Rent – Residential Only\n\nPrime villa available for rent in the prestigious Al Narges Villas area, located in New Cairo. The villa enjoys a garden view and a north-facing façade, providing excellent natural light and ventilation.\n\nProperty Details:\n\nLand Area: 700 sqm\n\nTotal Rooms: 18\n\nTotal Bathrooms: 16\n\nEach Floor Area: 300 sqm\n\nVilla Layout:\n\nBasement: Includes a swimming pool\n\nGround Floor\n\nFirst Floor\n\nSecond Floor (Typical Floor)\n\nRoof Floor\n\nRoof Features:\n\n3 Bedrooms (including 1 Master Bedroom)\n\n3 Bathrooms\n\nLiving Area\n\nLarge Kitchen\n\nReception (4 pieces)\n\nAdditional Features:\n\nAir conditioners installed\n\nWater heaters installed\n\nGarden view\n\nNorth-facing façade\n\n Located in Al Narges Villas – Fifth Settlement\nUsage: Residential Only\n Asking Price: 250,000 EGP per month for the entire villa"
+      },
+      "purpose": "rent",
+      "marketSegment": "resale",
+      "propertyType": "villa",
+      "price": {
+        "amount": 249999,
+        "currency": "EGP",
+        "period": "monthly"
+      },
+      "bedrooms": null,
+      "bathrooms": null,
+      "areaSqm": 700,
+      "compoundName": null,
+      "developerName": {
+        "en": "sms for RealEstate",
+        "ar": "sms for RealEstate"
+      },
+      "location": {
+        "lat": 30.017269134521484,
+        "lng": 31.460926055908203
+      },
+      "imageUrls": [
+        "https://static.shared.propertyfinder.eg/media/images/listing/9AJQ0HJCT7CBS3EZVY340M1QS0/c3371673-42db-49e5-92d9-ffbb0a0c4f2c/668x452.jpg"
+      ],
+      "publishedAt": "2026-03-09T14:09:14Z",
+      "extractionConfidence": 0.97,
+      "areaName": "Cairo, New Cairo City, Al Narges, Al Narges 1",
+      "rawFields": {
+        "reference": "B41097ss",
+        "sourcePayload": {
+          "id": "57498342",
+          "category_id": 2,
+          "property_type": "Villa",
+          "price": {
+            "value": 249999,
+            "currency": "EGP",
+            "period": "monthly",
+            "is_hidden": false
+          },
+          "title": "Prime villa available for rent in Al Narges Villa",
+          "location": {
+            "id": "2262",
+            "full_name": "Beram Al Tunsi St., Al Narges 1, Al Narges, New Cairo City, Cairo",
+            "coordinates": {
+              "lat": 30.017269134521484,
+              "lon": 31.460926055908203
+            },
+            "slug": "new-cairo-city-al-narges-al-narges-1-beram-al-tunsi-st",
+            "path": "2254.2255.2258.2260.2262",
+            "type": "STREET",
+            "name": "Beram Al Tunsi St.",
+            "path_name": "Cairo, New Cairo City, Al Narges, Al Narges 1"
+          },
+          "images": [
+            {
+              "small": "https://static.shared.propertyfinder.eg/media/images/listing/9AJQ0HJCT7CBS3EZVY340M1QS0/c3371673-42db-49e5-92d9-ffbb0a0c4f2c/416x272.jpg",
+              "medium": "https://static.shared.propertyfinder.eg/media/images/listing/9AJQ0HJCT7CBS3EZVY340M1QS0/c3371673-42db-49e5-92d9-ffbb0a0c4f2c/668x452.jpg",
+              "classification_label": ""
+            }
+          ],
+          "agent": {
+            "id": "68818",
+            "image": "",
+            "is_super_agent": false,
+            "name": "Samar sms",
+            "user_id": 0,
+            "email": "samar@sms-eg.com",
+            "languages": [],
+            "slug": "samar-sms"
+          },
+          "broker": {
+            "id": "6174",
+            "logo": "https://www.propertyfinder.eg/broker/0/178/98/MODE/f8cc64/6174-18ab6o.jpg?ctr=eg",
+            "name": "sms for RealEstate",
+            "address": "Office -, Building -, New Cairo City, -, Cairo, ",
+            "email": "ceo@sms-eg.com",
+            "phone": "01012027115",
+            "slug": "sms-for-realestate-6174"
+          },
+          "is_verified": false,
+          "is_direct_from_developer": false,
+          "is_new_construction": false,
+          "is_available": true,
+          "is_featured": false,
+          "is_premium": false,
+          "is_new_insert": false,
+          "utilities_price_type": "notSelected",
+          "live_viewing": null,
+          "is_community_expert": false,
+          "is_cts": false,
+          "bedrooms": "7+",
+          "bathrooms": "7+",
+          "size": {
+            "value": 700,
+            "unit": "sqm"
+          },
+          "share_url": "https://www.propertyfinder.eg/en/plp/rent/villa-for-rent-cairo-new-cairo-city-al-narges-al-narges-1-beram-al-tunsi-st-2Q22pux3weG.html",
+          "reference": "B41097ss",
+          "listed_date": "2026-03-09T14:09:14Z",
+          "contact_options": [
+            {
+              "type": "email",
+              "value": "samar@sms-eg.com",
+              "link": "mailto:samar@sms-eg.com",
+              "is_did": false
+            },
+            {
+              "type": "phone",
+              "value": "+201553967759",
+              "link": "tel:+201553967759",
+              "is_did": false
+            },
+            {
+              "type": "whatsapp",
+              "value": "+20221257340",
+              "link": "https://api.whatsapp.com/send?phone=+20221257340&text=Hello%2C%0AI+would+like+to+get+more+information+about+this+property%3A+%0A+%0AReference%3A+B41097ss%0AType%3A+Villa%0APrice%3A+249%2C999+EGP%2Fmonth+%0ALocation%3A+Beram+Al+Tunsi+St.+%0ALink%3A+https%3A%2F%2Fwww.propertyfinder.eg%2Fto%2F57498342%2Fen+%0A+%0AAny+changes+made+to+this+message+will+result+in+the+enquiry+not+being+sent+to+the+agent.",
+              "is_did": false
+            }
+          ],
+          "images_count": 6,
+          "amenities": [
+            "BA",
+            "AC"
+          ],
+          "completion_status": "",
+          "furnished": "PARTLY",
+          "property_type_id": 35,
+          "has_view_360": false,
+          "rsp": 86.84935,
+          "rss": 86.84935,
+          "qs": 90,
+          "is_exclusive": false,
+          "is_broker_project_property": false,
+          "rera": "",
+          "offering_type": "Residential for Rent",
+          "video_url": "",
+          "is_smart_ad": false,
+          "is_spotlight_listing": false,
+          "is_claimed_by_agent": false,
+          "is_under_offer_by_competitor": false,
+          "listing_level": "standard",
+          "listing_level_label": "standard",
+          "location_tree": [
+            {
+              "id": "2254",
+              "name": "Cairo",
+              "type": "CITY",
+              "slug": "cairo",
+              "slug_en": "cairo",
+              "level": "0"
+            },
+            {
+              "id": "2255",
+              "name": "New Cairo City",
+              "type": "TOWN",
+              "slug": "new-cairo-city",
+              "slug_en": "new-cairo-city",
+              "level": "1"
+            },
+            {
+              "id": "2258",
+              "name": "Al Narges",
+              "type": "DISTRICT",
+              "slug": "new-cairo-city-al-narges",
+              "slug_en": "new-cairo-city-al-narges",
+              "level": "2"
+            },
+            {
+              "id": "2260",
+              "name": "Al Narges 1",
+              "type": "SUBDISTRICT",
+              "slug": "new-cairo-city-al-narges-al-narges-1",
+              "slug_en": "new-cairo-city-al-narges-al-narges-1",
+              "level": "3"
+            },
+            {
+              "id": "2262",
+              "name": "Beram Al Tunsi St.",
+              "type": "STREET",
+              "slug": "new-cairo-city-al-narges-al-narges-1-beram-al-tunsi-st",
+              "slug_en": "new-cairo-city-al-narges-al-narges-1-beram-al-tunsi-st",
+              "level": "4"
+            }
+          ],
+          "description": "Villa for Rent – Residential Only\n\nPrime villa available for rent in the prestigious Al Narges Villas area, located in New Cairo. The villa enjoys a garden view and a north-facing façade, providing excellent natural light and ventilation.\n\nProperty Details:\n\nLand Area: 700 sqm\n\nTotal Rooms: 18\n\nTotal Bathrooms: 16\n\nEach Floor Area: 300 sqm\n\nVilla Layout:\n\nBasement: Includes a swimming pool\n\nGround Floor\n\nFirst Floor\n\nSecond Floor (Typical Floor)\n\nRoof Floor\n\nRoof Features:\n\n3 Bedrooms (including 1 Master Bedroom)\n\n3 Bathrooms\n\nLiving Area\n\nLarge Kitchen\n\nReception (4 pieces)\n\nAdditional Features:\n\nAir conditioners installed\n\nWater heaters installed\n\nGarden view\n\nNorth-facing façade\n\n Located in Al Narges Villas – Fifth Settlement\nUsage: Residential Only\n Asking Price: 250,000 EGP per month for the entire villa",
+          "amenity_names": [
+            "Balcony",
+            "Central A/C"
+          ],
+          "payment_method": [],
+          "lead_value": 100,
+          "details_path": "/en/plp/rent/villa-for-rent-cairo-new-cairo-city-al-narges-al-narges-1-beram-al-tunsi-st-2Q22pux3weG.html",
+          "rank_score": 86.84934997558594,
+          "bedrooms_value": 18,
+          "bathrooms_value": 16,
+          "ranking_factors": "7mO49Nd0XyWSHIEchObbs0EyNHXwLjpAMEfTGLjZULyOtfnwF9Saj9WsKfGWQZtO2rr4wvrOqg+yzJNPBgEyX7T5nrbxm5hoLkyjOK38a1fRpHDMunysWSaRPOHRTsQtyhFuKk9RxnngZUDc1Q==",
+          "is_pf_exclusive": false,
+          "listing_id": "9AJQ0HJCT7CBS3EZVY340M1QS0",
+          "client": {
+            "id": "6174",
+            "logo": "https://www.propertyfinder.eg/broker/0/178/98/MODE/f8cc64/6174-18ab6o.jpg?ctr=eg",
+            "name": "sms for RealEstate",
+            "address": "Office -, Building -, New Cairo City, -, Cairo, ",
+            "email": "ceo@sms-eg.com",
+            "phone": "01012027115",
+            "slug": "sms-for-realestate-6174"
+          },
+          "is_fhm": false,
+          "travel_time_tags": [],
+          "floor_plans": [],
+          "mortgage_cashback": 0,
+          "price_per_area": null
+        }
+      }
+    }
+  ]
+}

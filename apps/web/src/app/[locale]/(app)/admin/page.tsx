@@ -1,7 +1,8 @@
 import { cookies } from "next/headers";
-import { Badge, Card } from "@jinka-eg/ui";
 import { redirect } from "next/navigation";
 
+import { Badge } from "@jinka-eg/ui";
+import { AdminConsole } from "../../../../components/admin-console";
 import { apiFetch } from "../../../../lib/api";
 import { getMessages, resolveLocale } from "../../../../i18n/messages";
 import { requireSessionUser } from "../../../../lib/session";
@@ -181,176 +182,22 @@ export default async function AdminPage({ params }: { params: Promise<{ locale: 
 
   return (
     <div className="space-y-8">
-      <div>
+      <div className="rounded-[28px] border border-[var(--jinka-border)] bg-[var(--jinka-surface-muted)] p-6">
         <Badge tone="accent">{t.admin}</Badge>
-        <h1 className="mt-4 text-4xl font-semibold tracking-tight text-stone-950">{t.adminTitle}</h1>
+        <h1 className="mt-4 text-4xl font-semibold tracking-tight text-[var(--jinka-text)]">{t.adminTitle}</h1>
+        <p className="mt-3 max-w-3xl text-[var(--jinka-muted)]">
+          Same product language as the customer side, reoriented around ops workflows, risk review, and connector controls.
+        </p>
       </div>
-      <div className="grid gap-4">
-        {connectors.map((connector) => (
-          <Card key={connector.source} className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-lg font-semibold text-stone-950">{connector.source}</div>
-                <div className="mt-1 text-sm text-stone-600">
-                  Parser coverage {Math.round(connector.parserCoverage * 100)}%
-                </div>
-                <div className="mt-1 text-xs text-stone-500">
-                  {connector.lastSuccessAt ? `Last completed ${new Date(connector.lastSuccessAt).toLocaleString()}` : "No runs yet"}
-                </div>
-                {!connector.enabled && connector.disabledReason ? (
-                  <div className="mt-1 text-xs text-stone-500">Disabled: {connector.disabledReason}</div>
-                ) : null}
-              </div>
-              <div className="text-right">
-                <Badge tone={connector.enabled ? (connector.status === "healthy" ? "success" : "danger") : "accent"}>
-                  {connector.enabled ? connector.status : "disabled"}
-                </Badge>
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
-      <div className="grid gap-4">
-        {runs.map((run) => (
-          <Card key={run.id} className="p-5">
-            <div className="flex items-start justify-between gap-6">
-              <div>
-                <div className="text-lg font-semibold text-stone-950">{run.source}</div>
-                <div className="mt-1 text-sm text-stone-600">
-                  discovered {run.discoveredCount} · normalized {run.parsedCount} · failed {run.failedCount}
-                </div>
-                <div className="mt-1 text-xs text-stone-500">
-                  started {new Date(run.startedAt).toLocaleString()}
-                </div>
-              </div>
-              <div className="text-right">
-                <Badge tone={run.status === "completed" ? "success" : run.status === "failed" ? "danger" : "accent"}>
-                  {run.status}
-                </Badge>
-                <div className="mt-2 text-sm text-stone-600">
-                  {Math.round((run.extractionRate ?? 0) * 100)}% extraction
-                </div>
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
-      <div className="grid gap-4">
-        {fraudCases.map((fraudCase) => (
-          <Card key={fraudCase.id} className="p-5">
-            <div className="flex items-start justify-between gap-6">
-              <div>
-                <div className="text-lg font-semibold text-stone-950">{fraudCase.canonicalTitleEn}</div>
-                <div className="mt-1 text-sm text-stone-600">
-                  score {Math.round(fraudCase.score * 100)}% · cluster {fraudCase.clusterId}
-                </div>
-                <div className="mt-3 text-sm text-stone-600">
-                  {Array.isArray(fraudCase.explanation)
-                    ? fraudCase.explanation.join(" ")
-                    : fraudCase.explanation}
-                </div>
-              </div>
-              <div className="text-right">
-                <Badge tone={fraudCase.label === "safe" ? "success" : "danger"}>
-                  {fraudCase.label.replace("_", " ")}
-                </Badge>
-                <div className="mt-2 text-xs text-stone-500">
-                  {fraudCase.resolved ? "resolved" : "open"}
-                </div>
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
-      <div className="grid gap-4">
-        {parserDriftAlarms.map((alarm) => (
-          <Card key={alarm.id} className="p-5">
-            <div className="flex items-start justify-between gap-6">
-              <div>
-                <div className="text-lg font-semibold text-stone-950">{alarm.source}</div>
-                <div className="mt-1 text-sm text-stone-600">{alarm.message}</div>
-                <div className="mt-2 text-xs text-stone-500">
-                  run {alarm.run.id} · {Math.round((alarm.run.extractionRate ?? 0) * 100)}% extraction · parsed {alarm.run.parsedCount} · failed {alarm.run.failedCount}
-                </div>
-              </div>
-              <div className="text-right">
-                <Badge tone={alarm.resolved ? "success" : alarm.severity === "high" ? "danger" : "accent"}>
-                  {alarm.resolved ? "resolved" : alarm.severity}
-                </Badge>
-                <div className="mt-2 text-xs text-stone-500">{new Date(alarm.createdAt).toLocaleString()}</div>
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
-      <div className="grid gap-4">
-        {clusterEdges.map((edge) => (
-          <Card key={edge.id} className="p-5">
-            <div className="flex items-start justify-between gap-6">
-              <div>
-                <div className="text-lg font-semibold text-stone-950">
-                  {edge.leftVariant.titleEn} {"->"} {edge.rightVariant.titleEn}
-                </div>
-                <div className="mt-1 text-sm text-stone-600">
-                  {edge.leftVariant.source} {edge.leftVariant.sourceListingId} {"->"} {edge.rightVariant.source}{" "}
-                  {edge.rightVariant.sourceListingId}
-                </div>
-                <div className="mt-1 text-sm text-stone-600">
-                  cluster {edge.sourceClusterId} candidate for {edge.targetClusterId}
-                </div>
-                <div className="mt-3 text-sm text-stone-600">
-                  {edge.reasons.slice(0, 3).map((reason) => reason.message).join(" ")}
-                </div>
-              </div>
-              <div className="text-right">
-                <Badge tone={edge.decision === "auto_attach" ? "success" : "accent"}>
-                  {edge.decision.replace("_", " ")}
-                </Badge>
-                <div className="mt-2 text-sm text-stone-600">{Math.round(edge.score * 100)}% confidence</div>
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
-      <div className="grid gap-4">
-        {reports.map((report) => (
-          <Card key={report.id} className="p-5">
-            <div className="flex items-start justify-between gap-6">
-              <div>
-                <div className="text-lg font-semibold text-stone-950">{report.clusterTitleEn}</div>
-                <div className="mt-1 text-sm text-stone-600">
-                  {report.reason} · by {report.reportedBy}
-                </div>
-                {report.details ? <div className="mt-3 text-sm text-stone-600">{report.details}</div> : null}
-                <div className="mt-2 text-xs text-stone-500">{new Date(report.createdAt).toLocaleString()}</div>
-              </div>
-              <div className="text-right">
-                <Badge tone={report.resolved ? "success" : "danger"}>{report.resolved ? "resolved" : "open"}</Badge>
-                {report.resolutionNote ? <div className="mt-2 text-xs text-stone-500">{report.resolutionNote}</div> : null}
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
-      <div className="grid gap-4">
-        {blacklists.map((entry) => (
-          <Card key={entry.id} className="p-5">
-            <div className="flex items-start justify-between gap-6">
-              <div>
-                <div className="text-lg font-semibold text-stone-950">
-                  {entry.source} · {entry.matchType}
-                </div>
-                <div className="mt-1 text-sm text-stone-600">{entry.value}</div>
-                {entry.reason ? <div className="mt-3 text-sm text-stone-600">{entry.reason}</div> : null}
-              </div>
-              <div className="text-right text-xs text-stone-500">
-                <div>{entry.createdBy}</div>
-                <div className="mt-1">{new Date(entry.createdAt).toLocaleString()}</div>
-              </div>
-            </div>
-          </Card>
-        ))}
-      </div>
+      <AdminConsole
+        connectors={connectors}
+        runs={runs}
+        fraudCases={fraudCases}
+        clusterEdges={clusterEdges}
+        reports={reports}
+        blacklists={blacklists}
+        parserDriftAlarms={parserDriftAlarms}
+      />
     </div>
   );
 }

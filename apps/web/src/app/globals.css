@@ -4,6 +4,16 @@
 
 :root {
   color-scheme: light;
+  --jinka-background: #f4f3f0;
+  --jinka-surface: #ffffff;
+  --jinka-surface-muted: #f8f7f4;
+  --jinka-border: #e4e1da;
+  --jinka-text: #23211f;
+  --jinka-muted: #7b7770;
+  --jinka-accent: #ff5c8a;
+  --jinka-accent-soft: #fff0f5;
+  --jinka-success: #4aa787;
+  --jinka-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
 }
 
 * {
@@ -15,14 +25,19 @@ body {
   margin: 0;
   min-height: 100%;
   background:
-    radial-gradient(circle at top left, rgba(198, 155, 109, 0.18), transparent 32%),
-    radial-gradient(circle at bottom right, rgba(92, 106, 83, 0.18), transparent 28%),
-    linear-gradient(180deg, #f6efe6 0%, #f8f5ef 38%, #f8f7f4 100%);
-  color: #111111;
+    radial-gradient(circle at top left, rgba(255, 92, 138, 0.08), transparent 24%),
+    radial-gradient(circle at bottom right, rgba(74, 167, 135, 0.08), transparent 20%),
+    var(--jinka-background);
+  color: var(--jinka-text);
 }
 
 body {
-  font-family: var(--font-manrope), system-ui, sans-serif;
+  font-family:
+    ui-sans-serif,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
 }
 
 a {
@@ -32,6 +47,14 @@ a {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+  border-radius: 16px;
 }

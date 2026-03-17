@@ -1,7 +1,8 @@
 import { Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 
-import type { ProjectSummary } from "@jinka-eg/types";
+import type { ProjectSummary, SearchSort } from "@jinka-eg/types";
+import { SearchDocumentsService } from "../common/search-documents.service.js";
 import { PrismaService } from "../common/prisma.service.js";
 
 function localizedText(en?: string | null, ar?: string | null) {
@@ -14,30 +15,35 @@ function localizedText(en?: string | null, ar?: string | null) {
 
 @Injectable()
 export class ProjectsService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(SearchDocumentsService) private readonly searchDocuments: SearchDocumentsService
+  ) {}
 
-  async findAll(query?: string): Promise<ProjectSummary[]> {
+  async findAll(query?: string, sort?: SearchSort): Promise<ProjectSummary[]> {
+    const rows = await this.searchDocuments.searchProjectIds(query, sort);
+
+    if (rows.length === 0) {
+      return [];
+    }
+
     const projects = await this.prisma.project.findMany({
-      where: query
-        ? {
-            OR: [
-              { nameEn: { contains: query, mode: "insensitive" } },
-              { nameAr: { contains: query, mode: "insensitive" } },
-              { developer: { is: { nameEn: { contains: query, mode: "insensitive" } } } },
-              { developer: { is: { nameAr: { contains: query, mode: "insensitive" } } } },
-              { area: { is: { nameEn: { contains: query, mode: "insensitive" } } } },
-              { area: { is: { nameAr: { contains: query, mode: "insensitive" } } } }
-            ]
-          }
-        : undefined,
+      where: {
+        id: {
+          in: rows.map((row) => row.projectId)
+        }
+      },
       include: {
         developer: true,
         area: true
-      },
-      orderBy: [{ startingPrice: "asc" }, { updatedAt: "desc" }]
+      }
     });
 
-    return projects.map((project) => this.mapProject(project));
+    const projectMap = new Map(projects.map((project) => [project.id, project]));
+    return rows
+      .map((row) => projectMap.get(row.projectId))
+      .filter((project): project is ProjectRecord => Boolean(project))
+      .map((project) => this.mapProject(project));
   }
 
   async findOne(id: string): Promise<ProjectSummary> {

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Inject, Post, Req, Res } from "@nestjs/common";
+import { Body, Controller, Get, Headers, Inject, Post, Query, Req, Res } from "@nestjs/common";
 import { IsEmail, IsString, Length } from "class-validator";
 import type { Request, Response } from "express";
 
@@ -21,6 +21,22 @@ class VerifyOtpDto {
 class RefreshTokenDto {
   @IsString()
   refreshToken!: string;
+}
+
+class GoogleStartQueryDto {
+  @IsString()
+  locale!: string;
+
+  @IsString()
+  returnTo!: string;
+}
+
+class GoogleCallbackQueryDto {
+  @IsString()
+  code!: string;
+
+  @IsString()
+  state!: string;
 }
 
 @Controller("auth")
@@ -75,12 +91,25 @@ export class AuthController {
   }
 
   @Get("google/start")
-  googleStart() {
-    return this.authService.getGoogleStartUrl();
+  googleStart(@Query() query: GoogleStartQueryDto) {
+    return this.authService.getGoogleStartUrl(query.locale, query.returnTo);
   }
 
   @Get("google/callback")
-  googleCallback() {
-    return this.authService.getGoogleCallback();
+  async googleCallback(@Query() query: GoogleCallbackQueryDto, @Res() res: Response) {
+    const result = await this.authService.getGoogleCallback(query.code, query.state);
+    res.cookie("access_token", result.accessToken, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/"
+    });
+    res.cookie("refresh_token", result.refreshToken, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/"
+    });
+    return res.redirect(result.returnTo);
   }
 }

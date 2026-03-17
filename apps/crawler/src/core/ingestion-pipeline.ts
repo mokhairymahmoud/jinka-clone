@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { SendEmailCommand, SESv2Client } from "@aws-sdk/client-sesv2";
 import {
   FraudLabel as PrismaFraudLabel,
   ListingPurpose as PrismaListingPurpose,
@@ -9,7 +10,9 @@ import {
   PrismaClient,
   SourceListingStatus as PrismaSourceListingStatus
 } from "@prisma/client";
+import webpush from "web-push";
 
+import { refreshSearchDocumentsStatements } from "@jinka-eg/config";
 import type { ListingSource } from "@jinka-eg/types";
 import type { QueueMap } from "./queue.js";
 import type { NormalizedListingCandidate, ParsedListingCandidate, RawPageResult, SourceSeed } from "./connector.js";
@@ -69,6 +72,21 @@ type PersistedVariantRecord = Prisma.ListingVariantGetPayload<{
     priceHistory: {
       orderBy: {
         recordedAt: "desc";
+      };
+    };
+  };
+}>;
+
+type QueuedDeliveryRecord = Prisma.NotificationDeliveryGetPayload<{
+  include: {
+    notification: {
+      include: {
+        alert: true;
+        user: {
+          include: {
+            pushSubscriptions: true;
+          };
+        };
       };
     };
   };
@@ -225,6 +243,8 @@ function asCoordinates(value: unknown) {
 }
 
 export class IngestionPipeline {
+  private sesClient: SESv2Client | null = null;
+
   constructor(
     private readonly queues: QueueMap,
     private readonly prisma = new PrismaClient(),
@@ -242,57 +262,9 @@ export class IngestionPipeline {
     for (const source of enabledSources) {
       const connector = getConnector(source);
       const seeds = await connector.discover();
-      const labels = seeds.map((seed) => seed.label);
-
-      await this.prisma.sourcePartition.updateMany({
-        where: {
-          source: toPrismaSource(source),
-          ...(labels.length > 0
-            ? {
-                label: {
-                  notIn: labels
-                }
-              }
-            : {})
-        },
-        data: {
-          isActive: false
-        }
+      syncedPartitions += await this.syncSeedsForSource(source, seeds, {
+        deactivateMissing: connector.getDiscoverySurfaceMode() === "authoritative"
       });
-
-      for (const seed of seeds) {
-        await this.prisma.sourcePartition.upsert({
-          where: {
-            source_label: {
-              source: toPrismaSource(source),
-              label: seed.label
-            }
-          },
-          update: {
-            seedUrl: seed.url,
-            purpose: seed.purpose ? toPrismaPurpose(seed.purpose) : undefined,
-            marketSegment: seed.marketSegment ? toPrismaMarketSegment(seed.marketSegment) : undefined,
-            propertyType: seed.propertyType,
-            areaSlug: seed.areaSlug,
-            page: seed.page,
-            priority: seed.priority ?? 100,
-            isActive: true
-          },
-          create: {
-            source: toPrismaSource(source),
-            label: seed.label,
-            seedUrl: seed.url,
-            purpose: seed.purpose ? toPrismaPurpose(seed.purpose) : undefined,
-            marketSegment: seed.marketSegment ? toPrismaMarketSegment(seed.marketSegment) : undefined,
-            propertyType: seed.propertyType,
-            areaSlug: seed.areaSlug,
-            page: seed.page,
-            priority: seed.priority ?? 100,
-            nextCrawlAt: new Date()
-          }
-        });
-        syncedPartitions += 1;
-      }
     }
 
     return {
@@ -615,6 +587,12 @@ export class IngestionPipeline {
         })
       : null;
     const controls = connector.getDiscoveryControls(raw, candidates, payload.seed, partition?.lastDiscoverySignature ?? null);
+
+    if (controls.discoveredSeeds && controls.discoveredSeeds.length > 0) {
+      await this.syncSeedsForSource(payload.source, controls.discoveredSeeds, {
+        deactivateMissing: false
+      });
+    }
 
     await this.prisma.ingestionRun.update({
       where: { id: payload.runId },
@@ -1021,6 +999,7 @@ export class IngestionPipeline {
 
     if (payload.stage === "send-notification" && payload.notificationIds) {
       await this.createDeliveryLogs(payload.notificationIds);
+      await this.processNotificationDeliveries(payload.notificationIds);
       return { source: payload.source, stage: payload.stage, deliveries: payload.notificationIds.length };
     }
 
@@ -1144,6 +1123,8 @@ export class IngestionPipeline {
         touchedClusters.add(clusterSync.clusterId);
       }
     }
+
+    await this.refreshSearchDocuments();
 
     return {
       ...summary,
@@ -1880,7 +1861,8 @@ export class IngestionPipeline {
           channel: "email",
           status:
             notification.alert?.notifyByEmail && prefs.emailEnabled !== false && !inQuietHours ? "queued" : "skipped",
-          attemptedAt: new Date(),
+          attemptedAt:
+            notification.alert?.notifyByEmail && prefs.emailEnabled !== false && !inQuietHours ? null : new Date(),
           metadata: {
             quietHours: inQuietHours,
             enabled: notification.alert?.notifyByEmail ?? false,
@@ -1898,7 +1880,13 @@ export class IngestionPipeline {
             !inQuietHours
               ? "queued"
               : "skipped",
-          attemptedAt: new Date(),
+          attemptedAt:
+            notification.alert?.notifyByPush &&
+            prefs.pushEnabled !== false &&
+            notification.user.pushSubscriptions.length > 0 &&
+            !inQuietHours
+              ? null
+              : new Date(),
           metadata: {
             quietHours: inQuietHours,
             enabled: notification.alert?.notifyByPush ?? false,
@@ -1913,6 +1901,195 @@ export class IngestionPipeline {
         data: rows
       });
     }
+  }
+
+  private async processNotificationDeliveries(notificationIds: string[]) {
+    const deliveries = await this.prisma.notificationDelivery.findMany({
+      where: {
+        notificationId: {
+          in: notificationIds
+        },
+        status: "queued"
+      },
+      include: {
+        notification: {
+          include: {
+            alert: true,
+            user: {
+              include: {
+                pushSubscriptions: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    for (const delivery of deliveries) {
+      if (delivery.channel === "email") {
+        await this.sendEmailDelivery(delivery);
+      }
+
+      if (delivery.channel === "push") {
+        await this.sendPushDelivery(delivery);
+      }
+    }
+  }
+
+  private getSesClient() {
+    if (!this.sesClient) {
+      this.sesClient = new SESv2Client({
+        region: process.env.SES_REGION
+      });
+    }
+
+    return this.sesClient;
+  }
+
+  private async sendEmailDelivery(delivery: QueuedDeliveryRecord) {
+    if (!process.env.EMAIL_FROM || !process.env.SES_REGION) {
+      await this.markDeliveryFailed(delivery.id, delivery.metadata, "SES is not configured");
+      return;
+    }
+
+    try {
+      const listingUrl = delivery.notification.clusterId
+        ? `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/en/listing/${delivery.notification.clusterId}`
+        : null;
+      const result = await this.getSesClient().send(
+        new SendEmailCommand({
+          FromEmailAddress: process.env.EMAIL_FROM,
+          Destination: {
+            ToAddresses: [delivery.notification.user.email]
+          },
+          Content: {
+            Simple: {
+              Subject: {
+                Data: delivery.notification.title
+              },
+              Body: {
+                Text: {
+                  Data: [delivery.notification.body, listingUrl ? `Listing: ${listingUrl}` : null].filter(Boolean).join("\n\n")
+                }
+              }
+            }
+          }
+        })
+      );
+
+      await this.prisma.notificationDelivery.update({
+        where: { id: delivery.id },
+        data: {
+          status: "delivered",
+          attemptedAt: new Date(),
+          deliveredAt: new Date(),
+          metadata: {
+            ...(delivery.metadata as Record<string, unknown> | null),
+            messageId: result.MessageId ?? null,
+            recipient: delivery.notification.user.email
+          }
+        }
+      });
+    } catch (error) {
+      await this.markDeliveryFailed(delivery.id, delivery.metadata, (error as Error).message);
+    }
+  }
+
+  private async sendPushDelivery(delivery: QueuedDeliveryRecord) {
+    if (!process.env.WEB_PUSH_PUBLIC_KEY || !process.env.WEB_PUSH_PRIVATE_KEY || !process.env.EMAIL_FROM) {
+      await this.markDeliveryFailed(delivery.id, delivery.metadata, "Web push is not configured");
+      return;
+    }
+
+    const subscriptions = delivery.notification.user.pushSubscriptions;
+
+    if (subscriptions.length === 0) {
+      await this.prisma.notificationDelivery.update({
+        where: { id: delivery.id },
+        data: {
+          status: "skipped",
+          attemptedAt: new Date(),
+          metadata: {
+            ...(delivery.metadata as Record<string, unknown> | null),
+            reason: "no_subscriptions"
+          }
+        }
+      });
+      return;
+    }
+
+    webpush.setVapidDetails(`mailto:${process.env.EMAIL_FROM}`, process.env.WEB_PUSH_PUBLIC_KEY, process.env.WEB_PUSH_PRIVATE_KEY);
+
+    const payload = JSON.stringify({
+      title: delivery.notification.title,
+      body: delivery.notification.body,
+      clusterId: delivery.notification.clusterId ?? null
+    });
+    let deliveredCount = 0;
+    const failures: Array<{ endpoint: string; message: string }> = [];
+
+    for (const subscription of subscriptions) {
+      try {
+        await webpush.sendNotification(
+          {
+            endpoint: subscription.endpoint,
+            keys: {
+              p256dh: subscription.p256dhKey,
+              auth: subscription.authKey
+            }
+          },
+          payload
+        );
+        deliveredCount += 1;
+      } catch (error) {
+        failures.push({
+          endpoint: subscription.endpoint,
+          message: (error as Error).message
+        });
+
+        const statusCode =
+          typeof error === "object" && error !== null && "statusCode" in error
+            ? Number((error as { statusCode?: unknown }).statusCode)
+            : undefined;
+
+        if (statusCode === 404 || statusCode === 410) {
+          await this.prisma.pushSubscription.deleteMany({
+            where: {
+              endpoint: subscription.endpoint
+            }
+          });
+        }
+      }
+    }
+
+    await this.prisma.notificationDelivery.update({
+      where: { id: delivery.id },
+      data: {
+        status: deliveredCount > 0 ? "delivered" : "failed",
+        attemptedAt: new Date(),
+        deliveredAt: deliveredCount > 0 ? new Date() : null,
+        metadata: {
+          ...(delivery.metadata as Record<string, unknown> | null),
+          deliveredCount,
+          failureCount: failures.length,
+          failures
+        }
+      }
+    });
+  }
+
+  private async markDeliveryFailed(id: string, metadata: Prisma.JsonValue | null, errorMessage: string) {
+    await this.prisma.notificationDelivery.update({
+      where: { id },
+      data: {
+        status: "failed",
+        attemptedAt: new Date(),
+        metadata: {
+          ...(metadata as Record<string, unknown> | null),
+          error: errorMessage
+        }
+      }
+    });
   }
 
   private async persistRawSnapshot(source: ListingSource, runId: string, seed: SourceSeed, raw: RawPageResult) {
@@ -2205,6 +2382,71 @@ export class IngestionPipeline {
     });
   }
 
+  private async syncSeedsForSource(
+    source: ListingSource,
+    seeds: SourceSeed[],
+    options: {
+      deactivateMissing: boolean;
+    }
+  ) {
+    const prismaSource = toPrismaSource(source);
+    const labels = seeds.map((seed) => seed.label);
+
+    if (options.deactivateMissing) {
+      await this.prisma.sourcePartition.updateMany({
+        where: {
+          source: prismaSource,
+          ...(labels.length > 0
+            ? {
+                label: {
+                  notIn: labels
+                }
+              }
+            : {})
+        },
+        data: {
+          isActive: false
+        }
+      });
+    }
+
+    for (const seed of seeds) {
+      await this.prisma.sourcePartition.upsert({
+        where: {
+          source_label: {
+            source: prismaSource,
+            label: seed.label
+          }
+        },
+        update: {
+          seedUrl: seed.url,
+          purpose: seed.purpose ? toPrismaPurpose(seed.purpose) : undefined,
+          marketSegment: seed.marketSegment ? toPrismaMarketSegment(seed.marketSegment) : undefined,
+          propertyType: seed.propertyType,
+          areaSlug: seed.areaSlug,
+          page: seed.page,
+          priority: seed.priority ?? 100,
+          isActive: true,
+          nextCrawlAt: new Date()
+        },
+        create: {
+          source: prismaSource,
+          label: seed.label,
+          seedUrl: seed.url,
+          purpose: seed.purpose ? toPrismaPurpose(seed.purpose) : undefined,
+          marketSegment: seed.marketSegment ? toPrismaMarketSegment(seed.marketSegment) : undefined,
+          propertyType: seed.propertyType,
+          areaSlug: seed.areaSlug,
+          page: seed.page,
+          priority: seed.priority ?? 100,
+          nextCrawlAt: new Date()
+        }
+      });
+    }
+
+    return seeds.length;
+  }
+
   private async markRunProgress(
     runId: string,
     rawSnapshotId: string,
@@ -2260,6 +2502,10 @@ export class IngestionPipeline {
 
     if (!run) {
       return;
+    }
+
+    if (run.status === "completed") {
+      await this.refreshSearchDocuments();
     }
 
     const threshold = 0.72;
@@ -2326,6 +2572,16 @@ export class IngestionPipeline {
         details
       }
     });
+  }
+
+  private async refreshSearchDocuments() {
+    for (const statement of refreshSearchDocumentsStatements) {
+      try {
+        await this.prisma.$executeRawUnsafe(statement);
+      } catch (error) {
+        console.warn(`Unable to refresh search documents: ${(error as Error).message}`);
+      }
+    }
   }
 
   private async filterEnabledSources(sources: ListingSource[]) {

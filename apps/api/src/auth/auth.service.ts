@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable, NotImplementedException, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, Inject, Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { UserRole } from "@prisma/client";
 import { createHash, randomInt } from "node:crypto";
@@ -162,19 +162,63 @@ export class AuthService {
     };
   }
 
-  getGoogleStartUrl() {
+  private getGoogleRedirectUri() {
+    return `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"}/v1/auth/google/callback`;
+  }
+
+  private getGoogleStateSecret() {
+    return process.env.GOOGLE_CLIENT_SECRET ?? process.env.JWT_REFRESH_SECRET ?? "refresh-secret";
+  }
+
+  private getAppBaseUrl() {
+    return process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  }
+
+  private sanitizeReturnTo(returnTo: string | undefined, locale: string) {
+    const fallback = new URL(`/${locale}/search/units`, this.getAppBaseUrl()).toString();
+
+    if (!returnTo) {
+      return fallback;
+    }
+
+    try {
+      const appBaseUrl = new URL(this.getAppBaseUrl());
+      const resolved = returnTo.startsWith("/")
+        ? new URL(returnTo, appBaseUrl)
+        : new URL(returnTo);
+
+      return resolved.origin === appBaseUrl.origin ? resolved.toString() : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
+  async getGoogleStartUrl(locale = "en", returnTo = "/en/search/units") {
     if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !process.env.NEXT_PUBLIC_API_URL) {
       throw new BadRequestException("Google OAuth is not configured");
     }
 
-    const redirectUri = `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/google/callback`;
+    const safeLocale = locale === "ar" ? "ar" : "en";
+    const safeReturnTo = this.sanitizeReturnTo(returnTo, safeLocale);
+    const state = await this.jwtService.signAsync(
+      {
+        locale: safeLocale,
+        returnTo: safeReturnTo,
+        scope: "google_oauth"
+      },
+      {
+        secret: this.getGoogleStateSecret(),
+        expiresIn: "10m"
+      }
+    );
     const params = new URLSearchParams({
       client_id: process.env.GOOGLE_CLIENT_ID,
-      redirect_uri: redirectUri,
+      redirect_uri: this.getGoogleRedirectUri(),
       response_type: "code",
       scope: "openid email profile",
       access_type: "offline",
-      prompt: "consent"
+      prompt: "consent",
+      state
     });
 
     return {
@@ -182,8 +226,93 @@ export class AuthService {
     };
   }
 
-  getGoogleCallback() {
-    throw new NotImplementedException("Google callback token exchange is not implemented in this phase");
+  async getGoogleCallback(code: string, state: string) {
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !process.env.NEXT_PUBLIC_API_URL) {
+      throw new BadRequestException("Google OAuth is not configured");
+    }
+
+    const oauthState = await this.jwtService.verifyAsync<{
+      locale?: string;
+      returnTo?: string;
+      scope?: string;
+    }>(state, {
+      secret: this.getGoogleStateSecret()
+    });
+
+    if (oauthState.scope !== "google_oauth") {
+      throw new UnauthorizedException("Google OAuth state is invalid");
+    }
+
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: {
+        "content-type": "application/x-www-form-urlencoded"
+      },
+      body: new URLSearchParams({
+        code,
+        client_id: process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        redirect_uri: this.getGoogleRedirectUri(),
+        grant_type: "authorization_code"
+      })
+    });
+
+    if (!tokenResponse.ok) {
+      throw new UnauthorizedException("Unable to exchange Google OAuth code");
+    }
+
+    const tokenPayload = (await tokenResponse.json()) as { access_token?: string };
+
+    if (!tokenPayload.access_token) {
+      throw new UnauthorizedException("Google OAuth response did not include an access token");
+    }
+
+    const userResponse = await fetch("https://openidconnect.googleapis.com/v1/userinfo", {
+      headers: {
+        authorization: `Bearer ${tokenPayload.access_token}`
+      }
+    });
+
+    if (!userResponse.ok) {
+      throw new UnauthorizedException("Unable to load Google profile");
+    }
+
+    const profile = (await userResponse.json()) as {
+      email?: string;
+      email_verified?: boolean;
+      name?: string;
+    };
+
+    if (!profile.email || profile.email_verified === false) {
+      throw new UnauthorizedException("Google account email is unavailable or unverified");
+    }
+
+    const safeLocale = oauthState.locale === "ar" ? "ar" : "en";
+    const user = await this.prisma.user.upsert({
+      where: {
+        email: profile.email.trim().toLowerCase()
+      },
+      update: {
+        name: profile.name ?? undefined,
+        locale: safeLocale
+      },
+      create: {
+        email: profile.email.trim().toLowerCase(),
+        name: profile.name ?? undefined,
+        locale: safeLocale,
+        notificationPrefs: {
+          emailEnabled: true,
+          pushEnabled: true
+        },
+        role: UserRole.USER
+      }
+    });
+    const tokens = await this.createAuthPayload(user);
+
+    return {
+      ...tokens,
+      returnTo: this.sanitizeReturnTo(oauthState.returnTo, safeLocale)
+    };
   }
 
   async refreshSession(refreshToken: string, metadata?: { ipAddress?: string; userAgent?: string }) {

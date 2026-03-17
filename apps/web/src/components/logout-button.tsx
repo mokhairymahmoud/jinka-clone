@@ -18,7 +18,7 @@ export function LogoutButton({ locale }: { locale: string }) {
     <button
       type="button"
       onClick={handleLogout}
-      className="rounded-full border border-stone-300 px-3 py-1.5 text-sm font-medium text-stone-600 transition hover:bg-stone-100"
+      className="rounded-full border border-[var(--jinka-border)] bg-[var(--jinka-surface)] px-3 py-1.5 text-sm font-medium text-[var(--jinka-muted)] transition hover:bg-[var(--jinka-surface-muted)]"
     >
       Sign out
     </button>

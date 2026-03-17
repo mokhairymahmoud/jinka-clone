@@ -30,12 +30,18 @@ type PropertyFinderListing = {
     description?: string;
     location?: {
       full_name?: string;
+      id?: string;
+      name?: string;
       path_name?: string;
+      path?: string;
+      slug?: string;
+      type?: string;
       coordinates?: {
         lat?: number;
         lon?: number;
       };
     };
+    location_tree?: PropertyFinderLocationNode[];
     images?: Array<{
       medium?: string;
       small?: string;
@@ -56,6 +62,15 @@ type PropertyFinderListing = {
   };
 };
 
+type PropertyFinderLocationNode = {
+  id?: string;
+  name?: string;
+  type?: string;
+  slug?: string;
+  slug_en?: string;
+  level?: string | number;
+};
+
 type PropertyFinderPageProps = {
   filtersData?: {
     filterChoices?: {
@@ -71,14 +86,6 @@ type PropertyFinderPageProps = {
     };
   };
 };
-
-const propertyFinderAreas = [
-  { label: "egypt", areaSlug: "egypt", locationId: "1864", priority: 20 },
-  { label: "cairo", areaSlug: "cairo", locationId: "2254", priority: 25 },
-  { label: "new-cairo", areaSlug: "new-cairo", locationId: "2255", priority: 25 },
-  { label: "giza", areaSlug: "giza", locationId: "20663", priority: 35 },
-  { label: "sheikh-zayed", areaSlug: "sheikh-zayed-city", locationId: "28683", priority: 35 }
-] as const;
 
 const propertyFinderMatrix = [
   { categoryId: "2", purpose: "rent" as const, propertyType: "apartment" as const, propertyTypeId: "1" },
@@ -104,10 +111,12 @@ function getPageProps(raw: RawPageResult) {
 export class PropertyFinderConnector extends BasePlaywrightConnector {
   readonly source = "property_finder" as const;
 
+  override getDiscoverySurfaceMode() {
+    return "additive" as const;
+  }
+
   async discover(): Promise<SourceSeed[]> {
-    return propertyFinderAreas.flatMap((area) =>
-      propertyFinderMatrix.map((entry) => this.buildSeed(area.locationId, area.areaSlug, area.label, area.priority, entry))
-    );
+    return propertyFinderMatrix.map((entry) => this.buildRootSeed(entry));
   }
 
   override getDiscoveryControls(
@@ -120,6 +129,7 @@ export class PropertyFinderConnector extends BasePlaywrightConnector {
     const meta = pageProps.searchResult?.meta;
     const currentPage = seed.page ?? meta?.page ?? 1;
     const pageBudget = Number(process.env.PROPERTY_FINDER_MAX_DISCOVERY_PAGE ?? "6");
+    const discoveredSeeds = this.discoverLocationSeeds(raw, seed);
     const pageSignature = candidates
       .slice(0, 10)
       .map((candidate) => candidate.sourceListingId ?? candidate.sourceUrl ?? "unknown")
@@ -127,6 +137,7 @@ export class PropertyFinderConnector extends BasePlaywrightConnector {
 
     if (candidates.length === 0) {
       return {
+        discoveredSeeds,
         pageSignature,
         stopReason: "no_results"
       };
@@ -134,6 +145,7 @@ export class PropertyFinderConnector extends BasePlaywrightConnector {
 
     if (previousSignature && previousSignature === pageSignature) {
       return {
+        discoveredSeeds,
         pageSignature,
         stopReason: "repeated_results"
       };
@@ -142,12 +154,14 @@ export class PropertyFinderConnector extends BasePlaywrightConnector {
     const pageCount = meta?.page_count ?? currentPage;
     if (currentPage >= pageBudget || currentPage >= pageCount) {
       return {
+        discoveredSeeds,
         pageSignature,
         stopReason: currentPage >= pageBudget ? "page_budget_reached" : "page_count_reached"
       };
     }
 
     return {
+      discoveredSeeds,
       pageSignature,
       nextSeed: {
         ...seed,
@@ -265,16 +279,9 @@ export class PropertyFinderConnector extends BasePlaywrightConnector {
     };
   }
 
-  private buildSeed(
-    locationId: string,
-    areaSlug: string,
-    areaLabel: string,
-    areaPriority: number,
-    entry: (typeof propertyFinderMatrix)[number]
-  ): SourceSeed {
+  private buildRootSeed(entry: (typeof propertyFinderMatrix)[number]): SourceSeed {
     const url = new URL("https://www.propertyfinder.eg/en/search");
 
-    url.searchParams.set("l", locationId);
     url.searchParams.set("c", entry.categoryId);
     url.searchParams.set("t", entry.propertyTypeId);
     url.searchParams.set("ob", "mr");
@@ -282,14 +289,13 @@ export class PropertyFinderConnector extends BasePlaywrightConnector {
     return {
       source: this.source,
       url: url.toString(),
-      label: `pf-${entry.categoryId}-${entry.propertyType}-${areaLabel}`,
+      label: `pf-${entry.categoryId}-${entry.propertyType}-root`,
       seedKind: "discovery",
-      areaSlug,
       page: 1,
       purpose: entry.purpose,
       marketSegment: "resale",
       propertyType: entry.propertyType,
-      priority: areaPriority + (entry.propertyType === "apartment" || entry.propertyType === "villa" ? 0 : 10)
+      priority: entry.propertyType === "apartment" || entry.propertyType === "villa" ? 20 : 30
     };
   }
 
@@ -297,5 +303,126 @@ export class PropertyFinderConnector extends BasePlaywrightConnector {
     const url = new URL(rawUrl);
     url.searchParams.set("page", String(page));
     return url.toString();
+  }
+
+  private discoverLocationSeeds(raw: RawPageResult, seed: SourceSeed): SourceSeed[] {
+    if (seed.areaSlug) {
+      return [];
+    }
+
+    const categoryId = this.readParam(seed.url, "c");
+    const propertyTypeId = this.readParam(seed.url, "t");
+
+    if (!categoryId || !propertyTypeId) {
+      return [];
+    }
+
+    const allowedTypes = new Set(
+      (process.env.PROPERTY_FINDER_DISCOVERY_LOCATION_TYPES ?? "CITY,TOWN,DISTRICT")
+        .split(",")
+        .map((value) => value.trim().toUpperCase())
+        .filter(Boolean)
+    );
+    const perPageLimit = Number(process.env.PROPERTY_FINDER_DISCOVERY_LOCATION_LIMIT ?? "12");
+    const listings = getPageProps(raw).searchResult?.listings ?? [];
+    const discovered = new Map<
+      string,
+      {
+        count: number;
+        node: PropertyFinderLocationNode;
+      }
+    >();
+
+    for (const listing of listings) {
+      for (const node of listing.property?.location_tree ?? []) {
+        const nodeId = node.id;
+        const nodeType = node.type?.toUpperCase();
+
+        if (!nodeId || !nodeType || !allowedTypes.has(nodeType)) {
+          continue;
+        }
+
+        const existing = discovered.get(nodeId);
+        if (existing) {
+          existing.count += 1;
+          continue;
+        }
+
+        discovered.set(nodeId, {
+          count: 1,
+          node
+        });
+      }
+    }
+
+    return [...discovered.values()]
+      .sort((left, right) => {
+        if (right.count !== left.count) {
+          return right.count - left.count;
+        }
+
+        return this.getLocationLevel(left.node) - this.getLocationLevel(right.node);
+      })
+      .slice(0, perPageLimit)
+      .map(({ node }) => this.buildLocationSeed(node, categoryId, propertyTypeId, seed))
+      .filter((candidate): candidate is SourceSeed => Boolean(candidate));
+  }
+
+  private buildLocationSeed(
+    node: PropertyFinderLocationNode,
+    categoryId: string,
+    propertyTypeId: string,
+    parentSeed: SourceSeed
+  ): SourceSeed | null {
+    if (!node.id) {
+      return null;
+    }
+
+    const areaSlug = this.normalizeLabel(node.slug_en ?? node.slug ?? node.name ?? node.id);
+    if (!areaSlug) {
+      return null;
+    }
+
+    const url = new URL("https://www.propertyfinder.eg/en/search");
+    url.searchParams.set("l", node.id);
+    url.searchParams.set("c", categoryId);
+    url.searchParams.set("t", propertyTypeId);
+    url.searchParams.set("ob", "mr");
+
+    return {
+      source: this.source,
+      url: url.toString(),
+      label: `pf-${categoryId}-${parentSeed.propertyType ?? propertyTypeId}-${areaSlug}`,
+      seedKind: "discovery",
+      areaSlug,
+      page: 1,
+      purpose: parentSeed.purpose,
+      marketSegment: parentSeed.marketSegment,
+      propertyType: parentSeed.propertyType,
+      priority: Math.min((parentSeed.priority ?? 100) + 5 + this.getLocationLevel(node) * 5, 120)
+    };
+  }
+
+  private getLocationLevel(node: PropertyFinderLocationNode) {
+    const level =
+      typeof node.level === "number"
+        ? node.level
+        : typeof node.level === "string"
+          ? Number(node.level)
+          : Number.NaN;
+
+    return Number.isFinite(level) ? level : 0;
+  }
+
+  private normalizeLabel(value: string) {
+    return value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  }
+
+  private readParam(rawUrl: string, key: string) {
+    return new URL(rawUrl).searchParams.get(key) ?? undefined;
   }
 }

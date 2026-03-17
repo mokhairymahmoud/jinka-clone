@@ -22,6 +22,15 @@ function toJsonSearchFilters(filters: SearchFilters): Prisma.InputJsonObject {
   if (filters.maxAreaSqm !== undefined) json.maxAreaSqm = filters.maxAreaSqm;
   if (filters.compoundIds !== undefined) json.compoundIds = [...filters.compoundIds];
   if (filters.developerIds !== undefined) json.developerIds = [...filters.developerIds];
+  if (filters.sort !== undefined) json.sort = filters.sort;
+  if (filters.bbox !== undefined) {
+    json.bbox = {
+      north: filters.bbox.north,
+      south: filters.bbox.south,
+      east: filters.bbox.east,
+      west: filters.bbox.west
+    } satisfies Prisma.InputJsonObject;
+  }
 
   return json;
 }

@@ -1,16 +1,39 @@
 import Link from "next/link";
 
-import { mockListings, mockProjects } from "@jinka-eg/fixtures";
 import { Badge, Card, SectionTitle } from "@jinka-eg/ui";
 import { ListingCard } from "../../components/listing-card";
 import { MarketingHeader } from "../../components/marketing-header";
 import { ProjectCard } from "../../components/project-card";
 import { getMessages, resolveLocale } from "../../i18n/messages";
+import { apiFetch } from "../../lib/api";
+
+async function fetchHomeListings() {
+  const response = await apiFetch("/v1/listings?sort=newest");
+
+  if (!response.ok) {
+    return [];
+  }
+
+  const listings = (await response.json()) as Array<Parameters<typeof ListingCard>[0]["listing"]>;
+  return listings.slice(0, 4);
+}
+
+async function fetchHomeProjects() {
+  const response = await apiFetch("/v1/projects?sort=newest");
+
+  if (!response.ok) {
+    return [];
+  }
+
+  const projects = (await response.json()) as Array<Parameters<typeof ProjectCard>[0]["project"]>;
+  return projects.slice(0, 4);
+}
 
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const safeLocale = resolveLocale(locale);
   const t = getMessages(safeLocale);
+  const [listings, projects] = await Promise.all([fetchHomeListings(), fetchHomeProjects()]);
 
   return (
     <div className="min-h-screen">
@@ -69,23 +92,27 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           </div>
         </section>
 
-        <section className="mt-20 space-y-8">
-          <SectionTitle eyebrow={t.units} title="Unit feed preview" description="The default browsing surface is a dense, mobile-first feed with freshness, price, and trust visible up front." />
-          <div className="grid gap-6 lg:grid-cols-2">
-            {mockListings.map((listing) => (
-              <ListingCard key={listing.id} listing={listing} locale={safeLocale} />
-            ))}
-          </div>
-        </section>
+        {listings.length > 0 ? (
+          <section className="mt-20 space-y-8">
+            <SectionTitle eyebrow={t.units} title="Unit feed preview" description="The default browsing surface is a dense, mobile-first feed with freshness, price, and trust visible up front." />
+            <div className="grid gap-6 lg:grid-cols-2">
+              {listings.map((listing) => (
+                <ListingCard key={listing.id} listing={listing} locale={safeLocale} />
+              ))}
+            </div>
+          </section>
+        ) : null}
 
-        <section className="mt-20 space-y-8">
-          <SectionTitle eyebrow={t.projects} title="Projects remain first-class" description="Off-plan inventory stays separate from unit listings to keep ranking and decision-making clear." />
-          <div className="grid gap-6 lg:grid-cols-2">
-            {mockProjects.map((project) => (
-              <ProjectCard key={project.id} project={project} locale={safeLocale} />
-            ))}
-          </div>
-        </section>
+        {projects.length > 0 ? (
+          <section className="mt-20 space-y-8">
+            <SectionTitle eyebrow={t.projects} title="Projects remain first-class" description="Off-plan inventory stays separate from unit listings to keep ranking and decision-making clear." />
+            <div className="grid gap-6 lg:grid-cols-2">
+              {projects.map((project) => (
+                <ProjectCard key={project.id} project={project} locale={safeLocale} />
+              ))}
+            </div>
+          </section>
+        ) : null}
       </div>
     </div>
   );

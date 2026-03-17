@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 
 import type { Coordinates, ListingCluster, ListingVariant, SearchFilters } from "@jinka-eg/types";
 import { PrismaService } from "../common/prisma.service.js";
+import { SearchDocumentsService } from "../common/search-documents.service.js";
 
 type ClusterRecord = Prisma.ListingClusterGetPayload<{
   include: {
@@ -81,39 +82,18 @@ function getVariantPrice(rawFields: Record<string, unknown>, fallback: number, p
 
 @Injectable()
 export class ListingsService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(SearchDocumentsService) private readonly searchDocuments: SearchDocumentsService
+  ) {}
 
   async findAll(query?: string) {
     return this.searchClusters(query ? { query } : {});
   }
 
   async searchClusters(filters: SearchFilters = {}): Promise<ListingCluster[]> {
-    const where = this.buildWhere(filters);
-    const clusters = await this.prisma.listingCluster.findMany({
-      where,
-      include: {
-        area: true,
-        variants: {
-          where: {
-            inactiveAt: null
-          },
-          orderBy: {
-            updatedAt: "desc"
-          }
-        },
-        fraudCases: {
-          orderBy: {
-            createdAt: "desc"
-          }
-        }
-      },
-      orderBy: {
-        updatedAt: "desc"
-      },
-      take: 60
-    });
-
-    return clusters.map((cluster) => this.mapCluster(cluster));
+    const rows = await this.searchDocuments.searchListingClusterIds(filters);
+    return this.findClustersByIds(rows.map((row) => row.clusterId));
   }
 
   async findOne(id: string) {
@@ -157,6 +137,10 @@ export class ListingsService {
   }
 
   async findAllByIds(ids: string[]) {
+    return this.findClustersByIds(ids);
+  }
+
+  private async findClustersByIds(ids: string[]) {
     if (ids.length === 0) {
       return [];
     }
@@ -190,65 +174,8 @@ export class ListingsService {
       }
     });
 
-    return clusters.map((cluster) => this.mapCluster(cluster));
-  }
-
-  private buildWhere(filters: SearchFilters): Prisma.ListingClusterWhereInput {
-    const where: Prisma.ListingClusterWhereInput = {
-      variants: {
-        some: {
-          inactiveAt: null
-        }
-      },
-      ...(filters.query
-        ? {
-            OR: [
-              { canonicalTitleEn: { contains: filters.query, mode: "insensitive" } },
-              { canonicalTitleAr: { contains: filters.query, mode: "insensitive" } },
-              { area: { is: { nameEn: { contains: filters.query, mode: "insensitive" } } } },
-              { area: { is: { nameAr: { contains: filters.query, mode: "insensitive" } } } }
-            ]
-          }
-        : {}),
-      ...(filters.purpose ? { purpose: filters.purpose.toUpperCase() as "RENT" | "SALE" } : {}),
-      ...(filters.marketSegment
-        ? { marketSegment: filters.marketSegment.toUpperCase() as "RESALE" | "PRIMARY" | "OFF_PLAN" }
-        : { marketSegment: { not: "OFF_PLAN" } }),
-      ...(filters.propertyTypes && filters.propertyTypes.length > 0
-        ? { propertyType: { in: filters.propertyTypes } }
-        : {}),
-      ...(filters.areaIds && filters.areaIds.length > 0
-        ? {
-            area: {
-              is: {
-                slug: {
-                  in: filters.areaIds
-                }
-              }
-            }
-          }
-        : {}),
-      ...(filters.bedrooms && filters.bedrooms.length > 0 ? { bedrooms: { in: filters.bedrooms } } : {}),
-      ...(filters.bathrooms && filters.bathrooms.length > 0 ? { bathrooms: { in: filters.bathrooms } } : {}),
-      ...(filters.minPrice !== undefined || filters.maxPrice !== undefined
-        ? {
-            bestPrice: {
-              ...(filters.minPrice !== undefined ? { gte: filters.minPrice } : {}),
-              ...(filters.maxPrice !== undefined ? { lte: filters.maxPrice } : {})
-            }
-          }
-        : {}),
-      ...(filters.minAreaSqm !== undefined || filters.maxAreaSqm !== undefined
-        ? {
-            areaSqm: {
-              ...(filters.minAreaSqm !== undefined ? { gte: filters.minAreaSqm } : {}),
-              ...(filters.maxAreaSqm !== undefined ? { lte: filters.maxAreaSqm } : {})
-            }
-          }
-        : {})
-    };
-
-    return where;
+    const clusterMap = new Map(clusters.map((cluster) => [cluster.id, cluster]));
+    return ids.map((id) => clusterMap.get(id)).filter((cluster): cluster is ClusterRecord => Boolean(cluster)).map((cluster) => this.mapCluster(cluster));
   }
 
   private mapCluster(cluster: ClusterRecord): ListingCluster {

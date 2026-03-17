@@ -1,4 +1,4 @@
-import { Body, Controller, Inject, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Inject, Post, UseGuards } from "@nestjs/common";
 import { IsOptional, IsString } from "class-validator";
 
 import { CurrentUser } from "../auth/current-user.decorator.js";
@@ -21,13 +21,29 @@ class CreatePushSubscriptionDto {
   platform?: string;
 }
 
+class DeletePushSubscriptionDto {
+  @IsString()
+  endpoint!: string;
+}
+
 @Controller("push-subscriptions")
-@UseGuards(JwtAuthGuard)
 export class PushSubscriptionsController {
   constructor(@Inject(PushSubscriptionsService) private readonly pushSubscriptionsService: PushSubscriptionsService) {}
 
+  @Get("public-key")
+  getPublicKey() {
+    return this.pushSubscriptionsService.getPublicKey();
+  }
+
   @Post()
+  @UseGuards(JwtAuthGuard)
   createPushSubscription(@CurrentUser() user: AuthenticatedUser, @Body() body: CreatePushSubscriptionDto) {
     return this.pushSubscriptionsService.createSubscription(user.id, body);
+  }
+
+  @Delete()
+  @UseGuards(JwtAuthGuard)
+  deletePushSubscription(@CurrentUser() user: AuthenticatedUser, @Body() body: DeletePushSubscriptionDto) {
+    return this.pushSubscriptionsService.deleteSubscription(user.id, body.endpoint);
   }
 }

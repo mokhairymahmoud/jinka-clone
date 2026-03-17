@@ -1,0 +1,2059 @@
+{
+  "generatedAt": "2026-03-16T15:28:52.646Z",
+  "rootSeedCount": 8,
+  "discoveredSeedCount": 216,
+  "roots": [
+    {
+      "label": "pf-2-apartment-root",
+      "url": "https://www.propertyfinder.eg/en/search?c=2&t=1&ob=mr",
+      "purpose": "rent",
+      "propertyType": "apartment",
+      "priority": 20
+    },
+    {
+      "label": "pf-2-villa-root",
+      "url": "https://www.propertyfinder.eg/en/search?c=2&t=35&ob=mr",
+      "purpose": "rent",
+      "propertyType": "villa",
+      "priority": 20
+    },
+    {
+      "label": "pf-1-apartment-root",
+      "url": "https://www.propertyfinder.eg/en/search?c=1&t=1&ob=mr",
+      "purpose": "sale",
+      "propertyType": "apartment",
+      "priority": 20
+    },
+    {
+      "label": "pf-1-villa-root",
+      "url": "https://www.propertyfinder.eg/en/search?c=1&t=35&ob=mr",
+      "purpose": "sale",
+      "propertyType": "villa",
+      "priority": 20
+    },
+    {
+      "label": "pf-4-office-root",
+      "url": "https://www.propertyfinder.eg/en/search?c=4&t=4&ob=mr",
+      "purpose": "rent",
+      "propertyType": "office",
+      "priority": 30
+    },
+    {
+      "label": "pf-4-retail-root",
+      "url": "https://www.propertyfinder.eg/en/search?c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "priority": 30
+    },
+    {
+      "label": "pf-3-office-root",
+      "url": "https://www.propertyfinder.eg/en/search?c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "priority": 30
+    },
+    {
+      "label": "pf-3-retail-root",
+      "url": "https://www.propertyfinder.eg/en/search?c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "priority": 30
+    }
+  ],
+  "rootSummaries": [
+    {
+      "label": "pf-2-apartment-root",
+      "url": "https://www.propertyfinder.eg/en/search?c=2&t=1&ob=mr",
+      "pagesVisited": 6,
+      "discoveredSeedEvents": 71
+    },
+    {
+      "label": "pf-2-villa-root",
+      "url": "https://www.propertyfinder.eg/en/search?c=2&t=35&ob=mr",
+      "pagesVisited": 6,
+      "discoveredSeedEvents": 72
+    },
+    {
+      "label": "pf-1-apartment-root",
+      "url": "https://www.propertyfinder.eg/en/search?c=1&t=1&ob=mr",
+      "pagesVisited": 6,
+      "discoveredSeedEvents": 72
+    },
+    {
+      "label": "pf-1-villa-root",
+      "url": "https://www.propertyfinder.eg/en/search?c=1&t=35&ob=mr",
+      "pagesVisited": 6,
+      "discoveredSeedEvents": 72
+    },
+    {
+      "label": "pf-4-office-root",
+      "url": "https://www.propertyfinder.eg/en/search?c=4&t=4&ob=mr",
+      "pagesVisited": 6,
+      "discoveredSeedEvents": 60
+    },
+    {
+      "label": "pf-4-retail-root",
+      "url": "https://www.propertyfinder.eg/en/search?c=4&t=27&ob=mr",
+      "pagesVisited": 6,
+      "discoveredSeedEvents": 72
+    },
+    {
+      "label": "pf-3-office-root",
+      "url": "https://www.propertyfinder.eg/en/search?c=3&t=4&ob=mr",
+      "pagesVisited": 6,
+      "discoveredSeedEvents": 70
+    },
+    {
+      "label": "pf-3-retail-root",
+      "url": "https://www.propertyfinder.eg/en/search?c=3&t=27&ob=mr",
+      "pagesVisited": 6,
+      "discoveredSeedEvents": 72
+    }
+  ],
+  "discoveredSeeds": [
+    {
+      "label": "pf-1-apartment-6-october-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=20671&c=1&t=1&ob=mr",
+      "purpose": "sale",
+      "propertyType": "apartment",
+      "areaSlug": "6-october-city",
+      "priority": 30,
+      "discoveredFrom": "pf-1-apartment-root"
+    },
+    {
+      "label": "pf-1-apartment-6-october-city-6-october-compounds",
+      "url": "https://www.propertyfinder.eg/en/search?l=21339&c=1&t=1&ob=mr",
+      "purpose": "sale",
+      "propertyType": "apartment",
+      "areaSlug": "6-october-city-6-october-compounds",
+      "priority": 35,
+      "discoveredFrom": "pf-1-apartment-root"
+    },
+    {
+      "label": "pf-1-apartment-alexandria",
+      "url": "https://www.propertyfinder.eg/en/search?l=30754&c=1&t=1&ob=mr",
+      "purpose": "sale",
+      "propertyType": "apartment",
+      "areaSlug": "alexandria",
+      "priority": 25,
+      "discoveredFrom": "pf-1-apartment-root"
+    },
+    {
+      "label": "pf-1-apartment-cairo",
+      "url": "https://www.propertyfinder.eg/en/search?l=2254&c=1&t=1&ob=mr",
+      "purpose": "sale",
+      "propertyType": "apartment",
+      "areaSlug": "cairo",
+      "priority": 25,
+      "discoveredFrom": "pf-1-apartment-root"
+    },
+    {
+      "label": "pf-1-apartment-giza",
+      "url": "https://www.propertyfinder.eg/en/search?l=20663&c=1&t=1&ob=mr",
+      "purpose": "sale",
+      "propertyType": "apartment",
+      "areaSlug": "giza",
+      "priority": 25,
+      "discoveredFrom": "pf-1-apartment-root"
+    },
+    {
+      "label": "pf-1-apartment-hay-sharq",
+      "url": "https://www.propertyfinder.eg/en/search?l=32184&c=1&t=1&ob=mr",
+      "purpose": "sale",
+      "propertyType": "apartment",
+      "areaSlug": "hay-sharq",
+      "priority": 30,
+      "discoveredFrom": "pf-1-apartment-root"
+    },
+    {
+      "label": "pf-1-apartment-hurghada",
+      "url": "https://www.propertyfinder.eg/en/search?l=37809&c=1&t=1&ob=mr",
+      "purpose": "sale",
+      "propertyType": "apartment",
+      "areaSlug": "hurghada",
+      "priority": 30,
+      "discoveredFrom": "pf-1-apartment-root"
+    },
+    {
+      "label": "pf-1-apartment-hurghada-al-ahyaa-district",
+      "url": "https://www.propertyfinder.eg/en/search?l=37810&c=1&t=1&ob=mr",
+      "purpose": "sale",
+      "propertyType": "apartment",
+      "areaSlug": "hurghada-al-ahyaa-district",
+      "priority": 35,
+      "discoveredFrom": "pf-1-apartment-root"
+    },
+    {
+      "label": "pf-1-apartment-hurghada-hurghada-resorts",
+      "url": "https://www.propertyfinder.eg/en/search?l=38068&c=1&t=1&ob=mr",
+      "purpose": "sale",
+      "propertyType": "apartment",
+      "areaSlug": "hurghada-hurghada-resorts",
+      "priority": 35,
+      "discoveredFrom": "pf-1-apartment-root"
+    },
+    {
+      "label": "pf-1-apartment-hurghada-mubarak-neighborhood",
+      "url": "https://www.propertyfinder.eg/en/search?l=37828&c=1&t=1&ob=mr",
+      "purpose": "sale",
+      "propertyType": "apartment",
+      "areaSlug": "hurghada-mubarak-neighborhood",
+      "priority": 35,
+      "discoveredFrom": "pf-1-apartment-root"
+    },
+    {
+      "label": "pf-1-apartment-mostakbal-city-future-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=20199&c=1&t=1&ob=mr",
+      "purpose": "sale",
+      "propertyType": "apartment",
+      "areaSlug": "mostakbal-city-future-city",
+      "priority": 30,
+      "discoveredFrom": "pf-1-apartment-root"
+    },
+    {
+      "label": "pf-1-apartment-mostakbal-city-future-city-mostakbal-city-compounds-2",
+      "url": "https://www.propertyfinder.eg/en/search?l=20200&c=1&t=1&ob=mr",
+      "purpose": "sale",
+      "propertyType": "apartment",
+      "areaSlug": "mostakbal-city-future-city-mostakbal-city-compounds-2",
+      "priority": 35,
+      "discoveredFrom": "pf-1-apartment-root"
+    },
+    {
+      "label": "pf-1-apartment-new-cairo-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=2255&c=1&t=1&ob=mr",
+      "purpose": "sale",
+      "propertyType": "apartment",
+      "areaSlug": "new-cairo-city",
+      "priority": 30,
+      "discoveredFrom": "pf-1-apartment-root"
+    },
+    {
+      "label": "pf-1-apartment-new-cairo-city-the-5th-settlement",
+      "url": "https://www.propertyfinder.eg/en/search?l=2731&c=1&t=1&ob=mr",
+      "purpose": "sale",
+      "propertyType": "apartment",
+      "areaSlug": "new-cairo-city-the-5th-settlement",
+      "priority": 35,
+      "discoveredFrom": "pf-1-apartment-root"
+    },
+    {
+      "label": "pf-1-apartment-new-capital-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=40470&c=1&t=1&ob=mr",
+      "purpose": "sale",
+      "propertyType": "apartment",
+      "areaSlug": "new-capital-city",
+      "priority": 30,
+      "discoveredFrom": "pf-1-apartment-root"
+    },
+    {
+      "label": "pf-1-apartment-new-capital-city-new-capital-compounds",
+      "url": "https://www.propertyfinder.eg/en/search?l=40471&c=1&t=1&ob=mr",
+      "purpose": "sale",
+      "propertyType": "apartment",
+      "areaSlug": "new-capital-city-new-capital-compounds",
+      "priority": 35,
+      "discoveredFrom": "pf-1-apartment-root"
+    },
+    {
+      "label": "pf-1-apartment-new-heliopolis",
+      "url": "https://www.propertyfinder.eg/en/search?l=20209&c=1&t=1&ob=mr",
+      "purpose": "sale",
+      "propertyType": "apartment",
+      "areaSlug": "new-heliopolis",
+      "priority": 30,
+      "discoveredFrom": "pf-1-apartment-root"
+    },
+    {
+      "label": "pf-1-apartment-new-heliopolis-6th-district",
+      "url": "https://www.propertyfinder.eg/en/search?l=20217&c=1&t=1&ob=mr",
+      "purpose": "sale",
+      "propertyType": "apartment",
+      "areaSlug": "new-heliopolis-6th-district",
+      "priority": 35,
+      "discoveredFrom": "pf-1-apartment-root"
+    },
+    {
+      "label": "pf-1-apartment-new-obour-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=39740&c=1&t=1&ob=mr",
+      "purpose": "sale",
+      "propertyType": "apartment",
+      "areaSlug": "new-obour-city",
+      "priority": 30,
+      "discoveredFrom": "pf-1-apartment-root"
+    },
+    {
+      "label": "pf-1-apartment-north-coast",
+      "url": "https://www.propertyfinder.eg/en/search?l=37579&c=1&t=1&ob=mr",
+      "purpose": "sale",
+      "propertyType": "apartment",
+      "areaSlug": "north-coast",
+      "priority": 25,
+      "discoveredFrom": "pf-1-apartment-root"
+    },
+    {
+      "label": "pf-1-apartment-qalyubia",
+      "url": "https://www.propertyfinder.eg/en/search?l=38191&c=1&t=1&ob=mr",
+      "purpose": "sale",
+      "propertyType": "apartment",
+      "areaSlug": "qalyubia",
+      "priority": 25,
+      "discoveredFrom": "pf-1-apartment-root"
+    },
+    {
+      "label": "pf-1-apartment-red-sea",
+      "url": "https://www.propertyfinder.eg/en/search?l=37808&c=1&t=1&ob=mr",
+      "purpose": "sale",
+      "propertyType": "apartment",
+      "areaSlug": "red-sea",
+      "priority": 25,
+      "discoveredFrom": "pf-1-apartment-root"
+    },
+    {
+      "label": "pf-1-apartment-sheikh-zayed-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=28683&c=1&t=1&ob=mr",
+      "purpose": "sale",
+      "propertyType": "apartment",
+      "areaSlug": "sheikh-zayed-city",
+      "priority": 30,
+      "discoveredFrom": "pf-1-apartment-root"
+    },
+    {
+      "label": "pf-1-apartment-sheikh-zayed-city-17th-district",
+      "url": "https://www.propertyfinder.eg/en/search?l=28842&c=1&t=1&ob=mr",
+      "purpose": "sale",
+      "propertyType": "apartment",
+      "areaSlug": "sheikh-zayed-city-17th-district",
+      "priority": 35,
+      "discoveredFrom": "pf-1-apartment-root"
+    },
+    {
+      "label": "pf-1-apartment-sheikh-zayed-city-new-zayed-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=40975&c=1&t=1&ob=mr",
+      "purpose": "sale",
+      "propertyType": "apartment",
+      "areaSlug": "sheikh-zayed-city-new-zayed-city",
+      "priority": 35,
+      "discoveredFrom": "pf-1-apartment-root"
+    },
+    {
+      "label": "pf-1-apartment-sheikh-zayed-city-sheikh-zayed-compounds",
+      "url": "https://www.propertyfinder.eg/en/search?l=28880&c=1&t=1&ob=mr",
+      "purpose": "sale",
+      "propertyType": "apartment",
+      "areaSlug": "sheikh-zayed-city-sheikh-zayed-compounds",
+      "priority": 35,
+      "discoveredFrom": "pf-1-apartment-root"
+    },
+    {
+      "label": "pf-1-villa-6-october-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=20671&c=1&t=35&ob=mr",
+      "purpose": "sale",
+      "propertyType": "villa",
+      "areaSlug": "6-october-city",
+      "priority": 30,
+      "discoveredFrom": "pf-1-villa-root"
+    },
+    {
+      "label": "pf-1-villa-6-october-city-26th-of-july-corridor",
+      "url": "https://www.propertyfinder.eg/en/search?l=20975&c=1&t=35&ob=mr",
+      "purpose": "sale",
+      "propertyType": "villa",
+      "areaSlug": "6-october-city-26th-of-july-corridor",
+      "priority": 35,
+      "discoveredFrom": "pf-1-villa-root"
+    },
+    {
+      "label": "pf-1-villa-6-october-city-6-october-compounds",
+      "url": "https://www.propertyfinder.eg/en/search?l=21339&c=1&t=35&ob=mr",
+      "purpose": "sale",
+      "propertyType": "villa",
+      "areaSlug": "6-october-city-6-october-compounds",
+      "priority": 35,
+      "discoveredFrom": "pf-1-villa-root"
+    },
+    {
+      "label": "pf-1-villa-6-october-city-al-wahat-road",
+      "url": "https://www.propertyfinder.eg/en/search?l=21035&c=1&t=35&ob=mr",
+      "purpose": "sale",
+      "propertyType": "villa",
+      "areaSlug": "6-october-city-al-wahat-road",
+      "priority": 35,
+      "discoveredFrom": "pf-1-villa-root"
+    },
+    {
+      "label": "pf-1-villa-cairo",
+      "url": "https://www.propertyfinder.eg/en/search?l=2254&c=1&t=35&ob=mr",
+      "purpose": "sale",
+      "propertyType": "villa",
+      "areaSlug": "cairo",
+      "priority": 25,
+      "discoveredFrom": "pf-1-villa-root"
+    },
+    {
+      "label": "pf-1-villa-giza",
+      "url": "https://www.propertyfinder.eg/en/search?l=20663&c=1&t=35&ob=mr",
+      "purpose": "sale",
+      "propertyType": "villa",
+      "areaSlug": "giza",
+      "priority": 25,
+      "discoveredFrom": "pf-1-villa-root"
+    },
+    {
+      "label": "pf-1-villa-hurghada",
+      "url": "https://www.propertyfinder.eg/en/search?l=37809&c=1&t=35&ob=mr",
+      "purpose": "sale",
+      "propertyType": "villa",
+      "areaSlug": "hurghada",
+      "priority": 30,
+      "discoveredFrom": "pf-1-villa-root"
+    },
+    {
+      "label": "pf-1-villa-hurghada-el-gouna",
+      "url": "https://www.propertyfinder.eg/en/search?l=37883&c=1&t=35&ob=mr",
+      "purpose": "sale",
+      "propertyType": "villa",
+      "areaSlug": "hurghada-el-gouna",
+      "priority": 35,
+      "discoveredFrom": "pf-1-villa-root"
+    },
+    {
+      "label": "pf-1-villa-madinaty",
+      "url": "https://www.propertyfinder.eg/en/search?l=2944&c=1&t=35&ob=mr",
+      "purpose": "sale",
+      "propertyType": "villa",
+      "areaSlug": "madinaty",
+      "priority": 30,
+      "discoveredFrom": "pf-1-villa-root"
+    },
+    {
+      "label": "pf-1-villa-mostakbal-city-future-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=20199&c=1&t=35&ob=mr",
+      "purpose": "sale",
+      "propertyType": "villa",
+      "areaSlug": "mostakbal-city-future-city",
+      "priority": 30,
+      "discoveredFrom": "pf-1-villa-root"
+    },
+    {
+      "label": "pf-1-villa-mostakbal-city-future-city-mostakbal-city-compounds-2",
+      "url": "https://www.propertyfinder.eg/en/search?l=20200&c=1&t=35&ob=mr",
+      "purpose": "sale",
+      "propertyType": "villa",
+      "areaSlug": "mostakbal-city-future-city-mostakbal-city-compounds-2",
+      "priority": 35,
+      "discoveredFrom": "pf-1-villa-root"
+    },
+    {
+      "label": "pf-1-villa-new-cairo-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=2255&c=1&t=35&ob=mr",
+      "purpose": "sale",
+      "propertyType": "villa",
+      "areaSlug": "new-cairo-city",
+      "priority": 30,
+      "discoveredFrom": "pf-1-villa-root"
+    },
+    {
+      "label": "pf-1-villa-new-cairo-city-el-katameya",
+      "url": "https://www.propertyfinder.eg/en/search?l=2452&c=1&t=35&ob=mr",
+      "purpose": "sale",
+      "propertyType": "villa",
+      "areaSlug": "new-cairo-city-el-katameya",
+      "priority": 35,
+      "discoveredFrom": "pf-1-villa-root"
+    },
+    {
+      "label": "pf-1-villa-new-cairo-city-saada-compound",
+      "url": "https://www.propertyfinder.eg/en/search?l=41579&c=1&t=35&ob=mr",
+      "purpose": "sale",
+      "propertyType": "villa",
+      "areaSlug": "new-cairo-city-saada-compound",
+      "priority": 35,
+      "discoveredFrom": "pf-1-villa-root"
+    },
+    {
+      "label": "pf-1-villa-new-cairo-city-the-5th-settlement",
+      "url": "https://www.propertyfinder.eg/en/search?l=2731&c=1&t=35&ob=mr",
+      "purpose": "sale",
+      "propertyType": "villa",
+      "areaSlug": "new-cairo-city-the-5th-settlement",
+      "priority": 35,
+      "discoveredFrom": "pf-1-villa-root"
+    },
+    {
+      "label": "pf-1-villa-new-capital-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=40470&c=1&t=35&ob=mr",
+      "purpose": "sale",
+      "propertyType": "villa",
+      "areaSlug": "new-capital-city",
+      "priority": 30,
+      "discoveredFrom": "pf-1-villa-root"
+    },
+    {
+      "label": "pf-1-villa-new-heliopolis",
+      "url": "https://www.propertyfinder.eg/en/search?l=20209&c=1&t=35&ob=mr",
+      "purpose": "sale",
+      "propertyType": "villa",
+      "areaSlug": "new-heliopolis",
+      "priority": 30,
+      "discoveredFrom": "pf-1-villa-root"
+    },
+    {
+      "label": "pf-1-villa-new-heliopolis-6th-district",
+      "url": "https://www.propertyfinder.eg/en/search?l=20217&c=1&t=35&ob=mr",
+      "purpose": "sale",
+      "propertyType": "villa",
+      "areaSlug": "new-heliopolis-6th-district",
+      "priority": 35,
+      "discoveredFrom": "pf-1-villa-root"
+    },
+    {
+      "label": "pf-1-villa-north-coast",
+      "url": "https://www.propertyfinder.eg/en/search?l=37579&c=1&t=35&ob=mr",
+      "purpose": "sale",
+      "propertyType": "villa",
+      "areaSlug": "north-coast",
+      "priority": 25,
+      "discoveredFrom": "pf-1-villa-root"
+    },
+    {
+      "label": "pf-1-villa-ras-al-hekma",
+      "url": "https://www.propertyfinder.eg/en/search?l=37801&c=1&t=35&ob=mr",
+      "purpose": "sale",
+      "propertyType": "villa",
+      "areaSlug": "ras-al-hekma",
+      "priority": 30,
+      "discoveredFrom": "pf-1-villa-root"
+    },
+    {
+      "label": "pf-1-villa-red-sea",
+      "url": "https://www.propertyfinder.eg/en/search?l=37808&c=1&t=35&ob=mr",
+      "purpose": "sale",
+      "propertyType": "villa",
+      "areaSlug": "red-sea",
+      "priority": 25,
+      "discoveredFrom": "pf-1-villa-root"
+    },
+    {
+      "label": "pf-1-villa-sheikh-zayed-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=28683&c=1&t=35&ob=mr",
+      "purpose": "sale",
+      "propertyType": "villa",
+      "areaSlug": "sheikh-zayed-city",
+      "priority": 30,
+      "discoveredFrom": "pf-1-villa-root"
+    },
+    {
+      "label": "pf-1-villa-sheikh-zayed-city-new-zayed-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=40975&c=1&t=35&ob=mr",
+      "purpose": "sale",
+      "propertyType": "villa",
+      "areaSlug": "sheikh-zayed-city-new-zayed-city",
+      "priority": 35,
+      "discoveredFrom": "pf-1-villa-root"
+    },
+    {
+      "label": "pf-1-villa-sheikh-zayed-city-sheikh-zayed-compounds",
+      "url": "https://www.propertyfinder.eg/en/search?l=28880&c=1&t=35&ob=mr",
+      "purpose": "sale",
+      "propertyType": "villa",
+      "areaSlug": "sheikh-zayed-city-sheikh-zayed-compounds",
+      "priority": 35,
+      "discoveredFrom": "pf-1-villa-root"
+    },
+    {
+      "label": "pf-1-villa-sidi-abdel-rahman",
+      "url": "https://www.propertyfinder.eg/en/search?l=37780&c=1&t=35&ob=mr",
+      "purpose": "sale",
+      "propertyType": "villa",
+      "areaSlug": "sidi-abdel-rahman",
+      "priority": 30,
+      "discoveredFrom": "pf-1-villa-root"
+    },
+    {
+      "label": "pf-2-apartment-6-october-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=20671&c=2&t=1&ob=mr",
+      "purpose": "rent",
+      "propertyType": "apartment",
+      "areaSlug": "6-october-city",
+      "priority": 30,
+      "discoveredFrom": "pf-2-apartment-root"
+    },
+    {
+      "label": "pf-2-apartment-alexandria",
+      "url": "https://www.propertyfinder.eg/en/search?l=30754&c=2&t=1&ob=mr",
+      "purpose": "rent",
+      "propertyType": "apartment",
+      "areaSlug": "alexandria",
+      "priority": 25,
+      "discoveredFrom": "pf-2-apartment-root"
+    },
+    {
+      "label": "pf-2-apartment-cairo",
+      "url": "https://www.propertyfinder.eg/en/search?l=2254&c=2&t=1&ob=mr",
+      "purpose": "rent",
+      "propertyType": "apartment",
+      "areaSlug": "cairo",
+      "priority": 25,
+      "discoveredFrom": "pf-2-apartment-root"
+    },
+    {
+      "label": "pf-2-apartment-giza",
+      "url": "https://www.propertyfinder.eg/en/search?l=20663&c=2&t=1&ob=mr",
+      "purpose": "rent",
+      "propertyType": "apartment",
+      "areaSlug": "giza",
+      "priority": 25,
+      "discoveredFrom": "pf-2-apartment-root"
+    },
+    {
+      "label": "pf-2-apartment-hay-el-maadi",
+      "url": "https://www.propertyfinder.eg/en/search?l=4779&c=2&t=1&ob=mr",
+      "purpose": "rent",
+      "propertyType": "apartment",
+      "areaSlug": "hay-el-maadi",
+      "priority": 30,
+      "discoveredFrom": "pf-2-apartment-root"
+    },
+    {
+      "label": "pf-2-apartment-hay-el-maadi-degla",
+      "url": "https://www.propertyfinder.eg/en/search?l=5067&c=2&t=1&ob=mr",
+      "purpose": "rent",
+      "propertyType": "apartment",
+      "areaSlug": "hay-el-maadi-degla",
+      "priority": 35,
+      "discoveredFrom": "pf-2-apartment-root"
+    },
+    {
+      "label": "pf-2-apartment-hay-el-maadi-sarayat-al-maadi",
+      "url": "https://www.propertyfinder.eg/en/search?l=5565&c=2&t=1&ob=mr",
+      "purpose": "rent",
+      "propertyType": "apartment",
+      "areaSlug": "hay-el-maadi-sarayat-al-maadi",
+      "priority": 35,
+      "discoveredFrom": "pf-2-apartment-root"
+    },
+    {
+      "label": "pf-2-apartment-hay-sharq",
+      "url": "https://www.propertyfinder.eg/en/search?l=32184&c=2&t=1&ob=mr",
+      "purpose": "rent",
+      "propertyType": "apartment",
+      "areaSlug": "hay-sharq",
+      "priority": 30,
+      "discoveredFrom": "pf-2-apartment-root"
+    },
+    {
+      "label": "pf-2-apartment-hay-wasat",
+      "url": "https://www.propertyfinder.eg/en/search?l=34044&c=2&t=1&ob=mr",
+      "purpose": "rent",
+      "propertyType": "apartment",
+      "areaSlug": "hay-wasat",
+      "priority": 30,
+      "discoveredFrom": "pf-2-apartment-root"
+    },
+    {
+      "label": "pf-2-apartment-madinaty",
+      "url": "https://www.propertyfinder.eg/en/search?l=2944&c=2&t=1&ob=mr",
+      "purpose": "rent",
+      "propertyType": "apartment",
+      "areaSlug": "madinaty",
+      "priority": 30,
+      "discoveredFrom": "pf-2-apartment-root"
+    },
+    {
+      "label": "pf-2-apartment-madinaty-privado",
+      "url": "https://www.propertyfinder.eg/en/search?l=42270&c=2&t=1&ob=mr",
+      "purpose": "rent",
+      "propertyType": "apartment",
+      "areaSlug": "madinaty-privado",
+      "priority": 35,
+      "discoveredFrom": "pf-2-apartment-root"
+    },
+    {
+      "label": "pf-2-apartment-mohandessin",
+      "url": "https://www.propertyfinder.eg/en/search?l=21777&c=2&t=1&ob=mr",
+      "purpose": "rent",
+      "propertyType": "apartment",
+      "areaSlug": "mohandessin",
+      "priority": 30,
+      "discoveredFrom": "pf-2-apartment-root"
+    },
+    {
+      "label": "pf-2-apartment-mokattam",
+      "url": "https://www.propertyfinder.eg/en/search?l=9644&c=2&t=1&ob=mr",
+      "purpose": "rent",
+      "propertyType": "apartment",
+      "areaSlug": "mokattam",
+      "priority": 30,
+      "discoveredFrom": "pf-2-apartment-root"
+    },
+    {
+      "label": "pf-2-apartment-new-cairo-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=2255&c=2&t=1&ob=mr",
+      "purpose": "rent",
+      "propertyType": "apartment",
+      "areaSlug": "new-cairo-city",
+      "priority": 30,
+      "discoveredFrom": "pf-2-apartment-root"
+    },
+    {
+      "label": "pf-2-apartment-new-cairo-city-al-narges",
+      "url": "https://www.propertyfinder.eg/en/search?l=2258&c=2&t=1&ob=mr",
+      "purpose": "rent",
+      "propertyType": "apartment",
+      "areaSlug": "new-cairo-city-al-narges",
+      "priority": 35,
+      "discoveredFrom": "pf-2-apartment-root"
+    },
+    {
+      "label": "pf-2-apartment-new-cairo-city-al-rehab",
+      "url": "https://www.propertyfinder.eg/en/search?l=2284&c=2&t=1&ob=mr",
+      "purpose": "rent",
+      "propertyType": "apartment",
+      "areaSlug": "new-cairo-city-al-rehab",
+      "priority": 35,
+      "discoveredFrom": "pf-2-apartment-root"
+    },
+    {
+      "label": "pf-2-apartment-new-cairo-city-north-investors-area",
+      "url": "https://www.propertyfinder.eg/en/search?l=2554&c=2&t=1&ob=mr",
+      "purpose": "rent",
+      "propertyType": "apartment",
+      "areaSlug": "new-cairo-city-north-investors-area",
+      "priority": 35,
+      "discoveredFrom": "pf-2-apartment-root"
+    },
+    {
+      "label": "pf-2-apartment-new-cairo-city-south-investors-area",
+      "url": "https://www.propertyfinder.eg/en/search?l=2610&c=2&t=1&ob=mr",
+      "purpose": "rent",
+      "propertyType": "apartment",
+      "areaSlug": "new-cairo-city-south-investors-area",
+      "priority": 35,
+      "discoveredFrom": "pf-2-apartment-root"
+    },
+    {
+      "label": "pf-2-apartment-new-cairo-city-the-5th-settlement",
+      "url": "https://www.propertyfinder.eg/en/search?l=2731&c=2&t=1&ob=mr",
+      "purpose": "rent",
+      "propertyType": "apartment",
+      "areaSlug": "new-cairo-city-the-5th-settlement",
+      "priority": 35,
+      "discoveredFrom": "pf-2-apartment-root"
+    },
+    {
+      "label": "pf-2-apartment-new-capital-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=40470&c=2&t=1&ob=mr",
+      "purpose": "rent",
+      "propertyType": "apartment",
+      "areaSlug": "new-capital-city",
+      "priority": 30,
+      "discoveredFrom": "pf-2-apartment-root"
+    },
+    {
+      "label": "pf-2-apartment-ring-road",
+      "url": "https://www.propertyfinder.eg/en/search?l=20229&c=2&t=1&ob=mr",
+      "purpose": "rent",
+      "propertyType": "apartment",
+      "areaSlug": "ring-road",
+      "priority": 30,
+      "discoveredFrom": "pf-2-apartment-root"
+    },
+    {
+      "label": "pf-2-apartment-sheikh-zayed-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=28683&c=2&t=1&ob=mr",
+      "purpose": "rent",
+      "propertyType": "apartment",
+      "areaSlug": "sheikh-zayed-city",
+      "priority": 30,
+      "discoveredFrom": "pf-2-apartment-root"
+    },
+    {
+      "label": "pf-2-apartment-sheikh-zayed-city-sheikh-zayed-compounds",
+      "url": "https://www.propertyfinder.eg/en/search?l=28880&c=2&t=1&ob=mr",
+      "purpose": "rent",
+      "propertyType": "apartment",
+      "areaSlug": "sheikh-zayed-city-sheikh-zayed-compounds",
+      "priority": 35,
+      "discoveredFrom": "pf-2-apartment-root"
+    },
+    {
+      "label": "pf-2-apartment-zamalek",
+      "url": "https://www.propertyfinder.eg/en/search?l=4698&c=2&t=1&ob=mr",
+      "purpose": "rent",
+      "propertyType": "apartment",
+      "areaSlug": "zamalek",
+      "priority": 30,
+      "discoveredFrom": "pf-2-apartment-root"
+    },
+    {
+      "label": "pf-2-villa-6-october-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=20671&c=2&t=35&ob=mr",
+      "purpose": "rent",
+      "propertyType": "villa",
+      "areaSlug": "6-october-city",
+      "priority": 30,
+      "discoveredFrom": "pf-2-villa-root"
+    },
+    {
+      "label": "pf-2-villa-6-october-city-al-wahat-road",
+      "url": "https://www.propertyfinder.eg/en/search?l=21035&c=2&t=35&ob=mr",
+      "purpose": "rent",
+      "propertyType": "villa",
+      "areaSlug": "6-october-city-al-wahat-road",
+      "priority": 35,
+      "discoveredFrom": "pf-2-villa-root"
+    },
+    {
+      "label": "pf-2-villa-6-october-city-cairo-alexandria-desert-road",
+      "url": "https://www.propertyfinder.eg/en/search?l=21060&c=2&t=35&ob=mr",
+      "purpose": "rent",
+      "propertyType": "villa",
+      "areaSlug": "6-october-city-cairo-alexandria-desert-road",
+      "priority": 35,
+      "discoveredFrom": "pf-2-villa-root"
+    },
+    {
+      "label": "pf-2-villa-alexandria",
+      "url": "https://www.propertyfinder.eg/en/search?l=30754&c=2&t=35&ob=mr",
+      "purpose": "rent",
+      "propertyType": "villa",
+      "areaSlug": "alexandria",
+      "priority": 25,
+      "discoveredFrom": "pf-2-villa-root"
+    },
+    {
+      "label": "pf-2-villa-cairo",
+      "url": "https://www.propertyfinder.eg/en/search?l=2254&c=2&t=35&ob=mr",
+      "purpose": "rent",
+      "propertyType": "villa",
+      "areaSlug": "cairo",
+      "priority": 25,
+      "discoveredFrom": "pf-2-villa-root"
+    },
+    {
+      "label": "pf-2-villa-giza",
+      "url": "https://www.propertyfinder.eg/en/search?l=20663&c=2&t=35&ob=mr",
+      "purpose": "rent",
+      "propertyType": "villa",
+      "areaSlug": "giza",
+      "priority": 25,
+      "discoveredFrom": "pf-2-villa-root"
+    },
+    {
+      "label": "pf-2-villa-hay-al-amereyah",
+      "url": "https://www.propertyfinder.eg/en/search?l=37405&c=2&t=35&ob=mr",
+      "purpose": "rent",
+      "propertyType": "villa",
+      "areaSlug": "hay-al-amereyah",
+      "priority": 30,
+      "discoveredFrom": "pf-2-villa-root"
+    },
+    {
+      "label": "pf-2-villa-hay-al-amereyah-king-mariout",
+      "url": "https://www.propertyfinder.eg/en/search?l=37563&c=2&t=35&ob=mr",
+      "purpose": "rent",
+      "propertyType": "villa",
+      "areaSlug": "hay-al-amereyah-king-mariout",
+      "priority": 35,
+      "discoveredFrom": "pf-2-villa-root"
+    },
+    {
+      "label": "pf-2-villa-hay-el-maadi",
+      "url": "https://www.propertyfinder.eg/en/search?l=4779&c=2&t=35&ob=mr",
+      "purpose": "rent",
+      "propertyType": "villa",
+      "areaSlug": "hay-el-maadi",
+      "priority": 30,
+      "discoveredFrom": "pf-2-villa-root"
+    },
+    {
+      "label": "pf-2-villa-madinaty",
+      "url": "https://www.propertyfinder.eg/en/search?l=2944&c=2&t=35&ob=mr",
+      "purpose": "rent",
+      "propertyType": "villa",
+      "areaSlug": "madinaty",
+      "priority": 30,
+      "discoveredFrom": "pf-2-villa-root"
+    },
+    {
+      "label": "pf-2-villa-madinaty-privado",
+      "url": "https://www.propertyfinder.eg/en/search?l=42270&c=2&t=35&ob=mr",
+      "purpose": "rent",
+      "propertyType": "villa",
+      "areaSlug": "madinaty-privado",
+      "priority": 35,
+      "discoveredFrom": "pf-2-villa-root"
+    },
+    {
+      "label": "pf-2-villa-mokattam",
+      "url": "https://www.propertyfinder.eg/en/search?l=9644&c=2&t=35&ob=mr",
+      "purpose": "rent",
+      "propertyType": "villa",
+      "areaSlug": "mokattam",
+      "priority": 30,
+      "discoveredFrom": "pf-2-villa-root"
+    },
+    {
+      "label": "pf-2-villa-new-cairo-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=2255&c=2&t=35&ob=mr",
+      "purpose": "rent",
+      "propertyType": "villa",
+      "areaSlug": "new-cairo-city",
+      "priority": 30,
+      "discoveredFrom": "pf-2-villa-root"
+    },
+    {
+      "label": "pf-2-villa-new-cairo-city-al-narges",
+      "url": "https://www.propertyfinder.eg/en/search?l=2258&c=2&t=35&ob=mr",
+      "purpose": "rent",
+      "propertyType": "villa",
+      "areaSlug": "new-cairo-city-al-narges",
+      "priority": 35,
+      "discoveredFrom": "pf-2-villa-root"
+    },
+    {
+      "label": "pf-2-villa-new-cairo-city-el-katameya",
+      "url": "https://www.propertyfinder.eg/en/search?l=2452&c=2&t=35&ob=mr",
+      "purpose": "rent",
+      "propertyType": "villa",
+      "areaSlug": "new-cairo-city-el-katameya",
+      "priority": 35,
+      "discoveredFrom": "pf-2-villa-root"
+    },
+    {
+      "label": "pf-2-villa-new-cairo-city-ext-north-inves-area",
+      "url": "https://www.propertyfinder.eg/en/search?l=2511&c=2&t=35&ob=mr",
+      "purpose": "rent",
+      "propertyType": "villa",
+      "areaSlug": "new-cairo-city-ext-north-inves-area",
+      "priority": 35,
+      "discoveredFrom": "pf-2-villa-root"
+    },
+    {
+      "label": "pf-2-villa-new-cairo-city-north-investors-area",
+      "url": "https://www.propertyfinder.eg/en/search?l=2554&c=2&t=35&ob=mr",
+      "purpose": "rent",
+      "propertyType": "villa",
+      "areaSlug": "new-cairo-city-north-investors-area",
+      "priority": 35,
+      "discoveredFrom": "pf-2-villa-root"
+    },
+    {
+      "label": "pf-2-villa-new-cairo-city-the-5th-settlement",
+      "url": "https://www.propertyfinder.eg/en/search?l=2731&c=2&t=35&ob=mr",
+      "purpose": "rent",
+      "propertyType": "villa",
+      "areaSlug": "new-cairo-city-the-5th-settlement",
+      "priority": 35,
+      "discoveredFrom": "pf-2-villa-root"
+    },
+    {
+      "label": "pf-2-villa-new-capital-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=40470&c=2&t=35&ob=mr",
+      "purpose": "rent",
+      "propertyType": "villa",
+      "areaSlug": "new-capital-city",
+      "priority": 30,
+      "discoveredFrom": "pf-2-villa-root"
+    },
+    {
+      "label": "pf-2-villa-north-coast",
+      "url": "https://www.propertyfinder.eg/en/search?l=37579&c=2&t=35&ob=mr",
+      "purpose": "rent",
+      "propertyType": "villa",
+      "areaSlug": "north-coast",
+      "priority": 25,
+      "discoveredFrom": "pf-2-villa-root"
+    },
+    {
+      "label": "pf-2-villa-sheikh-zayed-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=28683&c=2&t=35&ob=mr",
+      "purpose": "rent",
+      "propertyType": "villa",
+      "areaSlug": "sheikh-zayed-city",
+      "priority": 30,
+      "discoveredFrom": "pf-2-villa-root"
+    },
+    {
+      "label": "pf-2-villa-sheikh-zayed-city-6th-district",
+      "url": "https://www.propertyfinder.eg/en/search?l=28776&c=2&t=35&ob=mr",
+      "purpose": "rent",
+      "propertyType": "villa",
+      "areaSlug": "sheikh-zayed-city-6th-district",
+      "priority": 35,
+      "discoveredFrom": "pf-2-villa-root"
+    },
+    {
+      "label": "pf-2-villa-sheikh-zayed-city-sheikh-zayed-compounds",
+      "url": "https://www.propertyfinder.eg/en/search?l=28880&c=2&t=35&ob=mr",
+      "purpose": "rent",
+      "propertyType": "villa",
+      "areaSlug": "sheikh-zayed-city-sheikh-zayed-compounds",
+      "priority": 35,
+      "discoveredFrom": "pf-2-villa-root"
+    },
+    {
+      "label": "pf-2-villa-sidi-abdel-rahman",
+      "url": "https://www.propertyfinder.eg/en/search?l=37780&c=2&t=35&ob=mr",
+      "purpose": "rent",
+      "propertyType": "villa",
+      "areaSlug": "sidi-abdel-rahman",
+      "priority": 30,
+      "discoveredFrom": "pf-2-villa-root"
+    },
+    {
+      "label": "pf-3-office-6-october-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=20671&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "6-october-city",
+      "priority": 40,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-6-october-city-26th-of-july-corridor",
+      "url": "https://www.propertyfinder.eg/en/search?l=20975&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "6-october-city-26th-of-july-corridor",
+      "priority": 45,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-6-october-city-cairo-alexandria-desert-road",
+      "url": "https://www.propertyfinder.eg/en/search?l=21060&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "6-october-city-cairo-alexandria-desert-road",
+      "priority": 45,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-6-october-city-gamal-abdel-nasser-axis",
+      "url": "https://www.propertyfinder.eg/en/search?l=21099&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "6-october-city-gamal-abdel-nasser-axis",
+      "priority": 45,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-alexandria",
+      "url": "https://www.propertyfinder.eg/en/search?l=30754&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "alexandria",
+      "priority": 35,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-cairo",
+      "url": "https://www.propertyfinder.eg/en/search?l=2254&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "cairo",
+      "priority": 35,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-demyat",
+      "url": "https://www.propertyfinder.eg/en/search?l=9&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "demyat",
+      "priority": 35,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-el-nozha",
+      "url": "https://www.propertyfinder.eg/en/search?l=4298&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "el-nozha",
+      "priority": 40,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-giza",
+      "url": "https://www.propertyfinder.eg/en/search?l=20663&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "giza",
+      "priority": 35,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-hadayek-el-ahram",
+      "url": "https://www.propertyfinder.eg/en/search?l=20664&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "hadayek-el-ahram",
+      "priority": 40,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-hay-el-maadi",
+      "url": "https://www.propertyfinder.eg/en/search?l=4779&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "hay-el-maadi",
+      "priority": 40,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-hay-sharq",
+      "url": "https://www.propertyfinder.eg/en/search?l=32184&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "hay-sharq",
+      "priority": 40,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-hay-sharq-glim",
+      "url": "https://www.propertyfinder.eg/en/search?l=32961&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "hay-sharq-glim",
+      "priority": 45,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-heliopolis-masr-el-gedida",
+      "url": "https://www.propertyfinder.eg/en/search?l=3836&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "heliopolis-masr-el-gedida",
+      "priority": 40,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-heliopolis-masr-el-gedida-el-korba",
+      "url": "https://www.propertyfinder.eg/en/search?l=4065&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "heliopolis-masr-el-gedida-el-korba",
+      "priority": 45,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-hurghada",
+      "url": "https://www.propertyfinder.eg/en/search?l=37809&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "hurghada",
+      "priority": 40,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-madinaty",
+      "url": "https://www.propertyfinder.eg/en/search?l=2944&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "madinaty",
+      "priority": 40,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-mohandessin",
+      "url": "https://www.propertyfinder.eg/en/search?l=21777&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "mohandessin",
+      "priority": 40,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-nasr-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=2945&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "nasr-city",
+      "priority": 40,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-new-cairo-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=2255&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "new-cairo-city",
+      "priority": 40,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-new-cairo-city-abou-el-houl",
+      "url": "https://www.propertyfinder.eg/en/search?l=2256&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "new-cairo-city-abou-el-houl",
+      "priority": 45,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-new-cairo-city-centro",
+      "url": "https://www.propertyfinder.eg/en/search?l=41480&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "new-cairo-city-centro",
+      "priority": 45,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-new-cairo-city-el-katameya",
+      "url": "https://www.propertyfinder.eg/en/search?l=2452&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "new-cairo-city-el-katameya",
+      "priority": 45,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-new-cairo-city-north-investors-area",
+      "url": "https://www.propertyfinder.eg/en/search?l=2554&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "new-cairo-city-north-investors-area",
+      "priority": 45,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-new-cairo-city-suez-road",
+      "url": "https://www.propertyfinder.eg/en/search?l=2633&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "new-cairo-city-suez-road",
+      "priority": 45,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-new-cairo-city-the-5th-settlement",
+      "url": "https://www.propertyfinder.eg/en/search?l=2731&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "new-cairo-city-the-5th-settlement",
+      "priority": 45,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-new-capital-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=40470&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "new-capital-city",
+      "priority": 40,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-new-capital-city-downtown-area",
+      "url": "https://www.propertyfinder.eg/en/search?l=40790&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "new-capital-city-downtown-area",
+      "priority": 45,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-new-capital-city-financial-district",
+      "url": "https://www.propertyfinder.eg/en/search?l=40997&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "new-capital-city-financial-district",
+      "priority": 45,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-new-damietta",
+      "url": "https://www.propertyfinder.eg/en/search?l=40938&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "new-damietta",
+      "priority": 40,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-red-sea",
+      "url": "https://www.propertyfinder.eg/en/search?l=37808&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "red-sea",
+      "priority": 35,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-sheikh-zayed-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=28683&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "sheikh-zayed-city",
+      "priority": 40,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-office-sheikh-zayed-city-sheikh-zayed-compounds",
+      "url": "https://www.propertyfinder.eg/en/search?l=28880&c=3&t=4&ob=mr",
+      "purpose": "sale",
+      "propertyType": "office",
+      "areaSlug": "sheikh-zayed-city-sheikh-zayed-compounds",
+      "priority": 45,
+      "discoveredFrom": "pf-3-office-root"
+    },
+    {
+      "label": "pf-3-retail-6-october-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=20671&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "6-october-city",
+      "priority": 40,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-6-october-city-26th-of-july-corridor",
+      "url": "https://www.propertyfinder.eg/en/search?l=20975&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "6-october-city-26th-of-july-corridor",
+      "priority": 45,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-6-october-city-hadayek-october",
+      "url": "https://www.propertyfinder.eg/en/search?l=21142&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "6-october-city-hadayek-october",
+      "priority": 45,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-6-october-city-northern-expansions",
+      "url": "https://www.propertyfinder.eg/en/search?l=21288&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "6-october-city-northern-expansions",
+      "priority": 45,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-al-alamein",
+      "url": "https://www.propertyfinder.eg/en/search?l=37635&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "al-alamein",
+      "priority": 40,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-cairo",
+      "url": "https://www.propertyfinder.eg/en/search?l=2254&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "cairo",
+      "priority": 35,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-dokki",
+      "url": "https://www.propertyfinder.eg/en/search?l=21484&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "dokki",
+      "priority": 40,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-el-nozha",
+      "url": "https://www.propertyfinder.eg/en/search?l=4298&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "el-nozha",
+      "priority": 40,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-giza",
+      "url": "https://www.propertyfinder.eg/en/search?l=20663&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "giza",
+      "priority": 35,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-hay-el-maadi",
+      "url": "https://www.propertyfinder.eg/en/search?l=4779&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "hay-el-maadi",
+      "priority": 40,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-heliopolis-masr-el-gedida",
+      "url": "https://www.propertyfinder.eg/en/search?l=3836&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "heliopolis-masr-el-gedida",
+      "priority": 40,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-heliopolis-masr-el-gedida-ard-el-golf",
+      "url": "https://www.propertyfinder.eg/en/search?l=4220&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "heliopolis-masr-el-gedida-ard-el-golf",
+      "priority": 45,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-heliopolis-masr-el-gedida-el-ismailia-square",
+      "url": "https://www.propertyfinder.eg/en/search?l=4011&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "heliopolis-masr-el-gedida-el-ismailia-square",
+      "priority": 45,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-madinaty",
+      "url": "https://www.propertyfinder.eg/en/search?l=2944&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "madinaty",
+      "priority": 40,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-madinaty-privado",
+      "url": "https://www.propertyfinder.eg/en/search?l=42270&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "madinaty-privado",
+      "priority": 45,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-nasr-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=2945&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "nasr-city",
+      "priority": 40,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-new-cairo-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=2255&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "new-cairo-city",
+      "priority": 40,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-new-cairo-city-el-banafseg",
+      "url": "https://www.propertyfinder.eg/en/search?l=2406&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "new-cairo-city-el-banafseg",
+      "priority": 45,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-new-cairo-city-north-investors-area",
+      "url": "https://www.propertyfinder.eg/en/search?l=2554&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "new-cairo-city-north-investors-area",
+      "priority": 45,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-new-cairo-city-suez-road",
+      "url": "https://www.propertyfinder.eg/en/search?l=2633&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "new-cairo-city-suez-road",
+      "priority": 45,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-new-cairo-city-the-5th-settlement",
+      "url": "https://www.propertyfinder.eg/en/search?l=2731&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "new-cairo-city-the-5th-settlement",
+      "priority": 45,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-new-capital-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=40470&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "new-capital-city",
+      "priority": 40,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-north-coast",
+      "url": "https://www.propertyfinder.eg/en/search?l=37579&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "north-coast",
+      "priority": 35,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-sheikh-zayed-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=28683&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "sheikh-zayed-city",
+      "priority": 40,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-sheikh-zayed-city-10th-district",
+      "url": "https://www.propertyfinder.eg/en/search?l=28792&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "sheikh-zayed-city-10th-district",
+      "priority": 45,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-sheikh-zayed-city-1o1-mall",
+      "url": "https://www.propertyfinder.eg/en/search?l=41734&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "sheikh-zayed-city-1o1-mall",
+      "priority": 45,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-sheikh-zayed-city-sheikh-zayed-compounds",
+      "url": "https://www.propertyfinder.eg/en/search?l=28880&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "sheikh-zayed-city-sheikh-zayed-compounds",
+      "priority": 45,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-sheikh-zayed-city-waslet-dahshur-road",
+      "url": "https://www.propertyfinder.eg/en/search?l=41299&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "sheikh-zayed-city-waslet-dahshur-road",
+      "priority": 45,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-shorouk-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=10359&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "shorouk-city",
+      "priority": 40,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-3-retail-shorouk-city-el-shorouk-compounds",
+      "url": "https://www.propertyfinder.eg/en/search?l=10392&c=3&t=27&ob=mr",
+      "purpose": "sale",
+      "propertyType": "retail",
+      "areaSlug": "shorouk-city-el-shorouk-compounds",
+      "priority": 45,
+      "discoveredFrom": "pf-3-retail-root"
+    },
+    {
+      "label": "pf-4-office-6-october-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=20671&c=4&t=4&ob=mr",
+      "purpose": "rent",
+      "propertyType": "office",
+      "areaSlug": "6-october-city",
+      "priority": 40,
+      "discoveredFrom": "pf-4-office-root"
+    },
+    {
+      "label": "pf-4-office-6-october-city-cairo-alexandria-desert-road",
+      "url": "https://www.propertyfinder.eg/en/search?l=21060&c=4&t=4&ob=mr",
+      "purpose": "rent",
+      "propertyType": "office",
+      "areaSlug": "6-october-city-cairo-alexandria-desert-road",
+      "priority": 45,
+      "discoveredFrom": "pf-4-office-root"
+    },
+    {
+      "label": "pf-4-office-alexandria",
+      "url": "https://www.propertyfinder.eg/en/search?l=30754&c=4&t=4&ob=mr",
+      "purpose": "rent",
+      "propertyType": "office",
+      "areaSlug": "alexandria",
+      "priority": 35,
+      "discoveredFrom": "pf-4-office-root"
+    },
+    {
+      "label": "pf-4-office-cairo",
+      "url": "https://www.propertyfinder.eg/en/search?l=2254&c=4&t=4&ob=mr",
+      "purpose": "rent",
+      "propertyType": "office",
+      "areaSlug": "cairo",
+      "priority": 35,
+      "discoveredFrom": "pf-4-office-root"
+    },
+    {
+      "label": "pf-4-office-giza",
+      "url": "https://www.propertyfinder.eg/en/search?l=20663&c=4&t=4&ob=mr",
+      "purpose": "rent",
+      "propertyType": "office",
+      "areaSlug": "giza",
+      "priority": 35,
+      "discoveredFrom": "pf-4-office-root"
+    },
+    {
+      "label": "pf-4-office-hay-el-maadi",
+      "url": "https://www.propertyfinder.eg/en/search?l=4779&c=4&t=4&ob=mr",
+      "purpose": "rent",
+      "propertyType": "office",
+      "areaSlug": "hay-el-maadi",
+      "priority": 40,
+      "discoveredFrom": "pf-4-office-root"
+    },
+    {
+      "label": "pf-4-office-hay-el-maadi-maadi",
+      "url": "https://www.propertyfinder.eg/en/search?l=4780&c=4&t=4&ob=mr",
+      "purpose": "rent",
+      "propertyType": "office",
+      "areaSlug": "hay-el-maadi-maadi",
+      "priority": 45,
+      "discoveredFrom": "pf-4-office-root"
+    },
+    {
+      "label": "pf-4-office-hay-sharq",
+      "url": "https://www.propertyfinder.eg/en/search?l=32184&c=4&t=4&ob=mr",
+      "purpose": "rent",
+      "propertyType": "office",
+      "areaSlug": "hay-sharq",
+      "priority": 40,
+      "discoveredFrom": "pf-4-office-root"
+    },
+    {
+      "label": "pf-4-office-hay-sharq-laurent",
+      "url": "https://www.propertyfinder.eg/en/search?l=33123&c=4&t=4&ob=mr",
+      "purpose": "rent",
+      "propertyType": "office",
+      "areaSlug": "hay-sharq-laurent",
+      "priority": 45,
+      "discoveredFrom": "pf-4-office-root"
+    },
+    {
+      "label": "pf-4-office-heliopolis-masr-el-gedida",
+      "url": "https://www.propertyfinder.eg/en/search?l=3836&c=4&t=4&ob=mr",
+      "purpose": "rent",
+      "propertyType": "office",
+      "areaSlug": "heliopolis-masr-el-gedida",
+      "priority": 40,
+      "discoveredFrom": "pf-4-office-root"
+    },
+    {
+      "label": "pf-4-office-heliopolis-masr-el-gedida-roxy",
+      "url": "https://www.propertyfinder.eg/en/search?l=4106&c=4&t=4&ob=mr",
+      "purpose": "rent",
+      "propertyType": "office",
+      "areaSlug": "heliopolis-masr-el-gedida-roxy",
+      "priority": 45,
+      "discoveredFrom": "pf-4-office-root"
+    },
+    {
+      "label": "pf-4-office-nasr-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=2945&c=4&t=4&ob=mr",
+      "purpose": "rent",
+      "propertyType": "office",
+      "areaSlug": "nasr-city",
+      "priority": 40,
+      "discoveredFrom": "pf-4-office-root"
+    },
+    {
+      "label": "pf-4-office-new-cairo-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=2255&c=4&t=4&ob=mr",
+      "purpose": "rent",
+      "propertyType": "office",
+      "areaSlug": "new-cairo-city",
+      "priority": 40,
+      "discoveredFrom": "pf-4-office-root"
+    },
+    {
+      "label": "pf-4-office-new-cairo-city-el-katameya",
+      "url": "https://www.propertyfinder.eg/en/search?l=2452&c=4&t=4&ob=mr",
+      "purpose": "rent",
+      "propertyType": "office",
+      "areaSlug": "new-cairo-city-el-katameya",
+      "priority": 45,
+      "discoveredFrom": "pf-4-office-root"
+    },
+    {
+      "label": "pf-4-office-new-cairo-city-north-investors-area",
+      "url": "https://www.propertyfinder.eg/en/search?l=2554&c=4&t=4&ob=mr",
+      "purpose": "rent",
+      "propertyType": "office",
+      "areaSlug": "new-cairo-city-north-investors-area",
+      "priority": 45,
+      "discoveredFrom": "pf-4-office-root"
+    },
+    {
+      "label": "pf-4-office-new-cairo-city-south-investors-area",
+      "url": "https://www.propertyfinder.eg/en/search?l=2610&c=4&t=4&ob=mr",
+      "purpose": "rent",
+      "propertyType": "office",
+      "areaSlug": "new-cairo-city-south-investors-area",
+      "priority": 45,
+      "discoveredFrom": "pf-4-office-root"
+    },
+    {
+      "label": "pf-4-office-new-cairo-city-suez-road",
+      "url": "https://www.propertyfinder.eg/en/search?l=2633&c=4&t=4&ob=mr",
+      "purpose": "rent",
+      "propertyType": "office",
+      "areaSlug": "new-cairo-city-suez-road",
+      "priority": 45,
+      "discoveredFrom": "pf-4-office-root"
+    },
+    {
+      "label": "pf-4-office-new-cairo-city-the-1st-settlement",
+      "url": "https://www.propertyfinder.eg/en/search?l=2634&c=4&t=4&ob=mr",
+      "purpose": "rent",
+      "propertyType": "office",
+      "areaSlug": "new-cairo-city-the-1st-settlement",
+      "priority": 45,
+      "discoveredFrom": "pf-4-office-root"
+    },
+    {
+      "label": "pf-4-office-new-cairo-city-the-5th-settlement",
+      "url": "https://www.propertyfinder.eg/en/search?l=2731&c=4&t=4&ob=mr",
+      "purpose": "rent",
+      "propertyType": "office",
+      "areaSlug": "new-cairo-city-the-5th-settlement",
+      "priority": 45,
+      "discoveredFrom": "pf-4-office-root"
+    },
+    {
+      "label": "pf-4-office-sheikh-zayed-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=28683&c=4&t=4&ob=mr",
+      "purpose": "rent",
+      "propertyType": "office",
+      "areaSlug": "sheikh-zayed-city",
+      "priority": 40,
+      "discoveredFrom": "pf-4-office-root"
+    },
+    {
+      "label": "pf-4-office-sheikh-zayed-city-26th-of-july-corridor",
+      "url": "https://www.propertyfinder.eg/en/search?l=40528&c=4&t=4&ob=mr",
+      "purpose": "rent",
+      "propertyType": "office",
+      "areaSlug": "sheikh-zayed-city-26th-of-july-corridor",
+      "priority": 45,
+      "discoveredFrom": "pf-4-office-root"
+    },
+    {
+      "label": "pf-4-office-sheikh-zayed-city-6th-district",
+      "url": "https://www.propertyfinder.eg/en/search?l=28776&c=4&t=4&ob=mr",
+      "purpose": "rent",
+      "propertyType": "office",
+      "areaSlug": "sheikh-zayed-city-6th-district",
+      "priority": 45,
+      "discoveredFrom": "pf-4-office-root"
+    },
+    {
+      "label": "pf-4-office-sheikh-zayed-city-sheikh-zayed-compounds",
+      "url": "https://www.propertyfinder.eg/en/search?l=28880&c=4&t=4&ob=mr",
+      "purpose": "rent",
+      "propertyType": "office",
+      "areaSlug": "sheikh-zayed-city-sheikh-zayed-compounds",
+      "priority": 45,
+      "discoveredFrom": "pf-4-office-root"
+    },
+    {
+      "label": "pf-4-retail-6-october-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=20671&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "6-october-city",
+      "priority": 40,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-6-october-city-cairo-alexandria-desert-road",
+      "url": "https://www.propertyfinder.eg/en/search?l=21060&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "6-october-city-cairo-alexandria-desert-road",
+      "priority": 45,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-abdeen",
+      "url": "https://www.propertyfinder.eg/en/search?l=12977&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "abdeen",
+      "priority": 40,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-cairo",
+      "url": "https://www.propertyfinder.eg/en/search?l=2254&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "cairo",
+      "priority": 35,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-dokki",
+      "url": "https://www.propertyfinder.eg/en/search?l=21484&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "dokki",
+      "priority": 40,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-el-nozha",
+      "url": "https://www.propertyfinder.eg/en/search?l=4298&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "el-nozha",
+      "priority": 40,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-el-nozha-el-nozha-el-gadida",
+      "url": "https://www.propertyfinder.eg/en/search?l=4605&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "el-nozha-el-nozha-el-gadida",
+      "priority": 45,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-el-nozha-sheraton-al-matar",
+      "url": "https://www.propertyfinder.eg/en/search?l=4299&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "el-nozha-sheraton-al-matar",
+      "priority": 45,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-giza",
+      "url": "https://www.propertyfinder.eg/en/search?l=20663&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "giza",
+      "priority": 35,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-hay-el-maadi",
+      "url": "https://www.propertyfinder.eg/en/search?l=4779&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "hay-el-maadi",
+      "priority": 40,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-hay-el-maadi-degla",
+      "url": "https://www.propertyfinder.eg/en/search?l=5067&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "hay-el-maadi-degla",
+      "priority": 45,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-hay-el-maadi-new-maadi",
+      "url": "https://www.propertyfinder.eg/en/search?l=4937&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "hay-el-maadi-new-maadi",
+      "priority": 45,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-heliopolis-masr-el-gedida",
+      "url": "https://www.propertyfinder.eg/en/search?l=3836&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "heliopolis-masr-el-gedida",
+      "priority": 40,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-heliopolis-masr-el-gedida-almazah",
+      "url": "https://www.propertyfinder.eg/en/search?l=3910&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "heliopolis-masr-el-gedida-almazah",
+      "priority": 45,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-mohandessin",
+      "url": "https://www.propertyfinder.eg/en/search?l=21777&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "mohandessin",
+      "priority": 40,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-nasr-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=2945&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "nasr-city",
+      "priority": 40,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-nasr-city-6th-zone",
+      "url": "https://www.propertyfinder.eg/en/search?l=3340&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "nasr-city-6th-zone",
+      "priority": 45,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-new-cairo-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=2255&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "new-cairo-city",
+      "priority": 40,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-new-cairo-city-al-rehab",
+      "url": "https://www.propertyfinder.eg/en/search?l=2284&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "new-cairo-city-al-rehab",
+      "priority": 45,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-new-cairo-city-el-banafseg",
+      "url": "https://www.propertyfinder.eg/en/search?l=2406&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "new-cairo-city-el-banafseg",
+      "priority": 45,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-new-cairo-city-north-investors-area",
+      "url": "https://www.propertyfinder.eg/en/search?l=2554&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "new-cairo-city-north-investors-area",
+      "priority": 45,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-new-cairo-city-the-5th-settlement",
+      "url": "https://www.propertyfinder.eg/en/search?l=2731&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "new-cairo-city-the-5th-settlement",
+      "priority": 45,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-new-capital-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=40470&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "new-capital-city",
+      "priority": 40,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-new-capital-city-new-capital-compounds",
+      "url": "https://www.propertyfinder.eg/en/search?l=40471&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "new-capital-city-new-capital-compounds",
+      "priority": 45,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-north-coast",
+      "url": "https://www.propertyfinder.eg/en/search?l=37579&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "north-coast",
+      "priority": 35,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-qalyubia",
+      "url": "https://www.propertyfinder.eg/en/search?l=38191&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "qalyubia",
+      "priority": 35,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-sheikh-zayed-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=28683&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "sheikh-zayed-city",
+      "priority": 40,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-sheikh-zayed-city-26th-of-july-corridor",
+      "url": "https://www.propertyfinder.eg/en/search?l=40528&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "sheikh-zayed-city-26th-of-july-corridor",
+      "priority": 45,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-sheikh-zayed-city-6th-district",
+      "url": "https://www.propertyfinder.eg/en/search?l=28776&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "sheikh-zayed-city-6th-district",
+      "priority": 45,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-sheikh-zayed-city-riviera-city",
+      "url": "https://www.propertyfinder.eg/en/search?l=28846&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "sheikh-zayed-city-riviera-city",
+      "priority": 45,
+      "discoveredFrom": "pf-4-retail-root"
+    },
+    {
+      "label": "pf-4-retail-sheikh-zayed-city-waslet-dahshur-road",
+      "url": "https://www.propertyfinder.eg/en/search?l=41299&c=4&t=27&ob=mr",
+      "purpose": "rent",
+      "propertyType": "retail",
+      "areaSlug": "sheikh-zayed-city-waslet-dahshur-road",
+      "priority": 45,
+      "discoveredFrom": "pf-4-retail-root"
+    }
+  ]
+}

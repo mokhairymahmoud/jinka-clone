@@ -10,7 +10,7 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-3xl border border-stone-200 bg-white/95 shadow-[0_12px_40px_rgba(0,0,0,0.06)]",
+        "rounded-[28px] border border-[var(--jinka-border)] bg-[var(--jinka-surface)] shadow-[var(--jinka-shadow)]",
         className
       )}
       {...props}

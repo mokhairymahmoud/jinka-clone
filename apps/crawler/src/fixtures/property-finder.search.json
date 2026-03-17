@@ -26,6 +26,32 @@
                 "slug": "sheikh-zayed-city-sheikh-zayed-compounds-zed-towers-park-side-residence",
                 "path_name": "Giza, Sheikh Zayed City, Sheikh Zayed Compounds, Zed Towers"
               },
+              "location_tree": [
+                {
+                  "id": "20663",
+                  "name": "Giza",
+                  "type": "CITY",
+                  "slug": "giza",
+                  "slug_en": "giza",
+                  "level": "0"
+                },
+                {
+                  "id": "28683",
+                  "name": "Sheikh Zayed City",
+                  "type": "TOWN",
+                  "slug": "sheikh-zayed-city",
+                  "slug_en": "sheikh-zayed-city",
+                  "level": "1"
+                },
+                {
+                  "id": "41355",
+                  "name": "Park Side Residence",
+                  "type": "COMPOUND",
+                  "slug": "sheikh-zayed-city-sheikh-zayed-compounds-zed-towers-park-side-residence",
+                  "slug_en": "sheikh-zayed-city-sheikh-zayed-compounds-zed-towers-park-side-residence",
+                  "level": "4"
+                }
+              ],
               "images": [
                 {
                   "medium": "https://static.shared.propertyfinder.eg/media/images/listing/zed-towers-1.jpg"
@@ -71,6 +97,32 @@
                 "slug": "new-cairo-mivida",
                 "path_name": "Cairo, New Cairo, Mivida"
               },
+              "location_tree": [
+                {
+                  "id": "2254",
+                  "name": "Cairo",
+                  "type": "CITY",
+                  "slug": "cairo",
+                  "slug_en": "cairo",
+                  "level": "0"
+                },
+                {
+                  "id": "2255",
+                  "name": "New Cairo City",
+                  "type": "TOWN",
+                  "slug": "new-cairo-city",
+                  "slug_en": "new-cairo-city",
+                  "level": "1"
+                },
+                {
+                  "id": "99999",
+                  "name": "Mivida",
+                  "type": "COMPOUND",
+                  "slug": "new-cairo-mivida",
+                  "slug_en": "new-cairo-mivida",
+                  "level": "4"
+                }
+              ],
               "images": [
                 {
                   "medium": "https://static.shared.propertyfinder.eg/media/images/listing/mivida-villa.jpg"

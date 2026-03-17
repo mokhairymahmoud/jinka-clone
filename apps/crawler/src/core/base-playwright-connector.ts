@@ -20,6 +20,10 @@ export abstract class BasePlaywrightConnector implements SourceConnector {
 
   abstract normalize(candidate: ParsedListingCandidate): Promise<import("./connector.js").NormalizedListingCandidate | null>;
 
+  getDiscoverySurfaceMode(): "authoritative" | "additive" {
+    return "authoritative";
+  }
+
   supportsDetailRefresh() {
     return false;
   }

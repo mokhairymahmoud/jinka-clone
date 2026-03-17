@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export function SignInForm({ locale }: { locale: string }) {
   const router = useRouter();
@@ -56,12 +57,16 @@ export function SignInForm({ locale }: { locale: string }) {
       return;
     }
 
-    router.push(`/${locale}/search/units`);
+    router.push(`/${locale}/alerts`);
     router.refresh();
   }
 
   return (
     <div className="space-y-5">
+      <div>
+        <div className="text-lg font-semibold text-[var(--jinka-text)]">Sign in</div>
+        <p className="mt-1 text-sm text-[var(--jinka-muted)]">Use your email to activate alerts and receive matching announcements.</p>
+      </div>
       <div className="space-y-2">
         <label className="text-sm font-medium text-stone-700" htmlFor="email">
           Email
@@ -71,7 +76,7 @@ export function SignInForm({ locale }: { locale: string }) {
           type="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          className="w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-stone-900 outline-none focus:border-stone-950"
+          className="w-full border border-[var(--jinka-border)] bg-[var(--jinka-surface-muted)] px-4 py-3 text-[var(--jinka-text)] outline-none transition focus:border-[var(--jinka-accent)]"
         />
       </div>
 
@@ -85,25 +90,31 @@ export function SignInForm({ locale }: { locale: string }) {
             type="text"
             value={code}
             onChange={(event) => setCode(event.target.value)}
-            className="w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-stone-900 outline-none focus:border-stone-950"
+            className="w-full border border-[var(--jinka-border)] bg-[var(--jinka-surface-muted)] px-4 py-3 text-[var(--jinka-text)] outline-none transition focus:border-[var(--jinka-accent)]"
           />
           {previewCode ? (
-            <p className="text-sm text-stone-500">
-              Dev OTP preview: <span className="font-semibold text-stone-900">{previewCode}</span>
+            <p className="rounded-[18px] bg-[var(--jinka-accent-soft)] px-3 py-2 text-sm text-[var(--jinka-text)]">
+              Dev OTP preview: <span className="font-semibold">{previewCode}</span>
             </p>
           ) : null}
         </div>
       ) : null}
 
-      {error ? <p className="text-sm text-rose-700">{error}</p> : null}
+      {error ? <p className="rounded-[18px] bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p> : null}
 
       <div className="flex flex-wrap gap-3">
+        <Link
+          href={`/api/auth/google/start?locale=${locale}&returnTo=/${locale}/alerts`}
+          className="rounded-full border border-[var(--jinka-border)] bg-[var(--jinka-surface)] px-5 py-3 text-sm font-semibold text-[var(--jinka-text)]"
+        >
+          Continue with Google
+        </Link>
         {step === "request" ? (
           <button
             type="button"
             onClick={handleRequestOtp}
             disabled={loading}
-            className="rounded-full bg-stone-950 px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
+            className="rounded-full bg-[var(--jinka-accent)] px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
           >
             {loading ? "Sending..." : "Request OTP"}
           </button>
@@ -113,14 +124,14 @@ export function SignInForm({ locale }: { locale: string }) {
               type="button"
               onClick={handleVerifyOtp}
               disabled={loading}
-              className="rounded-full bg-stone-950 px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
+              className="rounded-full bg-[var(--jinka-accent)] px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
             >
               {loading ? "Verifying..." : "Verify and continue"}
             </button>
             <button
               type="button"
               onClick={() => setStep("request")}
-              className="rounded-full border border-stone-300 px-5 py-3 text-sm font-semibold text-stone-700"
+              className="rounded-full border border-[var(--jinka-border)] bg-[var(--jinka-surface)] px-5 py-3 text-sm font-semibold text-[var(--jinka-text)]"
             >
               Change email
             </button>

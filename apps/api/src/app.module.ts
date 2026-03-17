@@ -4,6 +4,7 @@ import { JwtModule } from "@nestjs/jwt";
 
 import { AdminModule } from "./admin/admin.module.js";
 import { AlertsModule } from "./alerts/alerts.module.js";
+import { AreasModule } from "./areas/areas.module.js";
 import { AuthModule } from "./auth/auth.module.js";
 import { sharedEnvSchema } from "@jinka-eg/config";
 import { CommonModule } from "./common/common.module.js";
@@ -30,6 +31,7 @@ import { UsersModule } from "./users/users.module.js";
     CommonModule,
     AuthModule,
     UsersModule,
+    AreasModule,
     ListingsModule,
     ProjectsModule,
     AlertsModule,

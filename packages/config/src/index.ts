@@ -9,6 +9,8 @@ export const sharedEnvSchema = z.object({
   S3_BUCKET_RAW: z.string().min(1),
   JWT_ACCESS_SECRET: z.string().min(1),
   JWT_REFRESH_SECRET: z.string().min(1),
+  NEXT_PUBLIC_APP_URL: z.string().url().optional(),
+  NEXT_PUBLIC_API_URL: z.string().url().optional(),
   MAPBOX_TOKEN: z.string().optional(),
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
@@ -39,3 +41,9 @@ export const queueNames = [
   "match-alerts",
   "send-notification"
 ] as const;
+
+export const searchDocumentViewNames = ["listing_search_documents", "project_search_documents"] as const;
+
+export const refreshSearchDocumentsStatements = searchDocumentViewNames.map(
+  (viewName) => `REFRESH MATERIALIZED VIEW CONCURRENTLY "${viewName}";`
+);

@@ -8,6 +8,8 @@ export type ListingPurpose = "rent" | "sale";
 
 export type MarketSegment = "resale" | "primary" | "off_plan";
 
+export type SearchSort = "relevance" | "newest" | "price_asc" | "price_desc";
+
 export type PropertyType =
   | "apartment"
   | "villa"
@@ -42,6 +44,13 @@ export interface PriceAmount {
 export interface Coordinates {
   lat: number;
   lng: number;
+}
+
+export interface SearchBoundingBox {
+  north: number;
+  south: number;
+  east: number;
+  west: number;
 }
 
 export interface ListingVariant {
@@ -118,6 +127,8 @@ export interface SearchFilters {
   maxAreaSqm?: number;
   compoundIds?: string[];
   developerIds?: string[];
+  sort?: SearchSort;
+  bbox?: SearchBoundingBox;
 }
 
 export interface AlertDefinition {

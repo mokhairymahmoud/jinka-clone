@@ -1,7 +1,7 @@
-import { Badge, Card } from "@jinka-eg/ui";
+import type { SearchFilters } from "@jinka-eg/types";
+import { Badge } from "@jinka-eg/ui";
 
-import { FavoriteButton } from "../../../../../components/favorite-button";
-import { ListingCard } from "../../../../../components/listing-card";
+import { UnitsSearchWorkspace } from "../../../../../components/units-search-workspace";
 import { getMessages, resolveLocale } from "../../../../../i18n/messages";
 import { apiFetch } from "../../../../../lib/api";
 import { getAccessTokenFromCookies } from "../../../../../lib/server-api";
@@ -12,9 +12,7 @@ type SearchPageProps = {
 };
 
 async function fetchListings(query?: string) {
-  const params = new URLSearchParams();
-  if (query) params.set("q", query);
-  const response = await apiFetch(`/v1/listings${params.toString() ? `?${params.toString()}` : ""}`);
+  const response = await apiFetch(`/v1/listings${query ? `?${query}` : ""}`);
 
   if (!response.ok) {
     return [];
@@ -43,60 +41,111 @@ async function fetchFavorites() {
   return response.json();
 }
 
+async function fetchAreas() {
+  const response = await apiFetch("/v1/areas");
+
+  if (!response.ok) {
+    return [];
+  }
+
+  return response.json();
+}
+
+function firstValue(value: string | string[] | undefined) {
+  return typeof value === "string" ? value : Array.isArray(value) ? value[0] : undefined;
+}
+
+function toStringArray(value: string | string[] | undefined) {
+  if (!value) {
+    return [];
+  }
+
+  return Array.isArray(value) ? value.flatMap((entry) => entry.split(",")) : value.split(",");
+}
+
 export default async function UnitSearchPage({ params, searchParams }: SearchPageProps) {
   const { locale } = await params;
   const resolvedSearchParams = await searchParams;
   const safeLocale = resolveLocale(locale);
   const t = getMessages(safeLocale);
-  const query = typeof resolvedSearchParams.q === "string" ? resolvedSearchParams.q : "";
-  const [listings, favorites] = await Promise.all([fetchListings(query), fetchFavorites()]);
+  const currentFilters: SearchFilters = {
+    query: firstValue(resolvedSearchParams.q),
+    purpose: firstValue(resolvedSearchParams.purpose) as SearchFilters["purpose"],
+    marketSegment: firstValue(resolvedSearchParams.marketSegment) as SearchFilters["marketSegment"],
+    propertyTypes: toStringArray(resolvedSearchParams.propertyTypes) as NonNullable<SearchFilters["propertyTypes"]>,
+    areaIds: toStringArray(resolvedSearchParams.areaIds),
+    bedrooms: toStringArray(resolvedSearchParams.bedrooms).map((entry) => Number(entry)).filter((entry) => Number.isFinite(entry)),
+    bathrooms: toStringArray(resolvedSearchParams.bathrooms).map((entry) => Number(entry)).filter((entry) => Number.isFinite(entry)),
+    minPrice: firstValue(resolvedSearchParams.minPrice) ? Number(firstValue(resolvedSearchParams.minPrice)) : undefined,
+    maxPrice: firstValue(resolvedSearchParams.maxPrice) ? Number(firstValue(resolvedSearchParams.maxPrice)) : undefined,
+    minAreaSqm: firstValue(resolvedSearchParams.minAreaSqm) ? Number(firstValue(resolvedSearchParams.minAreaSqm)) : undefined,
+    maxAreaSqm: firstValue(resolvedSearchParams.maxAreaSqm) ? Number(firstValue(resolvedSearchParams.maxAreaSqm)) : undefined,
+    sort: firstValue(resolvedSearchParams.sort) as SearchFilters["sort"],
+    bbox:
+      firstValue(resolvedSearchParams.north) &&
+      firstValue(resolvedSearchParams.south) &&
+      firstValue(resolvedSearchParams.east) &&
+      firstValue(resolvedSearchParams.west)
+        ? {
+            north: Number(firstValue(resolvedSearchParams.north)),
+            south: Number(firstValue(resolvedSearchParams.south)),
+            east: Number(firstValue(resolvedSearchParams.east)),
+            west: Number(firstValue(resolvedSearchParams.west))
+          }
+        : undefined
+  };
+  const searchQueryString = new URLSearchParams(
+    Object.entries(resolvedSearchParams).flatMap(([key, value]) =>
+      Array.isArray(value) ? value.map((entry) => [key, entry]) : value ? [[key, value]] : []
+    )
+  ).toString();
+  const [listings, favorites, areas] = await Promise.all([fetchListings(searchQueryString), fetchFavorites(), fetchAreas()]);
   const favoriteIds = new Set((favorites as Array<{ clusterId: string }>).map((favorite) => favorite.clusterId));
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
-        <div>
-          <Badge tone="accent">{t.units}</Badge>
-          <h1 className="mt-4 text-4xl font-semibold tracking-tight text-stone-950">Canonical unit search</h1>
-          <p className="mt-3 max-w-2xl text-stone-600">
-            Dense feed with freshness, variant count, and fraud label surfaced before detail view.
-          </p>
-        </div>
-        <Card className="grid min-w-[320px] gap-3 p-4">
-          <form className="grid gap-3" method="GET">
-            <div className="text-sm font-medium text-stone-500">{t.filters}</div>
-            <input
-              name="q"
-              defaultValue={query}
-              placeholder="Search area, title, or compound"
-              className="rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm text-stone-900 outline-none focus:border-stone-950"
-            />
-            <button className="rounded-full bg-stone-950 px-4 py-3 text-sm font-semibold text-white" type="submit">
-              Search
-            </button>
-          </form>
-        </Card>
-      </div>
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <div className="grid gap-6">
-          {(listings as Array<Parameters<typeof ListingCard>[0]["listing"]>).map((listing) => (
-            <ListingCard
-              key={listing.id}
-              listing={listing}
-              locale={safeLocale}
-              action={<FavoriteButton clusterId={listing.id} initialSaved={favoriteIds.has(listing.id)} />}
-            />
-          ))}
-        </div>
-        <Card className="sticky top-6 min-h-[480px] p-6">
-          <div className="h-full rounded-[2rem] bg-[linear-gradient(145deg,#ddd0bd_0%,#f7f2ea_50%,#c0d3c1_100%)] p-6">
-            <div className="text-sm uppercase tracking-[0.24em] text-stone-500">{t.listMap}</div>
-            <div className="mt-6 grid h-[360px] place-items-center rounded-[1.5rem] border border-dashed border-stone-400/60 bg-white/60 text-center text-stone-600">
-              Mapbox-integrated map panel
-            </div>
-          </div>
-        </Card>
-      </div>
+      <Badge tone="accent">{t.units}</Badge>
+      <UnitsSearchWorkspace
+        locale={safeLocale}
+        listings={listings as Array<Parameters<typeof UnitsSearchWorkspace>[0]["listings"][number]>}
+        favoriteIds={[...favoriteIds]}
+        areas={areas as Array<Parameters<typeof UnitsSearchWorkspace>[0]["areas"][number]>}
+        initialFilters={currentFilters}
+        mapboxToken={process.env.MAPBOX_TOKEN}
+        labels={{
+          title: t.searchTitle,
+          body: t.searchBody,
+          filters: t.filters,
+          searchPlaceholder: t.searchPlaceholder,
+          searchAction: t.searchAction,
+          sort: t.sort,
+          area: t.area,
+          purpose: t.purposeLabel,
+          marketSegment: t.marketSegmentLabel,
+          propertyType: t.propertyTypeLabel,
+          bedrooms: t.bedroomsLabel,
+          bathrooms: t.bathroomsLabel,
+          minPrice: t.minPriceLabel,
+          maxPrice: t.maxPriceLabel,
+          minArea: t.minAreaLabel,
+          maxArea: t.maxAreaLabel,
+          allAreas: t.allAreas,
+          allPurposes: t.allPurposes,
+          allSegments: t.allSegments,
+          allPropertyTypes: t.allPropertyTypes,
+          allBedrooms: t.allBedrooms,
+          allBathrooms: t.allBathrooms,
+          sortNewest: t.sortNewest,
+          sortRelevance: t.sortRelevance,
+          sortPriceAsc: t.sortPriceAsc,
+          sortPriceDesc: t.sortPriceDesc,
+          mapTitle: t.mapTitle,
+          mapShow: t.mapShow,
+          mapHide: t.mapHide,
+          mapSearchArea: t.mapSearchArea,
+          mapUnavailable: t.mapUnavailable
+        }}
+      />
     </div>
   );
 }

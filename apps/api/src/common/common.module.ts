@@ -5,12 +5,14 @@ import { AppStoreService } from "./app-store.service.js";
 import { AllExceptionsFilter } from "./all-exceptions.filter.js";
 import { PrismaService } from "./prisma.service.js";
 import { RequestLoggingInterceptor } from "./request-logging.interceptor.js";
+import { SearchDocumentsService } from "./search-documents.service.js";
 
 @Global()
 @Module({
   providers: [
     AppStoreService,
     PrismaService,
+    SearchDocumentsService,
     {
       provide: APP_INTERCEPTOR,
       useClass: RequestLoggingInterceptor
@@ -20,6 +22,6 @@ import { RequestLoggingInterceptor } from "./request-logging.interceptor.js";
       useClass: AllExceptionsFilter
     }
   ],
-  exports: [AppStoreService, PrismaService]
+  exports: [AppStoreService, PrismaService, SearchDocumentsService]
 })
 export class CommonModule {}

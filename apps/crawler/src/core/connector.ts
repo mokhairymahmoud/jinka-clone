@@ -29,6 +29,7 @@ export interface SourceSeed {
 
 export interface DiscoveryControls {
   nextSeed?: SourceSeed;
+  discoveredSeeds?: SourceSeed[];
   pageSignature?: string;
   stopReason?: string;
 }
@@ -81,6 +82,7 @@ export interface NormalizedListingCandidate extends ListingVariant {
 export interface SourceConnector {
   readonly source: ListingSource;
   discover(): Promise<SourceSeed[]>;
+  getDiscoverySurfaceMode(): "authoritative" | "additive";
   supportsDetailRefresh(): boolean;
   getDiscoveryControls(raw: RawPageResult, candidates: ParsedListingCandidate[], seed: SourceSeed, previousSignature?: string | null): DiscoveryControls;
   createCrawler(): PlaywrightCrawler;

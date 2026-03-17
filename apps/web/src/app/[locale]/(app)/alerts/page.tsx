@@ -25,10 +25,22 @@ async function fetchAlerts() {
   return response.json();
 }
 
+async function fetchAreas() {
+  const response = await apiFetch("/v1/areas");
+
+  if (!response.ok) {
+    return [];
+  }
+
+  return response.json();
+}
+
 export default async function AlertsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
-  const t = getMessages(resolveLocale(locale));
-  const alerts = (await fetchAlerts()) as Array<{
+  const safeLocale = resolveLocale(locale);
+  const t = getMessages(safeLocale);
+  const [alerts, areas] = await Promise.all([fetchAlerts(), fetchAreas()]);
+  const typedAlerts = alerts as Array<{
     id: string;
     name: string;
     filters: Record<string, unknown>;
@@ -37,22 +49,32 @@ export default async function AlertsPage({ params }: { params: Promise<{ locale:
   }>;
 
   return (
-    <div className="space-y-8">
-      <div>
+    <div className="space-y-6">
+      <div className="rounded-[32px] border border-[var(--jinka-border)] bg-[var(--jinka-surface)] p-6 shadow-[var(--jinka-shadow)]">
         <Badge tone="accent">{t.navAlerts}</Badge>
-        <h1 className="mt-4 text-4xl font-semibold tracking-tight text-stone-950">{t.alertsTitle}</h1>
+        <h1 className="mt-4 text-4xl font-semibold tracking-tight text-[var(--jinka-text)]">{t.alertsTitle}</h1>
+        <p className="mt-3 max-w-2xl text-[var(--jinka-muted)]">
+          Create simple, high-signal alerts and let the customer experience revolve around the announcements they trigger.
+        </p>
       </div>
-      <CreateAlertForm />
+      <CreateAlertForm locale={safeLocale} areas={areas as Parameters<typeof CreateAlertForm>[0]["areas"]} />
       <div className="grid gap-4">
-        {alerts.map((alert) => (
-          <Card key={alert.id} className="p-5">
-            <div className="flex items-center justify-between">
+        {typedAlerts.map((alert) => (
+          <Card key={alert.id} className="border-[var(--jinka-border)] p-5 shadow-[var(--jinka-shadow)]">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <div className="text-lg font-semibold text-stone-950">{alert.name}</div>
-                <div className="mt-1 text-sm text-stone-600">{JSON.stringify(alert.filters)}</div>
+                <div className="text-lg font-semibold text-[var(--jinka-text)]">{alert.name}</div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {Object.entries(alert.filters).map(([key, value]) => (
+                    <span key={key} className="inline-flex rounded-full bg-[var(--jinka-surface-muted)] px-3 py-1 text-xs font-medium text-[var(--jinka-muted)]">
+                      {key}: {Array.isArray(value) ? value.join(", ") : String(value)}
+                    </span>
+                  ))}
+                </div>
               </div>
-              <div className="text-sm text-stone-500">
-                {alert.notifyByPush ? "push" : ""} {alert.notifyByEmail ? "email" : ""}
+              <div className="flex flex-wrap gap-2 text-sm">
+                {alert.notifyByPush ? <span className="rounded-full bg-[var(--jinka-accent-soft)] px-3 py-1 font-medium text-[var(--jinka-accent)]">push</span> : null}
+                {alert.notifyByEmail ? <span className="rounded-full bg-[var(--jinka-surface-muted)] px-3 py-1 font-medium text-[var(--jinka-text)]">email</span> : null}
               </div>
             </div>
           </Card>

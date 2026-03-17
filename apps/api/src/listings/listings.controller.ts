@@ -2,7 +2,7 @@ import { Controller, Get, Inject, Param, Query } from "@nestjs/common";
 import { Transform } from "class-transformer";
 import { IsArray, IsIn, IsNumber, IsOptional, IsString } from "class-validator";
 
-import type { SearchFilters } from "@jinka-eg/types";
+import type { SearchFilters, SearchSort } from "@jinka-eg/types";
 
 import { ListingsService } from "./listings.service.js";
 
@@ -98,6 +98,30 @@ class ListingsQueryDto {
   @IsNumber()
   @Transform(({ value }) => toOptionalNumber(value))
   maxAreaSqm?: number;
+
+  @IsOptional()
+  @IsIn(["relevance", "newest", "price_asc", "price_desc"])
+  sort?: SearchSort;
+
+  @IsOptional()
+  @IsNumber()
+  @Transform(({ value }) => toOptionalNumber(value))
+  north?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Transform(({ value }) => toOptionalNumber(value))
+  south?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Transform(({ value }) => toOptionalNumber(value))
+  east?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Transform(({ value }) => toOptionalNumber(value))
+  west?: number;
 }
 
 @Controller("listings")
@@ -117,7 +141,17 @@ export class ListingsController {
       minPrice: asOptionalNumber(query.minPrice),
       maxPrice: asOptionalNumber(query.maxPrice),
       minAreaSqm: asOptionalNumber(query.minAreaSqm),
-      maxAreaSqm: asOptionalNumber(query.maxAreaSqm)
+      maxAreaSqm: asOptionalNumber(query.maxAreaSqm),
+      sort: query.sort,
+      bbox:
+        [query.north, query.south, query.east, query.west].every((value) => value !== undefined)
+          ? {
+              north: asOptionalNumber(query.north) ?? 0,
+              south: asOptionalNumber(query.south) ?? 0,
+              east: asOptionalNumber(query.east) ?? 0,
+              west: asOptionalNumber(query.west) ?? 0
+            }
+          : undefined
     });
   }
 
