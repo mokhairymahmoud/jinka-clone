@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "dev": "tsx watch src/index.ts",
+    "dev": "zsh -lc 'typeset -a pids; cleanup(){ (( ${#pids[@]} )) && kill ${pids[@]} 2>/dev/null; }; trap cleanup EXIT INT TERM; pnpm worker & pids+=($!); pnpm schedule & pids+=($!); wait'",
+    "healthcheck": "tsx src/index.ts",
     "backfill:phase3": "tsx src/backfill-phase3.ts",
     "ingest": "tsx src/enqueue.ts",
     "ingest:once": "tsx src/run-once.ts",
