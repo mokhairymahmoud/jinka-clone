@@ -5,7 +5,7 @@
   "packageManager": "pnpm@10.6.3",
   "scripts": {
     "build": "turbo run build",
-    "dev": "zsh -lc 'set -a; [ -f .env ] && source .env; set +a; turbo run dev --parallel'",
+    "dev": "zsh -lc 'set -a; [ -f .env ] && source .env; set +a; turbo run dev --parallel --env-mode=loose'",
     "dev:all": "pnpm infra && pnpm db:setup && zsh -lc 'set -a; source .env; set +a; typeset -a pids; cleanup(){ (( ${#pids[@]} )) && kill ${pids[@]} 2>/dev/null; }; trap cleanup EXIT INT TERM; pnpm --filter @jinka-eg/api dev & pids+=($!); pnpm --filter @jinka-eg/web dev & pids+=($!); pnpm --filter @jinka-eg/crawler worker & pids+=($!); pnpm --filter @jinka-eg/crawler schedule & pids+=($!); wait'",
     "lint": "turbo run lint",
     "test": "turbo run test",
