@@ -6,10 +6,13 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
+    "dev:all": "pnpm infra && pnpm db:setup && zsh -lc 'set -a; source .env; set +a; typeset -a pids; cleanup(){ (( ${#pids[@]} )) && kill ${pids[@]} 2>/dev/null; }; trap cleanup EXIT INT TERM; pnpm --filter @jinka-eg/api dev & pids+=($!); pnpm --filter @jinka-eg/web dev & pids+=($!); pnpm --filter @jinka-eg/crawler worker & pids+=($!); pnpm --filter @jinka-eg/crawler schedule & pids+=($!); wait'",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
     "format": "prettier --write .",
+    "infra": "docker compose up -d postgres redis minio",
+    "db:setup": "zsh -lc 'set -a; source .env; set +a; pnpm --filter @jinka-eg/api exec prisma migrate deploy && pnpm --filter @jinka-eg/api prisma:seed'",
     "db:generate": "pnpm --filter @jinka-eg/api prisma:generate",
     "db:migrate": "pnpm --filter @jinka-eg/api prisma:migrate",
     "db:studio": "pnpm --filter @jinka-eg/api prisma:studio"

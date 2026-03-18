@@ -4,24 +4,23 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import type { SearchFilters } from "@jinka-eg/types";
-
-type AreaOption = {
-  id: string;
-  slug: string;
-  name: {
-    en: string;
-    ar: string;
-  };
-};
+import { AreaSearchField, type AreaOption } from "./area-search-field";
 
 export function CreateAlertForm({
   locale,
   initialFilters,
-  areas
+  areas,
+  labels
 }: {
   locale: "en" | "ar";
   initialFilters?: SearchFilters;
   areas?: AreaOption[];
+  labels: {
+    allAreas: string;
+    searchAreas: string;
+    noAreasFound: string;
+    clearSelection: string;
+  };
 }) {
   const router = useRouter();
   const [name, setName] = useState(initialFilters?.query ? `${initialFilters.query} alert` : "Saved search");
@@ -91,18 +90,16 @@ export function CreateAlertForm({
         placeholder="Alert name"
       />
       <div className="grid gap-3 sm:grid-cols-2">
-        <select
+        <AreaSearchField
+          locale={locale}
+          options={areas}
           value={areaId}
-          onChange={(event) => setAreaId(event.target.value)}
-          className="border border-[var(--jinka-border)] bg-[var(--jinka-surface-muted)] px-4 py-3 text-sm text-[var(--jinka-text)] outline-none transition focus:border-[var(--jinka-accent)]"
-        >
-          <option value="">All areas</option>
-          {areas?.map((area) => (
-            <option key={area.id} value={area.slug}>
-              {area.name[locale]}
-            </option>
-          ))}
-        </select>
+          onChange={(value) => setAreaId(typeof value === "string" ? value : value[0] ?? "")}
+          allLabel={labels.allAreas}
+          searchPlaceholder={labels.searchAreas}
+          emptyMessage={labels.noAreasFound}
+          clearLabel={labels.clearSelection}
+        />
         <select
           value={purpose}
           onChange={(event) => setPurpose(event.target.value as "sale" | "rent")}

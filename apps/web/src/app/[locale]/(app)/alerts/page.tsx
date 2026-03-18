@@ -57,7 +57,16 @@ export default async function AlertsPage({ params }: { params: Promise<{ locale:
           Create simple, high-signal alerts and let the customer experience revolve around the announcements they trigger.
         </p>
       </div>
-      <CreateAlertForm locale={safeLocale} areas={areas as Parameters<typeof CreateAlertForm>[0]["areas"]} />
+      <CreateAlertForm
+        locale={safeLocale}
+        areas={areas as Parameters<typeof CreateAlertForm>[0]["areas"]}
+        labels={{
+          allAreas: t.allAreas,
+          searchAreas: t.searchAreas,
+          noAreasFound: t.noAreasFound,
+          clearSelection: t.clearSelection
+        }}
+      />
       <div className="grid gap-4">
         {typedAlerts.map((alert) => (
           <Card key={alert.id} className="border-[var(--jinka-border)] p-5 shadow-[var(--jinka-shadow)]">

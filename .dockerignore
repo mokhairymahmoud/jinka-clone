@@ -1,0 +1,11 @@
+node_modules
+.git
+.github
+.turbo
+.next
+dist
+coverage
+tmp
+output
+storage
+.DS_Store

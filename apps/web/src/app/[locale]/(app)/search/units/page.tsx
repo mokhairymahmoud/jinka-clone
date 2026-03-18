@@ -143,7 +143,10 @@ export default async function UnitSearchPage({ params, searchParams }: SearchPag
           mapShow: t.mapShow,
           mapHide: t.mapHide,
           mapSearchArea: t.mapSearchArea,
-          mapUnavailable: t.mapUnavailable
+          mapUnavailable: t.mapUnavailable,
+          searchAreas: t.searchAreas,
+          noAreasFound: t.noAreasFound,
+          clearSelection: t.clearSelection
         }}
       />
     </div>

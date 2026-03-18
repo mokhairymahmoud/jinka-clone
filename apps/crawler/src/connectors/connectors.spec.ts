@@ -78,6 +78,27 @@ describe("connector health", () => {
     expect(normalized?.location?.lng).toBeGreaterThan(0);
   });
 
+  it("discovers deeper Property Finder locations from area-scoped seeds", async () => {
+    const connector = new PropertyFinderConnector();
+    const raw = getParserFixture("property_finder");
+    const parsed = await connector.parse(raw);
+
+    const controls = connector.getDiscoveryControls(raw, parsed, {
+      source: "property_finder",
+      url: "https://www.propertyfinder.eg/en/search?l=2254&c=2&t=1&ob=mr",
+      label: "pf-2-apartment-cairo",
+      seedKind: "discovery",
+      areaSlug: "cairo",
+      page: 1,
+      purpose: "rent",
+      marketSegment: "resale",
+      propertyType: "apartment"
+    });
+
+    expect(controls.discoveredSeeds?.map((seed) => seed.label)).toContain("pf-2-apartment-new-cairo-city");
+    expect(controls.discoveredSeeds?.map((seed) => seed.label)).not.toContain("pf-2-apartment-cairo");
+  });
+
   it("parses and normalizes Aqarmap fixture data", async () => {
     const connector = new AqarmapConnector();
     const parsed = await connector.parse(getParserFixture("aqarmap"));

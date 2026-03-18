@@ -73,7 +73,10 @@ describe("UnitsSearchWorkspace", () => {
           mapShow: "Open map",
           mapHide: "Hide map",
           mapSearchArea: "Search this area",
-          mapUnavailable: "Map unavailable"
+          mapUnavailable: "Map unavailable",
+          searchAreas: "Search areas",
+          noAreasFound: "No areas found",
+          clearSelection: "Clear"
         }}
       />
     );

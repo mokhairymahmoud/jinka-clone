@@ -306,12 +306,9 @@ export class PropertyFinderConnector extends BasePlaywrightConnector {
   }
 
   private discoverLocationSeeds(raw: RawPageResult, seed: SourceSeed): SourceSeed[] {
-    if (seed.areaSlug) {
-      return [];
-    }
-
     const categoryId = this.readParam(seed.url, "c");
     const propertyTypeId = this.readParam(seed.url, "t");
+    const currentLocationId = this.readParam(seed.url, "l");
 
     if (!categoryId || !propertyTypeId) {
       return [];
@@ -325,6 +322,7 @@ export class PropertyFinderConnector extends BasePlaywrightConnector {
     );
     const perPageLimit = Number(process.env.PROPERTY_FINDER_DISCOVERY_LOCATION_LIMIT ?? "12");
     const listings = getPageProps(raw).searchResult?.listings ?? [];
+    const currentLocationLevel = currentLocationId ? this.findLocationLevel(listings, currentLocationId) : null;
     const discovered = new Map<
       string,
       {
@@ -337,9 +335,20 @@ export class PropertyFinderConnector extends BasePlaywrightConnector {
       for (const node of listing.property?.location_tree ?? []) {
         const nodeId = node.id;
         const nodeType = node.type?.toUpperCase();
+        const nodeLevel = this.getLocationLevel(node);
 
         if (!nodeId || !nodeType || !allowedTypes.has(nodeType)) {
           continue;
+        }
+
+        if (currentLocationId) {
+          if (nodeId === currentLocationId) {
+            continue;
+          }
+
+          if (currentLocationLevel === null || nodeLevel <= currentLocationLevel) {
+            continue;
+          }
         }
 
         const existing = discovered.get(nodeId);
@@ -366,6 +375,18 @@ export class PropertyFinderConnector extends BasePlaywrightConnector {
       .slice(0, perPageLimit)
       .map(({ node }) => this.buildLocationSeed(node, categoryId, propertyTypeId, seed))
       .filter((candidate): candidate is SourceSeed => Boolean(candidate));
+  }
+
+  private findLocationLevel(listings: PropertyFinderListing[], locationId: string) {
+    for (const listing of listings) {
+      for (const node of listing.property?.location_tree ?? []) {
+        if (node.id === locationId) {
+          return this.getLocationLevel(node);
+        }
+      }
+    }
+
+    return null;
   }
 
   private buildLocationSeed(

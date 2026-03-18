@@ -5,19 +5,11 @@ import { usePathname, useRouter } from "next/navigation";
 import type { ListingCluster, SearchFilters, SearchSort } from "@jinka-eg/types";
 import { Card } from "@jinka-eg/ui";
 
+import { AreaSearchField, type AreaOption } from "./area-search-field";
 import { CreateAlertForm } from "./create-alert-form";
 import { FavoriteButton } from "./favorite-button";
 import { ListingCard } from "./listing-card";
 import { SearchMapPanel } from "./search-map-panel";
-
-type AreaOption = {
-  id: string;
-  slug: string;
-  name: {
-    en: string;
-    ar: string;
-  };
-};
 
 type UnitsSearchWorkspaceProps = {
   locale: "en" | "ar";
@@ -57,6 +49,9 @@ type UnitsSearchWorkspaceProps = {
     mapHide: string;
     mapSearchArea: string;
     mapUnavailable: string;
+    searchAreas: string;
+    noAreasFound: string;
+    clearSelection: string;
   };
   mapboxToken?: string;
 };
@@ -196,18 +191,18 @@ export function UnitsSearchWorkspace({
                   <option value="office">Office</option>
                 </select>
               </div>
-              <select
-                multiple
+              <AreaSearchField
+                locale={locale}
+                options={areas}
                 value={selectedAreaIds}
-                onChange={(event) => setSelectedAreaIds(Array.from(event.target.selectedOptions).map((option) => option.value))}
-                className="min-h-32 rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm text-stone-900 outline-none focus:border-stone-950"
-              >
-                {areas.map((area) => (
-                  <option key={area.id} value={area.slug}>
-                    {area.name[locale]}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => setSelectedAreaIds(Array.isArray(value) ? value : value ? [value] : [])}
+                multiple
+                allLabel={labels.allAreas}
+                searchPlaceholder={labels.searchAreas}
+                emptyMessage={labels.noAreasFound}
+                clearLabel={labels.clearSelection}
+                variant="plain"
+              />
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
                 <select value={bedrooms} onChange={(event) => setBedrooms(event.target.value)} className="rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm text-stone-900 outline-none focus:border-stone-950">
                   <option value="">{labels.allBedrooms}</option>
@@ -236,7 +231,17 @@ export function UnitsSearchWorkspace({
               </button>
             </form>
           </Card>
-          <CreateAlertForm locale={locale} initialFilters={currentFilters} areas={areas} />
+          <CreateAlertForm
+            locale={locale}
+            initialFilters={currentFilters}
+            areas={areas}
+            labels={{
+              allAreas: labels.allAreas,
+              searchAreas: labels.searchAreas,
+              noAreasFound: labels.noAreasFound,
+              clearSelection: labels.clearSelection
+            }}
+          />
         </div>
         <div className="grid gap-6">
           {listings.map((listing) => (

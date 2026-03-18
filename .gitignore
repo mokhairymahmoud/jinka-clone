@@ -9,3 +9,4 @@ pnpm-lock.yaml
 .DS_Store
 apps/api/prisma/migrations
 storage
+AGENTS.md
