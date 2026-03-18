@@ -1,0 +1,23 @@
+meta {
+  name: 47 Admin Resolve Report
+  type: http
+  seq: 47
+}
+
+post {
+  url: {{apiBaseUrl}}/v1/admin/reports/{{reportId}}/resolve
+  body: json
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{accessToken}}
+  content-type: application/json
+  accept: application/json
+}
+
+body:json {
+  {
+    "resolutionNote": "Reviewed from Bruno"
+  }
+}

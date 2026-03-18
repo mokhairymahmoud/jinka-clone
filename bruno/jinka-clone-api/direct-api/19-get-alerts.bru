@@ -1,0 +1,16 @@
+meta {
+  name: 19 Get Alerts
+  type: http
+  seq: 19
+}
+
+get {
+  url: {{apiBaseUrl}}/v1/alerts
+  body: none
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{accessToken}}
+  accept: application/json
+}

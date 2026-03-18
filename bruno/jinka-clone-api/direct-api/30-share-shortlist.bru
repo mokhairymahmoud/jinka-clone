@@ -1,0 +1,24 @@
+meta {
+  name: 30 Share Shortlist
+  type: http
+  seq: 30
+}
+
+post {
+  url: {{apiBaseUrl}}/v1/shortlists/{{shortlistId}}/share
+  body: json
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{accessToken}}
+  content-type: application/json
+  accept: application/json
+}
+
+body:json {
+  {
+    "email": "{{sharedEmail}}",
+    "role": "viewer"
+  }
+}

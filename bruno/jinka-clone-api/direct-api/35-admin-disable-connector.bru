@@ -1,0 +1,23 @@
+meta {
+  name: 35 Admin Disable Connector
+  type: http
+  seq: 35
+}
+
+post {
+  url: {{apiBaseUrl}}/v1/admin/connectors/{{connectorSource}}/disable
+  body: json
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{accessToken}}
+  content-type: application/json
+  accept: application/json
+}
+
+body:json {
+  {
+    "reason": "Disabled from Bruno"
+  }
+}

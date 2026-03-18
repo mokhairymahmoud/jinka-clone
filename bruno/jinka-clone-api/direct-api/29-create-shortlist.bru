@@ -1,0 +1,33 @@
+meta {
+  name: 29 Create Shortlist
+  type: http
+  seq: 29
+}
+
+post {
+  url: {{apiBaseUrl}}/v1/shortlists
+  body: json
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{accessToken}}
+  content-type: application/json
+  accept: application/json
+}
+
+body:json {
+  {
+    "name": "Bruno Shortlist",
+    "description": "Created from the Bruno collection",
+    "clusterIds": ["{{clusterId}}"]
+  }
+}
+
+tests {
+  const body = res.body;
+
+  if (body?.id) {
+    bru.setEnvVar("shortlistId", body.id);
+  }
+}

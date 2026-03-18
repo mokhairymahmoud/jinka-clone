@@ -1,0 +1,16 @@
+meta {
+  name: 04 Auth Logout
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{apiBaseUrl}}/v1/auth/logout
+  body: none
+  auth: none
+}
+
+headers {
+  x-refresh-token: {{refreshToken}}
+  accept: application/json
+}

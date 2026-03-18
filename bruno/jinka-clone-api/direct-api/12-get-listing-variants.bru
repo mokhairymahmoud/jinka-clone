@@ -1,0 +1,15 @@
+meta {
+  name: 12 Get Listing Variants
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{apiBaseUrl}}/v1/listings/{{clusterId}}/variants
+  body: none
+  auth: none
+}
+
+headers {
+  accept: application/json
+}

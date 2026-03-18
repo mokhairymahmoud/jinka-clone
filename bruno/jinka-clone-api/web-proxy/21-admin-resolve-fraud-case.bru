@@ -1,0 +1,23 @@
+meta {
+  name: 21 Admin Resolve Fraud Case
+  type: http
+  seq: 21
+}
+
+post {
+  url: {{webBaseUrl}}/api/admin/fraud-cases/{{fraudCaseId}}/resolve
+  body: json
+  auth: none
+}
+
+headers {
+  cookie: access_token={{accessToken}}; refresh_token={{refreshToken}}
+  content-type: application/json
+  accept: application/json
+}
+
+body:json {
+  {
+    "label": "review"
+  }
+}

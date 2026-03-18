@@ -1,0 +1,23 @@
+meta {
+  name: 46 Admin Resolve Fraud Case
+  type: http
+  seq: 46
+}
+
+post {
+  url: {{apiBaseUrl}}/v1/admin/fraud-cases/{{fraudCaseId}}/resolve
+  body: json
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{accessToken}}
+  content-type: application/json
+  accept: application/json
+}
+
+body:json {
+  {
+    "label": "review"
+  }
+}

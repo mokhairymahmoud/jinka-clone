@@ -1,0 +1,24 @@
+meta {
+  name: 15 Add Shortlist Comment
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{webBaseUrl}}/api/shortlists/{{shortlistId}}/comments
+  body: json
+  auth: none
+}
+
+headers {
+  cookie: access_token={{accessToken}}; refresh_token={{refreshToken}}
+  content-type: application/json
+  accept: application/json
+}
+
+body:json {
+  {
+    "body": "Comment added from Bruno web proxy",
+    "clusterId": "{{clusterId}}"
+  }
+}

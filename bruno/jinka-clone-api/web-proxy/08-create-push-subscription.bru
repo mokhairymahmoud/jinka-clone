@@ -1,0 +1,26 @@
+meta {
+  name: 08 Create Push Subscription
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{webBaseUrl}}/api/push-subscriptions
+  body: json
+  auth: none
+}
+
+headers {
+  cookie: access_token={{accessToken}}; refresh_token={{refreshToken}}
+  content-type: application/json
+  accept: application/json
+}
+
+body:json {
+  {
+    "endpoint": "{{pushEndpoint}}",
+    "p256dhKey": "{{pushP256dhKey}}",
+    "authKey": "{{pushAuthKey}}",
+    "platform": "web"
+  }
+}

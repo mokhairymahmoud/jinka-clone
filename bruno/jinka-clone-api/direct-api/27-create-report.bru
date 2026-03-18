@@ -1,0 +1,33 @@
+meta {
+  name: 27 Create Report
+  type: http
+  seq: 27
+}
+
+post {
+  url: {{apiBaseUrl}}/v1/reports
+  body: json
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{accessToken}}
+  content-type: application/json
+  accept: application/json
+}
+
+body:json {
+  {
+    "clusterId": "{{clusterId}}",
+    "reason": "duplicate",
+    "details": "Submitted from Bruno collection"
+  }
+}
+
+tests {
+  const body = res.body;
+
+  if (body?.id) {
+    bru.setEnvVar("reportId", body.id);
+  }
+}

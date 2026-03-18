@@ -1,0 +1,16 @@
+meta {
+  name: 41 Admin Get Blacklists
+  type: http
+  seq: 41
+}
+
+get {
+  url: {{apiBaseUrl}}/v1/admin/blacklists
+  body: none
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{accessToken}}
+  accept: application/json
+}

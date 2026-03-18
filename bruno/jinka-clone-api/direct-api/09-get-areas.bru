@@ -1,0 +1,27 @@
+meta {
+  name: 09 Get Areas
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{apiBaseUrl}}/v1/areas?q={{areaQuery}}
+  body: none
+  auth: none
+}
+
+headers {
+  accept: application/json
+}
+
+tests {
+  const body = res.body;
+
+  test("status is not 5xx", function() {
+    expect(res.status).to.be.lessThan(500);
+  });
+
+  if (Array.isArray(body) && body[0]?.id) {
+    bru.setEnvVar("areaId", body[0].id);
+  }
+}

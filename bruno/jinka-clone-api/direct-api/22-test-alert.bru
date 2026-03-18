@@ -1,0 +1,16 @@
+meta {
+  name: 22 Test Alert
+  type: http
+  seq: 22
+}
+
+post {
+  url: {{apiBaseUrl}}/v1/alerts/{{alertId}}/test
+  body: none
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{accessToken}}
+  accept: application/json
+}

@@ -1,0 +1,28 @@
+meta {
+  name: 06 Patch Me
+  type: http
+  seq: 6
+}
+
+patch {
+  url: {{webBaseUrl}}/api/me
+  body: json
+  auth: none
+}
+
+headers {
+  cookie: access_token={{accessToken}}; refresh_token={{refreshToken}}
+  content-type: application/json
+  accept: application/json
+}
+
+body:json {
+  {
+    "name": "Demo Admin",
+    "locale": "{{locale}}",
+    "notificationPrefs": {
+      "emailEnabled": true,
+      "pushEnabled": true
+    }
+  }
+}

@@ -1,0 +1,16 @@
+meta {
+  name: 07 Get Me
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{apiBaseUrl}}/v1/me
+  body: none
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{accessToken}}
+  accept: application/json
+}

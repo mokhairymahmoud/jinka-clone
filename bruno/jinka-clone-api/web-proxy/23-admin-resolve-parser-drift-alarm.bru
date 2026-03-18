@@ -1,0 +1,23 @@
+meta {
+  name: 23 Admin Resolve Parser Drift Alarm
+  type: http
+  seq: 23
+}
+
+post {
+  url: {{webBaseUrl}}/api/admin/parser-drift-alarms/{{parserDriftAlarmId}}/resolve
+  body: json
+  auth: none
+}
+
+headers {
+  cookie: access_token={{accessToken}}; refresh_token={{refreshToken}}
+  content-type: application/json
+  accept: application/json
+}
+
+body:json {
+  {
+    "note": "Resolved from Bruno web proxy"
+  }
+}

@@ -1,0 +1,15 @@
+meta {
+  name: 06 Auth Google Callback
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{apiBaseUrl}}/v1/auth/google/callback?code={{googleCallbackCode}}&state={{googleCallbackState}}
+  body: none
+  auth: none
+}
+
+headers {
+  accept: application/json
+}

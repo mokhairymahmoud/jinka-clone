@@ -1,0 +1,26 @@
+meta {
+  name: 17 Create Push Subscription
+  type: http
+  seq: 17
+}
+
+post {
+  url: {{apiBaseUrl}}/v1/push-subscriptions
+  body: json
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{accessToken}}
+  content-type: application/json
+  accept: application/json
+}
+
+body:json {
+  {
+    "endpoint": "{{pushEndpoint}}",
+    "p256dhKey": "{{pushP256dhKey}}",
+    "authKey": "{{pushAuthKey}}",
+    "platform": "web"
+  }
+}

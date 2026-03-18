@@ -1,0 +1,16 @@
+meta {
+  name: 15 Get Notifications
+  type: http
+  seq: 15
+}
+
+get {
+  url: {{apiBaseUrl}}/v1/notifications
+  body: none
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{accessToken}}
+  accept: application/json
+}

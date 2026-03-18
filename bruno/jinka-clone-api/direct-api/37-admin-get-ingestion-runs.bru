@@ -1,0 +1,16 @@
+meta {
+  name: 37 Admin Get Ingestion Runs
+  type: http
+  seq: 37
+}
+
+get {
+  url: {{apiBaseUrl}}/v1/admin/ingestion-runs
+  body: none
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{accessToken}}
+  accept: application/json
+}

@@ -1,0 +1,23 @@
+meta {
+  name: 48 Admin Resolve Parser Drift Alarm
+  type: http
+  seq: 48
+}
+
+post {
+  url: {{apiBaseUrl}}/v1/admin/parser-drift-alarms/{{parserDriftAlarmId}}/resolve
+  body: json
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{accessToken}}
+  content-type: application/json
+  accept: application/json
+}
+
+body:json {
+  {
+    "note": "Resolved from Bruno"
+  }
+}

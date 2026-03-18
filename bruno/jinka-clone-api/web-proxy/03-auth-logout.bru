@@ -1,0 +1,16 @@
+meta {
+  name: 03 Auth Logout
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{webBaseUrl}}/api/auth/logout
+  body: none
+  auth: none
+}
+
+headers {
+  cookie: access_token={{accessToken}}; refresh_token={{refreshToken}}
+  accept: application/json
+}

@@ -1,0 +1,38 @@
+meta {
+  name: 03 Auth Refresh
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{apiBaseUrl}}/v1/auth/refresh
+  body: json
+  auth: none
+}
+
+headers {
+  content-type: application/json
+  accept: application/json
+}
+
+body:json {
+  {
+    "refreshToken": "{{refreshToken}}"
+  }
+}
+
+tests {
+  const body = res.body;
+
+  test("status is not 5xx", function() {
+    expect(res.status).to.be.lessThan(500);
+  });
+
+  if (body?.accessToken) {
+    bru.setEnvVar("accessToken", body.accessToken);
+  }
+
+  if (body?.refreshToken) {
+    bru.setEnvVar("refreshToken", body.refreshToken);
+  }
+}

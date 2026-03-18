@@ -1,0 +1,15 @@
+meta {
+  name: 05 Auth Google Start
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{apiBaseUrl}}/v1/auth/google/start?locale={{locale}}&returnTo={{returnToPath}}
+  body: none
+  auth: none
+}
+
+headers {
+  accept: application/json
+}

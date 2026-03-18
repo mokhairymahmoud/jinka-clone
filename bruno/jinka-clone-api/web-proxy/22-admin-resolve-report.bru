@@ -1,0 +1,23 @@
+meta {
+  name: 22 Admin Resolve Report
+  type: http
+  seq: 22
+}
+
+post {
+  url: {{webBaseUrl}}/api/admin/reports/{{reportId}}/resolve
+  body: json
+  auth: none
+}
+
+headers {
+  cookie: access_token={{accessToken}}; refresh_token={{refreshToken}}
+  content-type: application/json
+  accept: application/json
+}
+
+body:json {
+  {
+    "resolutionNote": "Reviewed from Bruno web proxy"
+  }
+}

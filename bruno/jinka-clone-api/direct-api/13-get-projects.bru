@@ -1,0 +1,27 @@
+meta {
+  name: 13 Get Projects
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{apiBaseUrl}}/v1/projects?q={{projectQuery}}&sort={{sort}}
+  body: none
+  auth: none
+}
+
+headers {
+  accept: application/json
+}
+
+tests {
+  const body = res.body;
+
+  test("status is not 5xx", function() {
+    expect(res.status).to.be.lessThan(500);
+  });
+
+  if (Array.isArray(body) && body[0]?.id) {
+    bru.setEnvVar("projectId", body[0].id);
+  }
+}

@@ -1,0 +1,24 @@
+meta {
+  name: 31 Add Shortlist Item
+  type: http
+  seq: 31
+}
+
+post {
+  url: {{apiBaseUrl}}/v1/shortlists/{{shortlistId}}/items
+  body: json
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{accessToken}}
+  content-type: application/json
+  accept: application/json
+}
+
+body:json {
+  {
+    "clusterId": "{{clusterId}}",
+    "note": "Added from Bruno"
+  }
+}

@@ -1,0 +1,23 @@
+meta {
+  name: 44 Admin Merge Cluster
+  type: http
+  seq: 44
+}
+
+post {
+  url: {{apiBaseUrl}}/v1/admin/clusters/{{clusterId}}/merge
+  body: json
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{accessToken}}
+  content-type: application/json
+  accept: application/json
+}
+
+body:json {
+  {
+    "targetClusterId": "{{targetClusterId}}"
+  }
+}

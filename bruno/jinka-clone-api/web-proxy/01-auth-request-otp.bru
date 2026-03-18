@@ -1,0 +1,30 @@
+meta {
+  name: 01 Auth Request OTP
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{webBaseUrl}}/api/auth/request-otp
+  body: json
+  auth: none
+}
+
+headers {
+  content-type: application/json
+  accept: application/json
+}
+
+body:json {
+  {
+    "email": "{{userEmail}}"
+  }
+}
+
+tests {
+  const body = res.body;
+
+  if (body?.otpPreview) {
+    bru.setEnvVar("otpCode", body.otpPreview);
+  }
+}

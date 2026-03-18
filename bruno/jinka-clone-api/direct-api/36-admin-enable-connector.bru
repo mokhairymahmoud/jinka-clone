@@ -1,0 +1,16 @@
+meta {
+  name: 36 Admin Enable Connector
+  type: http
+  seq: 36
+}
+
+post {
+  url: {{apiBaseUrl}}/v1/admin/connectors/{{connectorSource}}/enable
+  body: none
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{accessToken}}
+  accept: application/json
+}

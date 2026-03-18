@@ -1,0 +1,43 @@
+meta {
+  name: 10 Create Alert
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{webBaseUrl}}/api/alerts
+  body: json
+  auth: none
+}
+
+headers {
+  cookie: access_token={{accessToken}}; refresh_token={{refreshToken}}
+  content-type: application/json
+  accept: application/json
+}
+
+body:json {
+  {
+    "name": "Bruno Alert",
+    "locale": "{{locale}}",
+    "filters": {
+      "query": "{{listingQuery}}",
+      "areaIds": ["{{areaId}}"],
+      "purpose": "sale",
+      "propertyTypes": ["apartment"],
+      "sort": "{{sort}}"
+    },
+    "notifyByPush": true,
+    "notifyByEmail": true,
+    "quietHoursStart": "23:00",
+    "quietHoursEnd": "07:00"
+  }
+}
+
+tests {
+  const body = res.body;
+
+  if (body?.id) {
+    bru.setEnvVar("alertId", body.id);
+  }
+}

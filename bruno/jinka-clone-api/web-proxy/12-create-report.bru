@@ -1,0 +1,33 @@
+meta {
+  name: 12 Create Report
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{webBaseUrl}}/api/reports
+  body: json
+  auth: none
+}
+
+headers {
+  cookie: access_token={{accessToken}}; refresh_token={{refreshToken}}
+  content-type: application/json
+  accept: application/json
+}
+
+body:json {
+  {
+    "clusterId": "{{clusterId}}",
+    "reason": "duplicate",
+    "details": "Submitted from Bruno web proxy collection"
+  }
+}
+
+tests {
+  const body = res.body;
+
+  if (body?.id) {
+    bru.setEnvVar("reportId", body.id);
+  }
+}

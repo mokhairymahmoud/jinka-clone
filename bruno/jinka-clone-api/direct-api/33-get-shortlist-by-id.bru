@@ -1,0 +1,16 @@
+meta {
+  name: 33 Get Shortlist By ID
+  type: http
+  seq: 33
+}
+
+get {
+  url: {{apiBaseUrl}}/v1/shortlists/{{shortlistId}}
+  body: none
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{accessToken}}
+  accept: application/json
+}

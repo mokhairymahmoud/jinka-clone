@@ -1,0 +1,28 @@
+meta {
+  name: 08 Patch Me
+  type: http
+  seq: 8
+}
+
+patch {
+  url: {{apiBaseUrl}}/v1/me
+  body: json
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{accessToken}}
+  content-type: application/json
+  accept: application/json
+}
+
+body:json {
+  {
+    "name": "Demo Admin",
+    "locale": "{{locale}}",
+    "notificationPrefs": {
+      "emailEnabled": true,
+      "pushEnabled": true
+    }
+  }
+}

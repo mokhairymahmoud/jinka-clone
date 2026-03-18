@@ -1,0 +1,23 @@
+meta {
+  name: 16 Admin Disable Connector
+  type: http
+  seq: 16
+}
+
+post {
+  url: {{webBaseUrl}}/api/admin/connectors/{{connectorSource}}/disable
+  body: json
+  auth: none
+}
+
+headers {
+  cookie: access_token={{accessToken}}; refresh_token={{refreshToken}}
+  content-type: application/json
+  accept: application/json
+}
+
+body:json {
+  {
+    "reason": "Disabled from Bruno web proxy"
+  }
+}

@@ -1,0 +1,32 @@
+meta {
+  name: 24 Create Favorite
+  type: http
+  seq: 24
+}
+
+post {
+  url: {{apiBaseUrl}}/v1/favorites
+  body: json
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{accessToken}}
+  content-type: application/json
+  accept: application/json
+}
+
+body:json {
+  {
+    "clusterId": "{{clusterId}}",
+    "note": "Created from Bruno"
+  }
+}
+
+tests {
+  const body = res.body;
+
+  if (body?.id) {
+    bru.setEnvVar("favoriteId", body.id);
+  }
+}

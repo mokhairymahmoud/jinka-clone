@@ -1,0 +1,24 @@
+meta {
+  name: 14 Share Shortlist
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{webBaseUrl}}/api/shortlists/{{shortlistId}}/share
+  body: json
+  auth: none
+}
+
+headers {
+  cookie: access_token={{accessToken}}; refresh_token={{refreshToken}}
+  content-type: application/json
+  accept: application/json
+}
+
+body:json {
+  {
+    "email": "{{sharedEmail}}",
+    "role": "viewer"
+  }
+}

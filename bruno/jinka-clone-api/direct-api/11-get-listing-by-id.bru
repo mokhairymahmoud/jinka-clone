@@ -1,0 +1,15 @@
+meta {
+  name: 11 Get Listing By ID
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{apiBaseUrl}}/v1/listings/{{clusterId}}
+  body: none
+  auth: none
+}
+
+headers {
+  accept: application/json
+}

@@ -1,0 +1,23 @@
+meta {
+  name: 45 Admin Split Cluster
+  type: http
+  seq: 45
+}
+
+post {
+  url: {{apiBaseUrl}}/v1/admin/clusters/{{clusterId}}/split
+  body: json
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{accessToken}}
+  content-type: application/json
+  accept: application/json
+}
+
+body:json {
+  {
+    "variantIds": ["{{variantId}}"]
+  }
+}

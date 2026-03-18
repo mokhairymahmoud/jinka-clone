@@ -1,0 +1,39 @@
+meta {
+  name: 02 Auth Verify OTP
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{webBaseUrl}}/api/auth/verify-otp
+  body: json
+  auth: none
+}
+
+headers {
+  content-type: application/json
+  accept: application/json
+}
+
+body:json {
+  {
+    "email": "{{userEmail}}",
+    "code": "{{otpCode}}"
+  }
+}
+
+tests {
+  const body = res.body;
+
+  if (body?.accessToken) {
+    bru.setEnvVar("accessToken", body.accessToken);
+  }
+
+  if (body?.refreshToken) {
+    bru.setEnvVar("refreshToken", body.refreshToken);
+  }
+
+  if (body?.user?.id) {
+    bru.setEnvVar("userId", body.user.id);
+  }
+}

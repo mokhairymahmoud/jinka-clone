@@ -1,0 +1,16 @@
+meta {
+  name: 23 Get Favorites
+  type: http
+  seq: 23
+}
+
+get {
+  url: {{apiBaseUrl}}/v1/favorites
+  body: none
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{accessToken}}
+  accept: application/json
+}

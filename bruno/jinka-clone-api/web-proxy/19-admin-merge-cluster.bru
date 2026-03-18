@@ -1,0 +1,23 @@
+meta {
+  name: 19 Admin Merge Cluster
+  type: http
+  seq: 19
+}
+
+post {
+  url: {{webBaseUrl}}/api/admin/clusters/{{clusterId}}/merge
+  body: json
+  auth: none
+}
+
+headers {
+  cookie: access_token={{accessToken}}; refresh_token={{refreshToken}}
+  content-type: application/json
+  accept: application/json
+}
+
+body:json {
+  {
+    "targetClusterId": "{{targetClusterId}}"
+  }
+}

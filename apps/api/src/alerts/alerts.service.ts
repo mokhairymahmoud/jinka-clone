@@ -1,9 +1,11 @@
 import { Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 
-import type { SearchFilters } from "@jinka-eg/types";
+import type { ListingCluster, SearchFilters } from "@jinka-eg/types";
 import { PrismaService } from "../common/prisma.service.js";
 import { ListingsService } from "../listings/listings.service.js";
+
+const INITIAL_ALERT_MATCH_LIMIT = 25;
 
 function toJsonSearchFilters(filters: SearchFilters): Prisma.InputJsonObject {
   const json: Record<string, Prisma.InputJsonValue> = {};
@@ -85,6 +87,12 @@ export class AlertsService {
       }
     });
 
+    try {
+      await this.backfillInitialNotifications(alert.id, alert.userId, alert.name, payload.filters);
+    } catch (error) {
+      console.error("Unable to backfill initial alert notifications", error);
+    }
+
     return {
       id: alert.id,
       name: alert.name,
@@ -154,5 +162,60 @@ export class AlertsService {
       id: alert.id,
       matchedListingIds: matches.map((listing) => listing.id)
     };
+  }
+
+  private async backfillInitialNotifications(
+    alertId: string,
+    userId: string,
+    alertName: string,
+    filters: SearchFilters
+  ) {
+    const matches = await this.listingsService.searchClusters(filters);
+
+    await Promise.all(
+      matches.slice(0, INITIAL_ALERT_MATCH_LIMIT).map((listing) =>
+        this.prisma.notification.upsert({
+          where: {
+            dedupeKey: this.getInitialMatchDedupeKey(alertId, listing.id)
+          },
+          update: {
+            title: this.buildInitialMatchTitle(listing),
+            body: this.buildInitialMatchBody(listing, alertName),
+            metadata: this.buildInitialMatchMetadata(listing)
+          },
+          create: {
+            userId,
+            alertId,
+            clusterId: listing.id,
+            type: "new_listing",
+            title: this.buildInitialMatchTitle(listing),
+            body: this.buildInitialMatchBody(listing, alertName),
+            dedupeKey: this.getInitialMatchDedupeKey(alertId, listing.id),
+            metadata: this.buildInitialMatchMetadata(listing)
+          }
+        })
+      )
+    );
+  }
+
+  private buildInitialMatchTitle(listing: ListingCluster) {
+    return `New match in ${listing.area.name.en}`;
+  }
+
+  private buildInitialMatchBody(listing: ListingCluster, alertName: string) {
+    return `${listing.title.en} matched your alert ${alertName}.`;
+  }
+
+  private buildInitialMatchMetadata(listing: ListingCluster): Prisma.InputJsonObject {
+    return {
+      eventType: "new_listing",
+      bestPrice: listing.price.amount,
+      variantCount: listing.variantCount,
+      source: "alert_backfill"
+    };
+  }
+
+  private getInitialMatchDedupeKey(alertId: string, clusterId: string) {
+    return `new_listing:${alertId}:${clusterId}`;
   }
 }

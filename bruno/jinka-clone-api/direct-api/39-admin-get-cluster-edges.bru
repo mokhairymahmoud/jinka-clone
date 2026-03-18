@@ -1,0 +1,16 @@
+meta {
+  name: 39 Admin Get Cluster Edges
+  type: http
+  seq: 39
+}
+
+get {
+  url: {{apiBaseUrl}}/v1/admin/cluster-edges
+  body: none
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{accessToken}}
+  accept: application/json
+}
