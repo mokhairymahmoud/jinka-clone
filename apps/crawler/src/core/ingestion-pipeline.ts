@@ -100,6 +100,11 @@ type ClusterSyncResult = {
   collapsedCluster: boolean;
 };
 
+type AttachedClusterRecord = {
+  id: string;
+  bestPrice: number | null;
+};
+
 function toPrismaSource(source: ListingSource) {
   switch (source) {
     case "nawy":
@@ -580,7 +585,7 @@ export class IngestionPipeline {
     }
 
     const rawSnapshot = await this.persistRawSnapshot(payload.source, payload.runId, payload.seed, raw);
-    const candidates = await this.parseCandidates(payload.source, rawSnapshot.id, payload.seed);
+    const candidates = await this.parseCandidatesFromRaw(payload.source, raw);
     const partition = payload.partitionId
       ? await this.prisma.sourcePartition.findUnique({
           where: { id: payload.partitionId }
@@ -614,7 +619,7 @@ export class IngestionPipeline {
       );
     }
 
-    if (controls.nextSeed && payload.partitionId) {
+    if (controls.nextSeed) {
       await this.queues["discover-page"].add(`discover:${payload.source}:${payload.runId}:${controls.nextSeed.label}:p${controls.nextSeed.page ?? 1}`, {
         source: payload.source,
         runId: payload.runId,
@@ -702,7 +707,7 @@ export class IngestionPipeline {
     }
 
     const rawSnapshot = await this.persistRawSnapshot(payload.source, payload.runId, payload.seed, raw);
-    const candidates = await this.parseCandidates(payload.source, rawSnapshot.id, payload.seed);
+    const candidates = await this.parseCandidatesFromRaw(payload.source, raw);
 
     await this.prisma.ingestionRun.update({
       where: { id: payload.runId },
@@ -968,7 +973,12 @@ export class IngestionPipeline {
     }
 
     if (payload.stage === "score-fraud" && payload.clusterId) {
-      await this.scoreClusterFraud(payload.clusterId);
+      const scored = await this.scoreClusterFraud(payload.clusterId);
+
+      if (!scored) {
+        return { source: payload.source, stage: payload.stage, status: "skipped_missing_cluster" };
+      }
+
       await this.queues["match-alerts"].add(`match-alerts:${payload.clusterId}:${Date.now()}`, {
         source: payload.source,
         runId: payload.runId,
@@ -1213,21 +1223,22 @@ export class IngestionPipeline {
     const dedup = await this.findDuplicateClusterForVariant(variantId, normalized);
 
     if (!existingClusterId && dedup.autoAttachClusterId) {
-      const targetCluster = await this.prisma.listingCluster.findUniqueOrThrow({
-        where: { id: dedup.autoAttachClusterId }
-      });
+      const targetCluster = await this.attachVariantToClusterIfExists(variantId, dedup.autoAttachClusterId);
 
-      await this.attachVariantToCluster(variantId, targetCluster.id);
-      await this.refreshClusterSummary(targetCluster.id);
+      if (targetCluster) {
+        await this.refreshClusterSummary(targetCluster.id);
 
-      return {
-        clusterId: targetCluster.id,
-        eventType:
-          targetCluster.bestPrice !== null && normalized.price.amount < targetCluster.bestPrice ? "price_drop" : undefined,
-        reviewEdgeCount: dedup.reviewEdgeCount,
-        autoAttached: true,
-        collapsedCluster: false
-      };
+        return {
+          clusterId: targetCluster.id,
+          eventType:
+            targetCluster.bestPrice !== null && normalized.price.amount < targetCluster.bestPrice
+              ? "price_drop"
+              : undefined,
+          reviewEdgeCount: dedup.reviewEdgeCount,
+          autoAttached: true,
+          collapsedCluster: false
+        };
+      }
     }
 
     if (!existingClusterId) {
@@ -1265,21 +1276,23 @@ export class IngestionPipeline {
     });
 
     if (dedup.autoAttachClusterId && dedup.autoAttachClusterId !== currentCluster.id) {
-      const targetCluster = await this.prisma.listingCluster.findUniqueOrThrow({
-        where: { id: dedup.autoAttachClusterId }
-      });
-      await this.attachVariantToCluster(variantId, dedup.autoAttachClusterId);
-      const collapsedCluster = await this.absorbSourceClusterIfEmpty(currentCluster.id, dedup.autoAttachClusterId);
-      await this.refreshClusterSummary(dedup.autoAttachClusterId);
+      const targetCluster = await this.attachVariantToClusterIfExists(variantId, dedup.autoAttachClusterId);
 
-      return {
-        clusterId: dedup.autoAttachClusterId,
-        eventType:
-          targetCluster.bestPrice !== null && normalized.price.amount < targetCluster.bestPrice ? "price_drop" : undefined,
-        reviewEdgeCount: dedup.reviewEdgeCount,
-        autoAttached: true,
-        collapsedCluster
-      };
+      if (targetCluster) {
+        const collapsedCluster = await this.absorbSourceClusterIfEmpty(currentCluster.id, targetCluster.id);
+        await this.refreshClusterSummary(targetCluster.id);
+
+        return {
+          clusterId: targetCluster.id,
+          eventType:
+            targetCluster.bestPrice !== null && normalized.price.amount < targetCluster.bestPrice
+              ? "price_drop"
+              : undefined,
+          reviewEdgeCount: dedup.reviewEdgeCount,
+          autoAttached: true,
+          collapsedCluster
+        };
+      }
     }
 
     await this.prisma.listingCluster.update({
@@ -1408,6 +1421,38 @@ export class IngestionPipeline {
     ]);
   }
 
+  private async attachVariantToClusterIfExists(variantId: string, clusterId: string): Promise<AttachedClusterRecord | null> {
+    return this.prisma.$transaction(async (tx) => {
+      const rows = await tx.$queryRaw<AttachedClusterRecord[]>`
+        SELECT id, "bestPrice"
+        FROM "ListingCluster"
+        WHERE id = ${clusterId}
+        FOR UPDATE
+      `;
+      const cluster = rows[0];
+
+      if (!cluster) {
+        return null;
+      }
+
+      await tx.listingVariant.update({
+        where: { id: variantId },
+        data: {
+          clusterId: cluster.id
+        }
+      });
+
+      await tx.priceHistory.updateMany({
+        where: { variantId },
+        data: {
+          clusterId: cluster.id
+        }
+      });
+
+      return cluster;
+    });
+  }
+
   private async absorbSourceClusterIfEmpty(sourceClusterId: string, targetClusterId: string) {
     const sourceCluster = await this.prisma.listingCluster.findUnique({
       where: { id: sourceClusterId },
@@ -1475,7 +1520,7 @@ export class IngestionPipeline {
           where: { clusterId: sourceClusterId },
           data: { clusterId: targetClusterId }
         }),
-        tx.listingCluster.delete({
+        tx.listingCluster.deleteMany({
           where: { id: sourceClusterId }
         })
       ]);
@@ -1516,7 +1561,7 @@ export class IngestionPipeline {
     );
     const nextArea = areaSlug ? await this.prisma.area.findUnique({ where: { slug: areaSlug } }) : null;
 
-    await this.prisma.listingCluster.update({
+    await this.prisma.listingCluster.updateMany({
       where: { id: cluster.id },
       data: {
         canonicalTitleEn: primaryVariant.titleEn,
@@ -1595,12 +1640,17 @@ export class IngestionPipeline {
   }
 
   private async scoreClusterFraud(clusterId: string) {
-    const cluster = await this.prisma.listingCluster.findUniqueOrThrow({
+    const cluster = await this.prisma.listingCluster.findUnique({
       where: { id: clusterId },
       include: {
         variants: true
       }
     });
+
+    if (!cluster) {
+      return false;
+    }
+
     const variantCount = cluster.variants.length;
     const lowPriceSignal = cluster.bestPrice && cluster.bestPrice < 10000 ? 0.45 : 0.04;
     const score = Number(Math.min(0.15 + lowPriceSignal + variantCount * 0.03, 0.82).toFixed(3));
@@ -1631,7 +1681,7 @@ export class IngestionPipeline {
           resolvedAt: new Date()
         }
       });
-      return;
+      return true;
     }
 
     const existingOpenCase = await this.prisma.fraudCase.findFirst({
@@ -1653,7 +1703,7 @@ export class IngestionPipeline {
           explanation
         }
       });
-      return;
+      return true;
     }
 
     await this.prisma.fraudCase.create({
@@ -1664,16 +1714,22 @@ export class IngestionPipeline {
         explanation
       }
     });
+
+    return true;
   }
 
   private async matchAlerts(clusterId: string, eventType: "new_listing" | "price_drop") {
-    const cluster = await this.prisma.listingCluster.findUniqueOrThrow({
+    const cluster = await this.prisma.listingCluster.findUnique({
       where: { id: clusterId },
       include: {
         area: true,
         variants: true
       }
     });
+
+    if (!cluster) {
+      return [];
+    }
 
     const alerts = await this.prisma.alert.findMany({
       include: {
@@ -2116,7 +2172,6 @@ export class IngestionPipeline {
   }
 
   private async parseCandidates(source: ListingSource, rawSnapshotId: string, seed: SourceSeed) {
-    const connector = getConnector(source);
     const snapshot = await this.prisma.rawSnapshot.findUniqueOrThrow({
       where: { id: rawSnapshotId }
     });
@@ -2129,18 +2184,8 @@ export class IngestionPipeline {
       body,
       fetchedAt: snapshot.fetchedAt.toISOString()
     };
-    const parsedCandidates = await connector.parse(raw);
-    const candidates: ParsedListingCandidate[] = [];
 
-    for (const candidate of parsedCandidates) {
-      if (await this.isBlacklisted(source, candidate.sourceUrl, candidate.sourceListingId)) {
-        continue;
-      }
-
-      candidates.push(candidate);
-    }
-
-    return candidates;
+    return this.parseCandidatesFromRaw(source, raw);
   }
 
   private async recordPartitionSeenListings(
@@ -2391,6 +2436,31 @@ export class IngestionPipeline {
   ) {
     const prismaSource = toPrismaSource(source);
     const labels = seeds.map((seed) => seed.label);
+    const existingPartitions =
+      labels.length > 0
+        ? await this.prisma.sourcePartition.findMany({
+            where: {
+              source: prismaSource,
+              label: {
+                in: labels
+              }
+            },
+            select: {
+              id: true,
+              label: true,
+              seedUrl: true,
+              purpose: true,
+              marketSegment: true,
+              propertyType: true,
+              areaSlug: true,
+              page: true,
+              priority: true,
+              isActive: true
+            }
+          })
+        : [];
+    const existingByLabel = new Map(existingPartitions.map((partition) => [partition.label, partition] as const));
+    const now = new Date();
 
     if (options.deactivateMissing) {
       await this.prisma.sourcePartition.updateMany({
@@ -2410,41 +2480,150 @@ export class IngestionPipeline {
       });
     }
 
+    const createData: Prisma.SourcePartitionCreateManyInput[] = [];
+    const updateOperations: Prisma.PrismaPromise<unknown>[] = [];
+
     for (const seed of seeds) {
-      await this.prisma.sourcePartition.upsert({
-        where: {
-          source_label: {
-            source: prismaSource,
-            label: seed.label
-          }
-        },
-        update: {
-          seedUrl: seed.url,
-          purpose: seed.purpose ? toPrismaPurpose(seed.purpose) : undefined,
-          marketSegment: seed.marketSegment ? toPrismaMarketSegment(seed.marketSegment) : undefined,
-          propertyType: seed.propertyType,
-          areaSlug: seed.areaSlug,
-          page: seed.page,
-          priority: seed.priority ?? 100,
-          isActive: true,
-          nextCrawlAt: new Date()
-        },
-        create: {
+      const purpose = seed.purpose ? toPrismaPurpose(seed.purpose) : undefined;
+      const marketSegment = seed.marketSegment ? toPrismaMarketSegment(seed.marketSegment) : undefined;
+      const priority = seed.priority ?? 100;
+      const existing = existingByLabel.get(seed.label);
+
+      if (!existing) {
+        createData.push({
           source: prismaSource,
           label: seed.label,
           seedUrl: seed.url,
-          purpose: seed.purpose ? toPrismaPurpose(seed.purpose) : undefined,
-          marketSegment: seed.marketSegment ? toPrismaMarketSegment(seed.marketSegment) : undefined,
-          propertyType: seed.propertyType,
-          areaSlug: seed.areaSlug,
-          page: seed.page,
-          priority: seed.priority ?? 100,
-          nextCrawlAt: new Date()
+          purpose: purpose ?? null,
+          marketSegment: marketSegment ?? null,
+          propertyType: seed.propertyType ?? null,
+          areaSlug: seed.areaSlug ?? null,
+          page: seed.page ?? null,
+          priority,
+          nextCrawlAt: now
+        });
+        continue;
+      }
+
+      const metadataChanged =
+        existing.seedUrl !== seed.url ||
+        existing.purpose !== (purpose ?? null) ||
+        existing.marketSegment !== (marketSegment ?? null) ||
+        existing.propertyType !== (seed.propertyType ?? null) ||
+        existing.areaSlug !== (seed.areaSlug ?? null) ||
+        existing.page !== (seed.page ?? null) ||
+        existing.priority !== priority;
+
+      if (!metadataChanged && existing.isActive) {
+        continue;
+      }
+
+      updateOperations.push(
+        this.prisma.sourcePartition.update({
+          where: {
+            id: existing.id
+          },
+          data: {
+            seedUrl: seed.url,
+            purpose: purpose ?? null,
+            marketSegment: marketSegment ?? null,
+            propertyType: seed.propertyType ?? null,
+            areaSlug: seed.areaSlug ?? null,
+            page: seed.page ?? null,
+            priority,
+            isActive: true,
+            ...(metadataChanged || !existing.isActive
+              ? {
+                  nextCrawlAt: now,
+                  failureCount: 0,
+                  stopReason: null
+                }
+              : {})
+          }
+        })
+      );
+    }
+
+    if (createData.length > 0) {
+      await this.prisma.sourcePartition.createMany({
+        data: createData,
+        skipDuplicates: true
+      });
+    }
+
+    if (updateOperations.length > 0) {
+      await this.prisma.$transaction(updateOperations);
+    }
+
+    return seeds.length;
+  }
+
+  private async parseCandidatesFromRaw(source: ListingSource, raw: RawPageResult) {
+    const connector = getConnector(source);
+    const parsedCandidates = await connector.parse(raw);
+    return this.filterBlacklistedCandidates(source, parsedCandidates);
+  }
+
+  private async filterBlacklistedCandidates(source: ListingSource, candidates: ParsedListingCandidate[]) {
+    const sourceUrls = [
+      ...new Set(candidates.map((candidate) => candidate.sourceUrl?.trim()).filter((value): value is string => Boolean(value)))
+    ];
+    const sourceListingIds = [
+      ...new Set(
+        candidates.map((candidate) => candidate.sourceListingId?.trim()).filter((value): value is string => Boolean(value))
+      )
+    ];
+    const clauses: Prisma.SourceBlacklistWhereInput[] = [];
+
+    if (sourceUrls.length > 0) {
+      clauses.push({
+        matchType: "source_url",
+        value: {
+          in: sourceUrls
         }
       });
     }
 
-    return seeds.length;
+    if (sourceListingIds.length > 0) {
+      clauses.push({
+        matchType: "source_listing_id",
+        value: {
+          in: sourceListingIds
+        }
+      });
+    }
+
+    if (clauses.length === 0) {
+      return candidates;
+    }
+
+    const entries = await this.prisma.sourceBlacklist.findMany({
+      where: {
+        source: toPrismaSource(source),
+        OR: clauses
+      }
+    });
+
+    if (entries.length === 0) {
+      return candidates;
+    }
+
+    const blockedUrls = new Set(
+      entries.filter((entry) => entry.matchType === "source_url").map((entry) => entry.value.trim())
+    );
+    const blockedListingIds = new Set(
+      entries.filter((entry) => entry.matchType === "source_listing_id").map((entry) => entry.value.trim())
+    );
+
+    return candidates.filter((candidate) => {
+      const sourceUrl = candidate.sourceUrl?.trim();
+      const sourceListingId = candidate.sourceListingId?.trim();
+
+      return !(
+        (sourceUrl && blockedUrls.has(sourceUrl)) ||
+        (sourceListingId && blockedListingIds.has(sourceListingId))
+      );
+    });
   }
 
   private async markRunProgress(
@@ -2482,16 +2661,28 @@ export class IngestionPipeline {
       }
     });
 
-    if (finalizeRun && processed >= run.discoveredCount) {
-      await this.prisma.ingestionRun.update({
-        where: { id: runId },
-        data: {
-          status: run.failedCount > 0 && run.parsedCount === 0 ? "failed" : "completed",
-          extractionRate,
-          completedAt: new Date()
-        }
-      });
-      await this.syncParserDriftAlarm(runId);
+    if (finalizeRun) {
+      const finalized = await this.prisma.$executeRaw`
+        UPDATE "IngestionRun"
+        SET
+          status = CASE
+            WHEN "failedCount" > 0 AND "parsedCount" = 0 THEN 'failed'
+            ELSE 'completed'
+          END,
+          "extractionRate" = CASE
+            WHEN "discoveredCount" = 0 THEN 0
+            ELSE CAST("parsedCount" AS DOUBLE PRECISION) / "discoveredCount"
+          END,
+          "completedAt" = NOW()
+        WHERE
+          id = ${runId}
+          AND status = 'running'
+          AND ("parsedCount" + "failedCount") >= "discoveredCount"
+      `;
+
+      if (finalized > 0) {
+        await this.syncParserDriftAlarm(runId);
+      }
     }
   }
 

@@ -40,14 +40,14 @@ type NawyPageProps = {
 };
 
 const nawyAreas = [
-  { areaSlug: "new-cairo", label: "new-cairo", priority: 25 },
-  { areaSlug: "el-sheikh-zayed", label: "el-sheikh-zayed", priority: 30 },
-  { areaSlug: "6th-of-october-city", label: "6th-of-october-city", priority: 30 },
-  { areaSlug: "new-capital-city", label: "new-capital-city", priority: 35 },
-  { areaSlug: "mostakbal-city", label: "mostakbal-city", priority: 35 },
-  { areaSlug: "ain-sokhna", label: "ain-sokhna", priority: 55 },
-  { areaSlug: "ras-el-hekma", label: "ras-el-hekma", priority: 60 },
-  { areaSlug: "north-coast-sahel", label: "north-coast-sahel", priority: 60 }
+  // { areaSlug: "new-cairo", label: "new-cairo", priority: 25 },
+  // { areaSlug: "el-sheikh-zayed", label: "el-sheikh-zayed", priority: 30 },
+  // { areaSlug: "6th-of-october-city", label: "6th-of-october-city", priority: 30 },
+  // { areaSlug: "new-capital-city", label: "new-capital-city", priority: 35 },
+  // { areaSlug: "mostakbal-city", label: "mostakbal-city", priority: 35 },
+  // { areaSlug: "ain-sokhna", label: "ain-sokhna", priority: 55 },
+  // { areaSlug: "ras-el-hekma", label: "ras-el-hekma", priority: 60 },
+  // { areaSlug: "north-coast-sahel", label: "north-coast-sahel", priority: 60 }
 ] as const;
 
 function getPageProps(raw: RawPageResult) {

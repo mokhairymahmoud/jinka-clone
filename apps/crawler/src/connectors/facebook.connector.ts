@@ -11,9 +11,9 @@ import { BasePlaywrightConnector } from "../core/base-playwright-connector.js";
 import { hashImageUrls, localizeText, normalizePrice, normalizePropertyType } from "../core/normalization.js";
 
 const facebookAreas = [
-  { areaSlug: "cairo", label: "cairo", priority: 90 },
-  { areaSlug: "giza", label: "giza", priority: 95 },
-  { areaSlug: "alexandria", label: "alexandria", priority: 100 }
+  // { areaSlug: "cairo", label: "cairo", priority: 90 },
+  // { areaSlug: "giza", label: "giza", priority: 95 },
+  // { areaSlug: "alexandria", label: "alexandria", priority: 100 }
 ] as const;
 
 export class FacebookConnector extends BasePlaywrightConnector {

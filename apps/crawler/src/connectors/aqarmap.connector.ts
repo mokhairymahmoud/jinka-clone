@@ -18,10 +18,10 @@ import {
 } from "../core/normalization.js";
 
 const aqarmapAreas = [
-  { label: "greater-cairo", path: ["cairo"], areaSlug: "cairo", priority: 95 },
-  { label: "new-cairo", path: ["cairo", "new-cairo"], areaSlug: "new-cairo", priority: 80 },
-  { label: "6th-of-october", path: ["cairo", "6th-of-october"], areaSlug: "6th-of-october", priority: 85 },
-  { label: "el-sheikh-zayed-city", path: ["cairo", "el-sheikh-zayed-city"], areaSlug: "el-sheikh-zayed-city", priority: 85 }
+  // { label: "greater-cairo", path: ["cairo"], areaSlug: "cairo", priority: 95 },
+  // { label: "new-cairo", path: ["cairo", "new-cairo"], areaSlug: "new-cairo", priority: 80 },
+  // { label: "6th-of-october", path: ["cairo", "6th-of-october"], areaSlug: "6th-of-october", priority: 85 },
+  // { label: "el-sheikh-zayed-city", path: ["cairo", "el-sheikh-zayed-city"], areaSlug: "el-sheikh-zayed-city", priority: 85 }
 ] as const;
 
 export class AqarmapConnector extends BasePlaywrightConnector {

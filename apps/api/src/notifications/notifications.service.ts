@@ -1,4 +1,4 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, NotFoundException } from "@nestjs/common";
 
 import type { NotificationItem } from "@jinka-eg/types";
 import { PrismaService } from "../common/prisma.service.js";
@@ -11,11 +11,36 @@ export class NotificationsService {
     @Inject(ListingsService) private readonly listingsService: ListingsService
   ) {}
 
-  async getNotifications(userId: string): Promise<NotificationItem[]> {
+  async getNotifications(userId: string, options?: { alertId?: string }): Promise<NotificationItem[]> {
+    if (options?.alertId) {
+      const alert = await this.prisma.alert.findFirst({
+        where: {
+          id: options.alertId,
+          userId
+        },
+        select: { id: true }
+      });
+
+      if (!alert) {
+        throw new NotFoundException("Alert not found");
+      }
+    }
+
     const notifications = await this.prisma.notification.findMany({
-      where: { userId },
+      where: {
+        userId,
+        ...(options?.alertId ? { alertId: options.alertId } : {})
+      },
       orderBy: { createdAt: "desc" },
-      take: 50
+      take: 50,
+      include: {
+        alert: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      }
     });
     const listingIds = notifications
       .map((notification) => notification.clusterId)
@@ -30,6 +55,8 @@ export class NotificationsService {
       type: notification.type as "new_listing" | "price_drop",
       createdAt: notification.createdAt.toISOString(),
       readAt: notification.readAt?.toISOString() ?? null,
+      alertId: notification.alert?.id ?? notification.alertId ?? undefined,
+      alertName: notification.alert?.name ?? undefined,
       clusterId: notification.clusterId ?? undefined,
       listing: notification.clusterId ? listingMap.get(notification.clusterId) : undefined
     }));

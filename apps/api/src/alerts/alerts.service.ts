@@ -144,6 +144,40 @@ export class AlertsService {
     };
   }
 
+  async deleteAlert(userId: string, id: string) {
+    const existing = await this.prisma.alert.findFirst({
+      where: {
+        id,
+        userId
+      }
+    });
+
+    if (!existing) {
+      throw new NotFoundException("Alert not found");
+    }
+
+    const deletedNotifications = await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.notification.deleteMany({
+        where: {
+          userId,
+          alertId: id
+        }
+      });
+
+      await tx.alert.delete({
+        where: { id }
+      });
+
+      return count;
+    });
+
+    return {
+      id,
+      deleted: true,
+      deletedNotifications
+    };
+  }
+
   async testAlert(userId: string, id: string) {
     const alert = await this.prisma.alert.findFirst({
       where: {

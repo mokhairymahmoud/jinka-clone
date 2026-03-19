@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Inject, Param, Patch, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, UseGuards } from "@nestjs/common";
 import { IsBoolean, IsObject, IsOptional, IsString } from "class-validator";
 
 import type { SearchFilters } from "@jinka-eg/types";
@@ -60,6 +60,11 @@ export class AlertsController {
   @Patch(":id")
   updateAlert(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string, @Body() body: UpdateAlertDto) {
     return this.alertsService.updateAlert(user.id, id, body);
+  }
+
+  @Delete(":id")
+  deleteAlert(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
+    return this.alertsService.deleteAlert(user.id, id);
   }
 
   @Post(":id/test")

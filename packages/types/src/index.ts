@@ -203,6 +203,8 @@ export interface NotificationItem {
   type: "new_listing" | "price_drop";
   createdAt: string;
   readAt?: string | null;
+  alertId?: string;
+  alertName?: string;
   clusterId?: string;
   listing?: ListingCluster;
 }

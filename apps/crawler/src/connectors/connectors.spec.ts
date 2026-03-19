@@ -54,16 +54,15 @@ describe("connector health", () => {
     const raw = getParserFixture("property_finder");
     const parsed = await connector.parse(raw);
 
-    expect(seeds.length).toBe(8);
-    expect(seeds[0]?.label).toBe("pf-2-apartment-root");
+    expect(seeds.length).toBe(33);
+    expect(seeds[0]?.label).toBe("pf-buy-apartment-new-cairo-city");
     expect(seeds[0]?.page).toBe(1);
     expect(parsed.length).toBeGreaterThan(0);
 
     const controls = connector.getDiscoveryControls(raw, parsed, seeds[0] ?? { url: "", label: "" });
 
     expect(controls.pageSignature).toBeTruthy();
-    expect(controls.discoveredSeeds?.map((seed) => seed.label)).toContain("pf-2-apartment-cairo");
-    expect(controls.discoveredSeeds?.map((seed) => seed.label)).toContain("pf-2-apartment-new-cairo-city");
+    expect(controls.discoveredSeeds).toBeUndefined();
     if (controls.nextSeed) {
       expect(controls.nextSeed.page).toBe(2);
       expect(controls.nextSeed.url).toContain("page=2");
@@ -78,25 +77,15 @@ describe("connector health", () => {
     expect(normalized?.location?.lng).toBeGreaterThan(0);
   });
 
-  it("discovers deeper Property Finder locations from area-scoped seeds", async () => {
+  it("uses only the static Property Finder buy apartment seed catalog", async () => {
     const connector = new PropertyFinderConnector();
-    const raw = getParserFixture("property_finder");
-    const parsed = await connector.parse(raw);
+    const seeds = await connector.discover();
 
-    const controls = connector.getDiscoveryControls(raw, parsed, {
-      source: "property_finder",
-      url: "https://www.propertyfinder.eg/en/search?l=2254&c=2&t=1&ob=mr",
-      label: "pf-2-apartment-cairo",
-      seedKind: "discovery",
-      areaSlug: "cairo",
-      page: 1,
-      purpose: "rent",
-      marketSegment: "resale",
-      propertyType: "apartment"
-    });
-
-    expect(controls.discoveredSeeds?.map((seed) => seed.label)).toContain("pf-2-apartment-new-cairo-city");
-    expect(controls.discoveredSeeds?.map((seed) => seed.label)).not.toContain("pf-2-apartment-cairo");
+    expect(connector.getDiscoverySurfaceMode()).toBe("authoritative");
+    expect(seeds.every((seed) => seed.purpose === "sale")).toBe(true);
+    expect(seeds.every((seed) => seed.propertyType === "apartment")).toBe(true);
+    expect(seeds.every((seed) => seed.url.includes("/en/buy/"))).toBe(true);
+    expect(seeds.every((seed) => seed.url.includes("apartments-for-sale"))).toBe(true);
   });
 
   it("parses and normalizes Aqarmap fixture data", async () => {
