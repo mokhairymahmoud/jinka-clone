@@ -6,7 +6,11 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const alertId = url.searchParams.get("alertId");
   const response = await authenticatedApiFetch(
-    `/v1/notifications${alertId ? `?alertId=${encodeURIComponent(alertId)}` : ""}`
+    `/v1/notifications${alertId ? `?alertId=${encodeURIComponent(alertId)}` : ""}`,
+    undefined,
+    {
+      persistRefresh: true
+    }
   );
 
   if (!response) {

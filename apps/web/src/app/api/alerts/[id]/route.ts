@@ -4,9 +4,15 @@ import { authenticatedApiFetch } from "../../../../lib/server-api";
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const response = await authenticatedApiFetch(`/v1/alerts/${id}`, {
-    method: "DELETE"
-  });
+  const response = await authenticatedApiFetch(
+    `/v1/alerts/${id}`,
+    {
+      method: "DELETE"
+    },
+    {
+      persistRefresh: true
+    }
+  );
 
   if (!response) {
     return NextResponse.json({ error: { message: "Unauthorized" } }, { status: 401 });

@@ -39,6 +39,21 @@ class GoogleCallbackQueryDto {
   state!: string;
 }
 
+function toSessionResponseBody(result: {
+  user: {
+    id: string;
+    email: string;
+    name: string | null;
+    locale: string;
+    role: "user" | "ops_reviewer" | "admin";
+    notificationPrefs: unknown;
+  };
+}) {
+  return {
+    user: result.user
+  };
+}
+
 @Controller("auth")
 export class AuthController {
   constructor(@Inject(AuthService) private readonly authService: AuthService) {}
@@ -60,7 +75,7 @@ export class AuthController {
     });
     res.cookie("access_token", result.accessToken, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production" });
     res.cookie("refresh_token", result.refreshToken, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production" });
-    return result;
+    return toSessionResponseBody(result);
   }
 
   @Post("refresh")
@@ -75,7 +90,7 @@ export class AuthController {
     });
     res.cookie("access_token", result.accessToken, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production" });
     res.cookie("refresh_token", result.refreshToken, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production" });
-    return result;
+    return toSessionResponseBody(result);
   }
 
   @Post("logout")

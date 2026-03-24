@@ -8,10 +8,16 @@ function buildPath(segments: string[]) {
 
 export async function POST(request: Request, { params }: { params: Promise<{ segments: string[] }> }) {
   const { segments } = await params;
-  const response = await authenticatedApiFetch(buildPath(segments), {
-    method: "POST",
-    body: await request.text()
-  });
+  const response = await authenticatedApiFetch(
+    buildPath(segments),
+    {
+      method: "POST",
+      body: await request.text()
+    },
+    {
+      persistRefresh: true
+    }
+  );
 
   if (!response) {
     return NextResponse.json({ error: { message: "Unauthorized" } }, { status: 401 });
@@ -23,10 +29,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ seg
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ segments: string[] }> }) {
   const { segments } = await params;
-  const response = await authenticatedApiFetch(buildPath(segments), {
-    method: "DELETE",
-    body: await request.text()
-  });
+  const response = await authenticatedApiFetch(
+    buildPath(segments),
+    {
+      method: "DELETE",
+      body: await request.text()
+    },
+    {
+      persistRefresh: true
+    }
+  );
 
   if (!response) {
     return NextResponse.json({ error: { message: "Unauthorized" } }, { status: 401 });

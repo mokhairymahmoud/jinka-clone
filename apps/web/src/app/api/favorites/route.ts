@@ -3,10 +3,16 @@ import { NextResponse } from "next/server";
 import { authenticatedApiFetch } from "../../../lib/server-api";
 
 export async function POST(request: Request) {
-  const response = await authenticatedApiFetch("/v1/favorites", {
-    method: "POST",
-    body: await request.text()
-  });
+  const response = await authenticatedApiFetch(
+    "/v1/favorites",
+    {
+      method: "POST",
+      body: await request.text()
+    },
+    {
+      persistRefresh: true
+    }
+  );
 
   if (!response) {
     return NextResponse.json({ error: { message: "Unauthorized" } }, { status: 401 });
