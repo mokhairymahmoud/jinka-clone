@@ -107,9 +107,12 @@ export const mockAlerts: AlertDefinition[] = [
       bedrooms: [3],
       maxPrice: 5000000
     },
+    isPaused: false,
+    snoozedUntil: null,
     notifyByPush: true,
     notifyByEmail: true,
     quietHoursStart: "23:00",
-    quietHoursEnd: "07:00"
+    quietHoursEnd: "07:00",
+    lastMatchedAt: null
   }
 ];

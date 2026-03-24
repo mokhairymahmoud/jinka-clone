@@ -1896,6 +1896,10 @@ export class IngestionPipeline {
     }
 
     const alerts = await this.prisma.alert.findMany({
+      where: {
+        isPaused: false,
+        OR: [{ snoozedUntil: null }, { snoozedUntil: { lte: new Date() } }]
+      },
       include: {
         user: {
           include: {
@@ -1948,6 +1952,13 @@ export class IngestionPipeline {
             bestPrice: cluster.bestPrice,
             variantCount: cluster.variants.length
           }
+        }
+      });
+
+      await this.prisma.alert.update({
+        where: { id: alert.id },
+        data: {
+          lastMatchedAt: new Date()
         }
       });
 

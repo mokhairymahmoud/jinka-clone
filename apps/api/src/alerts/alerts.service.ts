@@ -37,6 +37,36 @@ function toJsonSearchFilters(filters: SearchFilters): Prisma.InputJsonObject {
   return json;
 }
 
+function mapAlertRecord(
+  alert: {
+    id: string;
+    name: string;
+    locale: string;
+    filters: Prisma.JsonValue;
+    isPaused: boolean;
+    snoozedUntil: Date | null;
+    notifyByPush: boolean;
+    notifyByEmail: boolean;
+    quietHoursStart: string | null;
+    quietHoursEnd: string | null;
+    lastMatchedAt: Date | null;
+  }
+) {
+  return {
+    id: alert.id,
+    name: alert.name,
+    locale: alert.locale as "en" | "ar",
+    filters: alert.filters as SearchFilters,
+    isPaused: alert.isPaused,
+    snoozedUntil: alert.snoozedUntil?.toISOString() ?? null,
+    notifyByPush: alert.notifyByPush,
+    notifyByEmail: alert.notifyByEmail,
+    quietHoursStart: alert.quietHoursStart ?? undefined,
+    quietHoursEnd: alert.quietHoursEnd ?? undefined,
+    lastMatchedAt: alert.lastMatchedAt?.toISOString() ?? null
+  };
+}
+
 @Injectable()
 export class AlertsService {
   constructor(
@@ -50,16 +80,7 @@ export class AlertsService {
       orderBy: { createdAt: "desc" }
     });
 
-    return alerts.map((alert) => ({
-      id: alert.id,
-      name: alert.name,
-      locale: alert.locale as "en" | "ar",
-      filters: alert.filters as SearchFilters,
-      notifyByPush: alert.notifyByPush,
-      notifyByEmail: alert.notifyByEmail,
-      quietHoursStart: alert.quietHoursStart ?? undefined,
-      quietHoursEnd: alert.quietHoursEnd ?? undefined
-    }));
+    return alerts.map((alert) => mapAlertRecord(alert));
   }
 
   async createAlert(
@@ -68,6 +89,8 @@ export class AlertsService {
       name: string;
       locale: "en" | "ar";
       filters: SearchFilters;
+      isPaused?: boolean;
+      snoozedUntil?: string;
       notifyByPush: boolean;
       notifyByEmail: boolean;
       quietHoursStart?: string;
@@ -80,6 +103,8 @@ export class AlertsService {
         name: payload.name,
         locale: payload.locale,
         filters: toJsonSearchFilters(payload.filters),
+        isPaused: payload.isPaused ?? false,
+        snoozedUntil: payload.snoozedUntil ? new Date(payload.snoozedUntil) : null,
         notifyByPush: payload.notifyByPush,
         notifyByEmail: payload.notifyByEmail,
         quietHoursStart: payload.quietHoursStart,
@@ -93,16 +118,7 @@ export class AlertsService {
       console.error("Unable to backfill initial alert notifications", error);
     }
 
-    return {
-      id: alert.id,
-      name: alert.name,
-      locale: alert.locale as "en" | "ar",
-      filters: alert.filters as SearchFilters,
-      notifyByPush: alert.notifyByPush,
-      notifyByEmail: alert.notifyByEmail,
-      quietHoursStart: alert.quietHoursStart ?? undefined,
-      quietHoursEnd: alert.quietHoursEnd ?? undefined
-    };
+    return mapAlertRecord(alert);
   }
 
   async updateAlert(
@@ -111,6 +127,13 @@ export class AlertsService {
     payload: {
       name?: string;
       filters?: SearchFilters;
+      isPaused?: boolean;
+      notifyByPush?: boolean;
+      notifyByEmail?: boolean;
+      quietHoursStart?: string;
+      quietHoursEnd?: string;
+      snoozedUntil?: string;
+      clearSnooze?: boolean;
     }
   ) {
     const existing = await this.prisma.alert.findFirst({
@@ -128,20 +151,18 @@ export class AlertsService {
       where: { id },
       data: {
         ...(payload.name !== undefined ? { name: payload.name } : {}),
-        ...(payload.filters !== undefined ? { filters: toJsonSearchFilters(payload.filters) } : {})
+        ...(payload.filters !== undefined ? { filters: toJsonSearchFilters(payload.filters) } : {}),
+        ...(payload.isPaused !== undefined ? { isPaused: payload.isPaused } : {}),
+        ...(payload.notifyByPush !== undefined ? { notifyByPush: payload.notifyByPush } : {}),
+        ...(payload.notifyByEmail !== undefined ? { notifyByEmail: payload.notifyByEmail } : {}),
+        ...(payload.quietHoursStart !== undefined ? { quietHoursStart: payload.quietHoursStart } : {}),
+        ...(payload.quietHoursEnd !== undefined ? { quietHoursEnd: payload.quietHoursEnd } : {}),
+        ...(payload.clearSnooze ? { snoozedUntil: null } : {}),
+        ...(payload.snoozedUntil !== undefined ? { snoozedUntil: new Date(payload.snoozedUntil) } : {})
       }
     });
 
-    return {
-      id: alert.id,
-      name: alert.name,
-      locale: alert.locale as "en" | "ar",
-      filters: alert.filters as SearchFilters,
-      notifyByPush: alert.notifyByPush,
-      notifyByEmail: alert.notifyByEmail,
-      quietHoursStart: alert.quietHoursStart ?? undefined,
-      quietHoursEnd: alert.quietHoursEnd ?? undefined
-    };
+    return mapAlertRecord(alert);
   }
 
   async deleteAlert(userId: string, id: string) {

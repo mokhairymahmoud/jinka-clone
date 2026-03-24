@@ -157,10 +157,13 @@ export interface AlertDefinition {
   name: string;
   locale: Locale;
   filters: SearchFilters;
+  isPaused: boolean;
+  snoozedUntil?: string | null;
   notifyByPush: boolean;
   notifyByEmail: boolean;
   quietHoursStart?: string;
   quietHoursEnd?: string;
+  lastMatchedAt?: string | null;
 }
 
 export interface FavoriteRecord {

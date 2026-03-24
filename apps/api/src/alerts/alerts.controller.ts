@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, UseGuards } from "@nestjs/common";
-import { IsBoolean, IsObject, IsOptional, IsString } from "class-validator";
+import { IsBoolean, IsDateString, IsObject, IsOptional, IsString } from "class-validator";
 
 import type { SearchFilters } from "@jinka-eg/types";
 import { CurrentUser } from "../auth/current-user.decorator.js";
@@ -30,6 +30,14 @@ class CreateAlertDto {
   @IsOptional()
   @IsString()
   quietHoursEnd?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isPaused?: boolean;
+
+  @IsOptional()
+  @IsDateString()
+  snoozedUntil?: string;
 }
 
 class UpdateAlertDto {
@@ -40,6 +48,34 @@ class UpdateAlertDto {
   @IsOptional()
   @IsObject()
   filters?: SearchFilters;
+
+  @IsOptional()
+  @IsBoolean()
+  isPaused?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  notifyByPush?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  notifyByEmail?: boolean;
+
+  @IsOptional()
+  @IsString()
+  quietHoursStart?: string;
+
+  @IsOptional()
+  @IsString()
+  quietHoursEnd?: string;
+
+  @IsOptional()
+  @IsDateString()
+  snoozedUntil?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  clearSnooze?: boolean;
 }
 
 @Controller("alerts")

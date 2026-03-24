@@ -1,5 +1,6 @@
 import { Badge, Card } from "@jinka-eg/ui";
 
+import { AlertControlsForm } from "../../../../components/alert-controls-form";
 import { CreateAlertForm } from "../../../../components/create-alert-form";
 import { DeleteAlertButton } from "../../../../components/delete-alert-button";
 import { getMessages, resolveLocale } from "../../../../i18n/messages";
@@ -36,6 +37,17 @@ async function fetchAreas() {
   return response.json();
 }
 
+function formatDateTime(value: string | null | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  return new Date(value).toLocaleString("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short"
+  });
+}
+
 export default async function AlertsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const safeLocale = resolveLocale(locale);
@@ -45,8 +57,13 @@ export default async function AlertsPage({ params }: { params: Promise<{ locale:
     id: string;
     name: string;
     filters: Record<string, unknown>;
+    isPaused: boolean;
+    snoozedUntil?: string | null;
     notifyByPush: boolean;
     notifyByEmail: boolean;
+    quietHoursStart?: string;
+    quietHoursEnd?: string;
+    lastMatchedAt?: string | null;
   }>;
 
   return (
@@ -71,22 +88,51 @@ export default async function AlertsPage({ params }: { params: Promise<{ locale:
       <div className="grid gap-4">
         {typedAlerts.map((alert) => (
           <Card key={alert.id} className="border-[var(--jinka-border)] p-5 shadow-[var(--jinka-shadow)]">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="text-lg font-semibold text-[var(--jinka-text)]">{alert.name}</div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {Object.entries(alert.filters).map(([key, value]) => (
-                    <span key={key} className="inline-flex rounded-full bg-[var(--jinka-surface-muted)] px-3 py-1 text-xs font-medium text-[var(--jinka-muted)]">
-                      {key}: {Array.isArray(value) ? value.join(", ") : String(value)}
-                    </span>
-                  ))}
+            <div className="grid gap-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="space-y-3">
+                  <div>
+                    <div className="text-lg font-semibold text-[var(--jinka-text)]">{alert.name}</div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {alert.isPaused ? (
+                        <span className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">
+                          paused
+                        </span>
+                      ) : null}
+                      {alert.snoozedUntil ? (
+                        <span className="inline-flex rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-700">
+                          snoozed until {formatDateTime(alert.snoozedUntil)}
+                        </span>
+                      ) : null}
+                      {alert.lastMatchedAt ? (
+                        <span className="inline-flex rounded-full bg-[var(--jinka-surface-muted)] px-3 py-1 text-xs font-medium text-[var(--jinka-muted)]">
+                          last match {formatDateTime(alert.lastMatchedAt)}
+                        </span>
+                      ) : (
+                        <span className="inline-flex rounded-full bg-[var(--jinka-surface-muted)] px-3 py-1 text-xs font-medium text-[var(--jinka-muted)]">
+                          no matches yet
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(alert.filters).map(([key, value]) => (
+                      <span key={key} className="inline-flex rounded-full bg-[var(--jinka-surface-muted)] px-3 py-1 text-xs font-medium text-[var(--jinka-muted)]">
+                        {key}: {Array.isArray(value) ? value.join(", ") : String(value)}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="text-sm text-[var(--jinka-muted)]">
+                    Quiet hours: {alert.quietHoursStart ?? "none"} to {alert.quietHoursEnd ?? "none"}
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 text-sm">
+                  {alert.notifyByPush ? <span className="rounded-full bg-[var(--jinka-accent-soft)] px-3 py-1 font-medium text-[var(--jinka-accent)]">push</span> : null}
+                  {alert.notifyByEmail ? <span className="rounded-full bg-[var(--jinka-surface-muted)] px-3 py-1 font-medium text-[var(--jinka-text)]">email</span> : null}
+                  <DeleteAlertButton alertId={alert.id} />
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2 text-sm">
-                {alert.notifyByPush ? <span className="rounded-full bg-[var(--jinka-accent-soft)] px-3 py-1 font-medium text-[var(--jinka-accent)]">push</span> : null}
-                {alert.notifyByEmail ? <span className="rounded-full bg-[var(--jinka-surface-muted)] px-3 py-1 font-medium text-[var(--jinka-text)]">email</span> : null}
-                <DeleteAlertButton alertId={alert.id} />
-              </div>
+              <AlertControlsForm alert={alert} />
             </div>
           </Card>
         ))}

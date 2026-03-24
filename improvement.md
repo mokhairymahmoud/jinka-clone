@@ -284,6 +284,16 @@ Once auth is hardened, users need visibility and control over their active sessi
 
 ### 10. Better alert controls
 
+Status: In progress
+
+Implemented in current slice:
+
+- Pause or resume an alert
+- Snooze an alert for 24 hours or 7 days
+- Edit per-alert push and email delivery settings
+- Edit quiet hours from the alert UI
+- Track and display the last matched time for each alert
+
 #### Why
 
 Alerts are central to the product, but current controls are still basic.

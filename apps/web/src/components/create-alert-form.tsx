@@ -28,6 +28,10 @@ export function CreateAlertForm({
   const [purpose, setPurpose] = useState<"sale" | "rent">(initialFilters?.purpose ?? "sale");
   const [bedrooms, setBedrooms] = useState(initialFilters?.bedrooms?.[0] ? String(initialFilters.bedrooms[0]) : "");
   const [maxPrice, setMaxPrice] = useState(initialFilters?.maxPrice ? String(initialFilters.maxPrice) : "");
+  const [notifyByPush, setNotifyByPush] = useState(true);
+  const [notifyByEmail, setNotifyByEmail] = useState(true);
+  const [quietHoursStart, setQuietHoursStart] = useState("23:00");
+  const [quietHoursEnd, setQuietHoursEnd] = useState("07:00");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -59,10 +63,10 @@ export function CreateAlertForm({
           maxAreaSqm: initialFilters?.maxAreaSqm,
           bbox: initialFilters?.bbox
         },
-        notifyByPush: true,
-        notifyByEmail: true,
-        quietHoursStart: "23:00",
-        quietHoursEnd: "07:00"
+        notifyByPush,
+        notifyByEmail,
+        quietHoursStart,
+        quietHoursEnd
       })
     });
 
@@ -123,9 +127,49 @@ export function CreateAlertForm({
           placeholder="Max price"
         />
       </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="flex items-center gap-3 rounded-[22px] bg-[var(--jinka-surface-muted)] px-4 py-3 text-sm text-[var(--jinka-text)]">
+          <input
+            type="checkbox"
+            checked={notifyByPush}
+            onChange={(event) => setNotifyByPush(event.target.checked)}
+          />
+          <span>Enable browser push</span>
+        </label>
+        <label className="flex items-center gap-3 rounded-[22px] bg-[var(--jinka-surface-muted)] px-4 py-3 text-sm text-[var(--jinka-text)]">
+          <input
+            type="checkbox"
+            checked={notifyByEmail}
+            onChange={(event) => setNotifyByEmail(event.target.checked)}
+          />
+          <span>Enable email delivery</span>
+        </label>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="grid gap-2 text-sm text-[var(--jinka-muted)]">
+          <span>Quiet hours start</span>
+          <input
+            type="time"
+            value={quietHoursStart}
+            onChange={(event) => setQuietHoursStart(event.target.value)}
+            className="border border-[var(--jinka-border)] bg-[var(--jinka-surface-muted)] px-4 py-3 text-sm text-[var(--jinka-text)] outline-none transition focus:border-[var(--jinka-accent)]"
+          />
+        </label>
+        <label className="grid gap-2 text-sm text-[var(--jinka-muted)]">
+          <span>Quiet hours end</span>
+          <input
+            type="time"
+            value={quietHoursEnd}
+            onChange={(event) => setQuietHoursEnd(event.target.value)}
+            className="border border-[var(--jinka-border)] bg-[var(--jinka-surface-muted)] px-4 py-3 text-sm text-[var(--jinka-text)] outline-none transition focus:border-[var(--jinka-accent)]"
+          />
+        </label>
+      </div>
       <div className="flex items-center justify-between gap-3 rounded-[22px] bg-[var(--jinka-surface-muted)] px-4 py-3 text-sm text-[var(--jinka-muted)]">
-        <span>Push and email are enabled by default for new alerts.</span>
-        <span>23:00 to 07:00 quiet hours</span>
+        <span>Choose how this alert can reach you.</span>
+        <span>
+          {quietHoursStart} to {quietHoursEnd} quiet hours
+        </span>
       </div>
       {message ? <div className="text-sm text-[var(--jinka-muted)]">{message}</div> : null}
       <button

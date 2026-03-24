@@ -122,10 +122,13 @@ model Alert {
   name            String
   locale          String   @default("en")
   filters         Json
+  isPaused        Boolean  @default(false)
+  snoozedUntil    DateTime?
   notifyByPush    Boolean  @default(true)
   notifyByEmail   Boolean  @default(true)
   quietHoursStart String?
   quietHoursEnd   String?
+  lastMatchedAt   DateTime?
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   notifications   Notification[]
   createdAt       DateTime @default(now())
