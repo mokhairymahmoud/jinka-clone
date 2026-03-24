@@ -1,7 +1,7 @@
 meta {
   name: 38 Admin Get Fraud Cases
   type: http
-  seq: 38
+  seq: 40
 }
 
 get {
@@ -17,7 +17,7 @@ headers {
 
 tests {
   const body = res.body;
-
+  
   if (Array.isArray(body) && body[0]?.id) {
     bru.setEnvVar("fraudCaseId", body[0].id);
   }

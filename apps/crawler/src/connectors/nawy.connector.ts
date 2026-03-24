@@ -39,7 +39,7 @@ type NawyPageProps = {
   };
 };
 
-const nawyAreas = [
+const nawyAreas: ReadonlyArray<{ areaSlug: string; label: string; priority: number }> = [
   // { areaSlug: "new-cairo", label: "new-cairo", priority: 25 },
   // { areaSlug: "el-sheikh-zayed", label: "el-sheikh-zayed", priority: 30 },
   // { areaSlug: "6th-of-october-city", label: "6th-of-october-city", priority: 30 },
@@ -48,7 +48,7 @@ const nawyAreas = [
   // { areaSlug: "ain-sokhna", label: "ain-sokhna", priority: 55 },
   // { areaSlug: "ras-el-hekma", label: "ras-el-hekma", priority: 60 },
   // { areaSlug: "north-coast-sahel", label: "north-coast-sahel", priority: 60 }
-] as const;
+];
 
 function getPageProps(raw: RawPageResult) {
   const parsed = JSON.parse(raw.body) as {
@@ -59,6 +59,13 @@ function getPageProps(raw: RawPageResult) {
   };
 
   return parsed.props?.pageProps ?? parsed;
+}
+
+function splitGeoPath(value?: string) {
+  return (value ?? "")
+    .split(",")
+    .map((segment) => segment.trim())
+    .filter(Boolean);
 }
 
 export class NawyConnector extends BasePlaywrightConnector {
@@ -176,6 +183,16 @@ export class NawyConnector extends BasePlaywrightConnector {
         developerName: result.developerName ? localizeText(result.developerName) : undefined,
         compoundName: localizeText(result.name),
         areaName: result.areaName,
+        extractedGeo: {
+          rawLabel: result.areaName,
+          rawPath: splitGeoPath(result.areaName),
+          rawFullText: result.areaName,
+          area: result.areaName
+            ? {
+                sourceName: result.areaName
+              }
+            : undefined
+        },
         location:
           result.coordinates && result.coordinates.length === 2
             ? { lat: result.coordinates[1], lng: result.coordinates[0] }
@@ -221,6 +238,7 @@ export class NawyConnector extends BasePlaywrightConnector {
       developerName: candidate.developerName,
       location: candidate.location,
       areaName: candidate.areaName,
+      extractedGeo: candidate.extractedGeo,
       mediaHashes: hashImageUrls(candidate.imageUrls ?? []),
       rawFields: candidate.rawFields ?? {}
     };

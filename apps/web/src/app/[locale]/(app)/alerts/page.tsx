@@ -1,6 +1,7 @@
 import { Badge, Card } from "@jinka-eg/ui";
 
 import { CreateAlertForm } from "../../../../components/create-alert-form";
+import { DeleteAlertButton } from "../../../../components/delete-alert-button";
 import { getMessages, resolveLocale } from "../../../../i18n/messages";
 import { apiFetch } from "../../../../lib/api";
 import { getAccessTokenFromCookies } from "../../../../lib/server-api";
@@ -84,6 +85,7 @@ export default async function AlertsPage({ params }: { params: Promise<{ locale:
               <div className="flex flex-wrap gap-2 text-sm">
                 {alert.notifyByPush ? <span className="rounded-full bg-[var(--jinka-accent-soft)] px-3 py-1 font-medium text-[var(--jinka-accent)]">push</span> : null}
                 {alert.notifyByEmail ? <span className="rounded-full bg-[var(--jinka-surface-muted)] px-3 py-1 font-medium text-[var(--jinka-text)]">email</span> : null}
+                <DeleteAlertButton alertId={alert.id} />
               </div>
             </div>
           </Card>

@@ -17,12 +17,19 @@ import {
   normalizePurpose
 } from "../core/normalization.js";
 
-const aqarmapAreas = [
+const aqarmapAreas: ReadonlyArray<{ label: string; path: string[]; areaSlug: string; priority: number }> = [
   // { label: "greater-cairo", path: ["cairo"], areaSlug: "cairo", priority: 95 },
   // { label: "new-cairo", path: ["cairo", "new-cairo"], areaSlug: "new-cairo", priority: 80 },
   // { label: "6th-of-october", path: ["cairo", "6th-of-october"], areaSlug: "6th-of-october", priority: 85 },
   // { label: "el-sheikh-zayed-city", path: ["cairo", "el-sheikh-zayed-city"], areaSlug: "el-sheikh-zayed-city", priority: 85 }
-] as const;
+];
+
+function splitGeoPath(value?: string) {
+  return (value ?? "")
+    .split(",")
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+}
 
 export class AqarmapConnector extends BasePlaywrightConnector {
   readonly source = "aqarmap" as const;
@@ -149,6 +156,16 @@ export class AqarmapConnector extends BasePlaywrightConnector {
         areaSqm: this.resolveNumber(structuredData, document, ["floorSize.value", "floorSize", "area"]) ?? undefined,
         areaName:
           this.resolveString(structuredData, document, ["address.addressLocality", "address.addressRegion"]) ?? undefined,
+        extractedGeo: {
+          rawLabel: this.resolveString(structuredData, document, ["address.addressLocality", "address.addressRegion"]) ?? undefined,
+          rawPath: splitGeoPath(this.resolveString(structuredData, document, ["address.addressRegion", "address.addressLocality"]) ?? ""),
+          rawFullText: this.resolveString(structuredData, document, ["address.streetAddress", "address.addressLocality"]) ?? undefined,
+          area: this.resolveString(structuredData, document, ["address.addressLocality", "address.addressRegion"])
+            ? {
+                sourceName: this.resolveString(structuredData, document, ["address.addressLocality", "address.addressRegion"]) ?? undefined
+              }
+            : undefined
+        },
         location: this.resolveCoordinates(structuredData, document),
         imageUrls,
         publishedAt: raw.fetchedAt,
@@ -188,6 +205,7 @@ export class AqarmapConnector extends BasePlaywrightConnector {
       developerName: candidate.developerName,
       location: candidate.location,
       areaName: candidate.areaName,
+      extractedGeo: candidate.extractedGeo,
       mediaHashes: hashImageUrls(candidate.imageUrls ?? []),
       rawFields: candidate.rawFields ?? {}
     };
@@ -257,6 +275,16 @@ export class AqarmapConnector extends BasePlaywrightConnector {
         bathrooms,
         areaSqm,
         areaName: location ?? undefined,
+        extractedGeo: {
+          rawLabel: location ?? undefined,
+          rawPath: splitGeoPath(location),
+          rawFullText: location ?? undefined,
+          area: location
+            ? {
+                sourceName: location
+              }
+            : undefined
+        },
         imageUrls: imageUrls.slice(0, 5),
         publishedAt: raw.fetchedAt,
         extractionConfidence: 0.72,

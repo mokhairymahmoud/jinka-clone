@@ -30,9 +30,7 @@ describe("connector health", () => {
     const raw = getParserFixture("nawy");
     const parsed = await connector.parse(raw);
 
-    expect(seeds.length).toBe(8);
-    expect(seeds[0]?.label).toBe("nawy-new-cairo-sale");
-    expect(seeds[0]?.page).toBe(1);
+    expect(seeds.length).toBe(0);
 
     expect(parsed.length).toBeGreaterThan(0);
 
@@ -54,8 +52,8 @@ describe("connector health", () => {
     const raw = getParserFixture("property_finder");
     const parsed = await connector.parse(raw);
 
-    expect(seeds.length).toBe(33);
-    expect(seeds[0]?.label).toBe("pf-buy-apartment-new-cairo-city");
+    expect(seeds.length).toBe(5);
+    expect(seeds[0]?.label).toBe("pf-buy-apartment-hay-sharq");
     expect(seeds[0]?.page).toBe(1);
     expect(parsed.length).toBeGreaterThan(0);
 
@@ -75,6 +73,9 @@ describe("connector health", () => {
     expect(normalized?.source).toBe("property_finder");
     expect(normalized?.bedrooms).toBeGreaterThan(0);
     expect(normalized?.location?.lng).toBeGreaterThan(0);
+    expect(normalized?.extractedGeo?.governorate?.sourceId).toBeTruthy();
+    expect(normalized?.extractedGeo?.city?.sourceSlug).toBeTruthy();
+    expect(normalized?.extractedGeo?.area?.sourceId).toBeTruthy();
   });
 
   it("uses only the static Property Finder buy apartment seed catalog", async () => {
@@ -113,7 +114,7 @@ describe("connector health", () => {
     const seeds = await connector.discover();
     const parsed = await connector.parse(raw);
 
-    expect(seeds.length).toBe(8);
+    expect(seeds.length).toBe(0);
     expect(parsed.length).toBe(2);
     expect(parsed[0]?.sourceListingId).toBe("6821540");
     expect(parsed[0]?.price?.amount).toBe(13800000);
@@ -135,6 +136,7 @@ describe("connector health", () => {
     expect(normalized?.sourceListingId).toBe("fb-market-12345");
     expect(normalized?.price.amount).toBe(23000);
     expect(normalized?.areaName).toBe("New Cairo");
+    expect(normalized?.extractedGeo?.rawLabel).toBe("New Cairo");
   });
 
   it("parses Facebook marketplace search pages from public HTML cards", async () => {
@@ -149,8 +151,7 @@ describe("connector health", () => {
     const seeds = await connector.discover();
     const parsed = await connector.parse(raw);
 
-    expect(seeds.length).toBe(3);
-    expect(seeds[0]?.label).toBe("facebook-cairo-rent");
+    expect(seeds.length).toBe(0);
     expect(parsed.length).toBe(2);
     expect(parsed[0]?.sourceListingId).toBe("1219697629543252");
     expect(parsed[0]?.price?.amount).toBe(6000000);

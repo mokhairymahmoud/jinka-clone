@@ -10,11 +10,18 @@ import type {
 import { BasePlaywrightConnector } from "../core/base-playwright-connector.js";
 import { hashImageUrls, localizeText, normalizePrice, normalizePropertyType } from "../core/normalization.js";
 
-const facebookAreas = [
+const facebookAreas: ReadonlyArray<{ areaSlug: string; label: string; priority: number }> = [
   // { areaSlug: "cairo", label: "cairo", priority: 90 },
   // { areaSlug: "giza", label: "giza", priority: 95 },
   // { areaSlug: "alexandria", label: "alexandria", priority: 100 }
-] as const;
+];
+
+function splitGeoPath(value?: string) {
+  return (value ?? "")
+    .split(",")
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+}
 
 export class FacebookConnector extends BasePlaywrightConnector {
   readonly source = "facebook" as const;
@@ -141,6 +148,17 @@ export class FacebookConnector extends BasePlaywrightConnector {
           bathrooms: this.asNumber(listing.bathrooms) ?? undefined,
           areaSqm: this.asNumber(listing.areaSqm) ?? this.asNumber(listing.sizeSqm) ?? undefined,
           areaName: this.asString(listing.areaName) ?? this.asString(listing.locationName) ?? undefined,
+          extractedGeo: {
+            rawLabel: this.asString(listing.areaName) ?? this.asString(listing.locationName) ?? undefined,
+            rawPath: splitGeoPath(this.asString(listing.locationName) ?? this.asString(listing.areaName) ?? ""),
+            rawFullText: this.asString(listing.locationName) ?? this.asString(listing.areaName) ?? undefined,
+            area:
+              this.asString(listing.areaName) ?? this.asString(listing.locationName)
+                ? {
+                    sourceName: this.asString(listing.areaName) ?? this.asString(listing.locationName) ?? undefined
+                  }
+                : undefined
+          },
           location: this.toCoordinates(listing.latitude, listing.longitude),
           imageUrls: this.asStringArray(listing.imageUrls),
           publishedAt: this.asString(listing.publishedAt) ?? raw.fetchedAt,
@@ -182,6 +200,7 @@ export class FacebookConnector extends BasePlaywrightConnector {
       developerName: candidate.developerName,
       location: candidate.location,
       areaName: candidate.areaName,
+      extractedGeo: candidate.extractedGeo,
       mediaHashes: hashImageUrls(candidate.imageUrls ?? []),
       rawFields: candidate.rawFields ?? {}
     };
@@ -249,6 +268,16 @@ export class FacebookConnector extends BasePlaywrightConnector {
         propertyType: normalizePropertyType(title),
         price,
         areaName: areaName ?? undefined,
+        extractedGeo: {
+          rawLabel: areaName ?? undefined,
+          rawPath: splitGeoPath(areaName),
+          rawFullText: areaName ?? undefined,
+          area: areaName
+            ? {
+                sourceName: areaName
+              }
+            : undefined
+        },
         imageUrls: imageUrl ? [imageUrl] : [],
         publishedAt: raw.fetchedAt,
         extractionConfidence: 0.61,

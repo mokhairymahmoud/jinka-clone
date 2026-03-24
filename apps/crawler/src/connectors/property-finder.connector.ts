@@ -93,6 +93,13 @@ function getPageProps(raw: RawPageResult) {
   return parsed.props?.pageProps ?? parsed;
 }
 
+function splitGeoPath(value?: string) {
+  return (value ?? "")
+    .split(",")
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+}
+
 export class PropertyFinderConnector extends BasePlaywrightConnector {
   readonly source = "property_finder" as const;
 
@@ -124,7 +131,7 @@ export class PropertyFinderConnector extends BasePlaywrightConnector {
     const pageProps = getPageProps(raw);
     const meta = pageProps.searchResult?.meta;
     const currentPage = seed.page ?? meta?.page ?? 1;
-    const pageBudget = Number(process.env.PROPERTY_FINDER_MAX_DISCOVERY_PAGE ?? "6");
+    const pageBudget = Number(process.env.PROPERTY_FINDER_MAX_DISCOVERY_PAGE ?? "100");
     const pageSignature = candidates
       .slice(0, 10)
       .map((candidate) => candidate.sourceListingId ?? candidate.sourceUrl ?? "unknown")
@@ -216,6 +223,7 @@ export class PropertyFinderConnector extends BasePlaywrightConnector {
         extractionConfidence: 0.97,
         developerName: property.broker?.name ? localizeText(property.broker.name) : undefined,
         areaName: property.location?.path_name ?? property.location?.full_name,
+        extractedGeo: this.extractGeoCandidate(property.location, property.location_tree),
         location:
           property.location?.coordinates?.lat && property.location?.coordinates?.lon
             ? {
@@ -265,6 +273,7 @@ export class PropertyFinderConnector extends BasePlaywrightConnector {
       developerName: candidate.developerName,
       location: candidate.location,
       areaName: candidate.areaName,
+      extractedGeo: candidate.extractedGeo,
       mediaHashes: hashImageUrls(candidate.imageUrls ?? []),
       rawFields: candidate.rawFields ?? {}
     };
@@ -274,5 +283,56 @@ export class PropertyFinderConnector extends BasePlaywrightConnector {
     const url = new URL(rawUrl);
     url.searchParams.set("page", String(page));
     return url.toString();
+  }
+
+  private extractGeoCandidate(
+    location: NonNullable<PropertyFinderListing["property"]>["location"] | undefined,
+    locationTree: PropertyFinderLocationNode[] | undefined
+  ) {
+    const path = splitGeoPath(location?.path_name);
+    const nodes = locationTree ?? [];
+    const governorateNode = nodes.find((node) => String(node.level ?? "") === "0") ?? nodes[0];
+    const cityNode = nodes.find((node) => String(node.level ?? "") === "1") ?? nodes[1];
+    const areaNode = nodes.find((node) => String(node.level ?? "") === "4") ?? nodes.at(-1);
+
+    return {
+      rawLabel: areaNode?.name ?? location?.name ?? path.at(-1),
+      rawPath: path,
+      rawFullText: location?.full_name ?? location?.path_name,
+      governorate: governorateNode
+        ? {
+            sourceName: governorateNode.name,
+            sourceSlug: governorateNode.slug_en ?? governorateNode.slug,
+            sourceId: governorateNode.id,
+            sourceType: governorateNode.type,
+            level: Number(governorateNode.level)
+          }
+        : undefined,
+      city: cityNode
+        ? {
+            sourceName: cityNode.name,
+            sourceSlug: cityNode.slug_en ?? cityNode.slug,
+            sourceId: cityNode.id,
+            sourceType: cityNode.type,
+            level: Number(cityNode.level)
+          }
+        : undefined,
+      area: areaNode
+        ? {
+            sourceName: areaNode.name,
+            sourceSlug: areaNode.slug_en ?? areaNode.slug,
+            sourceId: areaNode.id,
+            sourceType: areaNode.type,
+            level: Number(areaNode.level)
+          }
+        : undefined,
+      coordinates:
+        location?.coordinates?.lat && location?.coordinates?.lon
+          ? {
+              lat: location.coordinates.lat,
+              lng: location.coordinates.lon
+            }
+          : undefined
+    };
   }
 }

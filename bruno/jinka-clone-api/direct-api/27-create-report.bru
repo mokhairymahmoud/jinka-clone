@@ -1,7 +1,7 @@
 meta {
   name: 27 Create Report
   type: http
-  seq: 27
+  seq: 29
 }
 
 post {
@@ -26,7 +26,7 @@ body:json {
 
 tests {
   const body = res.body;
-
+  
   if (body?.id) {
     bru.setEnvVar("reportId", body.id);
   }

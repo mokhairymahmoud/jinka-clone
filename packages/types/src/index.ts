@@ -23,6 +23,7 @@ export type PropertyType =
   | "land";
 
 export type FraudLabel = "safe" | "review" | "high_risk";
+export type AreaType = "governorate" | "city" | "area";
 
 export interface LocalizedText {
   en: string;
@@ -33,6 +34,24 @@ export interface AreaReference {
   id: string;
   name: LocalizedText;
   slug: string;
+  type?: AreaType;
+  parentId?: string;
+}
+
+export interface GeoNodeReference {
+  id: string;
+  slug: string;
+  type: AreaType;
+  name: LocalizedText;
+  parentId?: string;
+}
+
+export interface ListingGeoReference {
+  governorate?: GeoNodeReference;
+  city?: GeoNodeReference;
+  area?: GeoNodeReference;
+  leaf?: GeoNodeReference;
+  confidence?: number;
 }
 
 export interface PriceAmount {
@@ -89,6 +108,7 @@ export interface ListingCluster {
   marketSegment: MarketSegment;
   propertyType: PropertyType;
   area: AreaReference;
+  geo?: ListingGeoReference;
   location?: Coordinates;
   bedrooms?: number;
   bathrooms?: number;
@@ -105,6 +125,7 @@ export interface ProjectSummary {
   name: LocalizedText;
   developerName: LocalizedText;
   area: AreaReference;
+  geo?: ListingGeoReference;
   handoffYear?: number;
   startingPrice?: PriceAmount;
   paymentPlanYears?: number;

@@ -50,6 +50,24 @@ export interface ConnectorHealth {
   notes: string[];
 }
 
+export type ExtractedGeoNode = {
+  sourceName?: string;
+  sourceSlug?: string;
+  sourceId?: string;
+  sourceType?: string;
+  level?: number;
+};
+
+export type ExtractedGeoCandidate = {
+  rawLabel?: string;
+  rawPath?: string[];
+  rawFullText?: string;
+  governorate?: ExtractedGeoNode;
+  city?: ExtractedGeoNode;
+  area?: ExtractedGeoNode;
+  coordinates?: Coordinates;
+};
+
 export interface ParsedListingCandidate {
   source?: ListingSource;
   sourceListingId?: string;
@@ -70,11 +88,13 @@ export interface ParsedListingCandidate {
   publishedAt?: string;
   extractionConfidence?: number;
   areaName?: string;
+  extractedGeo?: ExtractedGeoCandidate;
   rawFields?: Record<string, unknown>;
 }
 
 export interface NormalizedListingCandidate extends ListingVariant {
   areaName?: string;
+  extractedGeo?: ExtractedGeoCandidate;
   mediaHashes: string[];
   rawFields: Record<string, unknown>;
 }

@@ -39,6 +39,12 @@ enum FraudLabel {
   HIGH_RISK
 }
 
+enum AreaType {
+  GOVERNORATE
+  CITY
+  AREA
+}
+
 enum SourceListingStatus {
   ACTIVE
   MISSING
@@ -200,18 +206,56 @@ model Developer {
 }
 
 model Area {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  nameEn      String
-  nameAr      String
-  parentId    String?
-  geometry    Unsupported("geometry(MultiPolygon, 4326)")?
-  parent      Area?    @relation("AreaHierarchy", fields: [parentId], references: [id])
-  children    Area[]   @relation("AreaHierarchy")
-  projects    Project[]
-  listingClusters ListingCluster[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id               String                @id @default(cuid())
+  slug             String                @unique
+  type             AreaType              @default(AREA)
+  nameEn           String
+  nameAr           String
+  normalizedName   String
+  parentId         String?
+  centroid         Unsupported("geometry(Point, 4326)")?
+  geometry         Unsupported("geometry(MultiPolygon, 4326)")?
+  isActive         Boolean               @default(true)
+  parent           Area?                 @relation("AreaHierarchy", fields: [parentId], references: [id])
+  children         Area[]                @relation("AreaHierarchy")
+  aliases          AreaAlias[]
+  externalMappings AreaExternalMapping[]
+  projects         Project[]
+  listingClusters  ListingCluster[]
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  @@index([type, parentId])
+  @@index([normalizedName])
+}
+
+model AreaAlias {
+  id              String   @id @default(cuid())
+  areaId          String
+  alias           String
+  normalizedAlias String
+  locale          String?
+  area            Area     @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([areaId, normalizedAlias])
+  @@index([normalizedAlias])
+}
+
+model AreaExternalMapping {
+  id               String         @id @default(cuid())
+  areaId           String
+  source           ListingSource
+  sourceExternalId String?
+  sourceSlug       String?
+  sourceType       String?
+  area             Area           @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@unique([source, sourceExternalId])
+  @@index([source, sourceSlug])
 }
 
 model Project {

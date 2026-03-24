@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{apiBaseUrl}}/v1/listings?q={{listingQuery}}&sort={{sort}}
+  url: {{apiBaseUrl}}/v1/listings
   body: none
   auth: none
 }
@@ -16,19 +16,19 @@ headers {
 
 tests {
   const body = res.body;
-
+  
   test("status is not 5xx", function() {
     expect(res.status).to.be.lessThan(500);
   });
-
+  
   if (Array.isArray(body) && body[0]?.id) {
     bru.setEnvVar("clusterId", body[0].id);
   }
-
+  
   if (Array.isArray(body) && body[0]?.projectId) {
     bru.setEnvVar("projectId", body[0].projectId);
   }
-
+  
   if (Array.isArray(body) && body[0]?.area?.id) {
     bru.setEnvVar("areaId", body[0].area.id);
   }

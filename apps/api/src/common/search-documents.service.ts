@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 
 import { refreshSearchDocumentsStatements } from "@jinka-eg/config";
-import type { SearchFilters, SearchSort } from "@jinka-eg/types";
+import type { MarketSegment, SearchFilters, SearchSort } from "@jinka-eg/types";
 import { PrismaService } from "./prisma.service.js";
 
 type ListingDocumentRow = {
@@ -25,6 +25,35 @@ function resolveSearchSort(sort: SearchSort | undefined, query?: string) {
   return hasTextQuery(query) ? "relevance" : "newest";
 }
 
+export function toSearchDocumentPurpose(purpose: SearchFilters["purpose"]) {
+  if (!purpose) {
+    return undefined;
+  }
+
+  return purpose.toUpperCase();
+}
+
+export function toSearchDocumentMarketSegment(segment: MarketSegment) {
+  return segment.toUpperCase();
+}
+
+export function hasMatchingAncestorSlug(ancestorSlugs: string[], requestedSlug: string) {
+  return ancestorSlugs.includes(requestedSlug);
+}
+
+function buildAreaSlugCondition(areaSlugs: string[]) {
+  const filters = [...new Set(areaSlugs.filter(Boolean))];
+
+  if (filters.length === 0) {
+    return null;
+  }
+
+  return Prisma.sql`(${Prisma.join(
+    filters.map((slug) => Prisma.sql`${slug} = ANY(ancestor_slugs)`),
+    " OR "
+  )})`;
+}
+
 @Injectable()
 export class SearchDocumentsService {
   private readonly logger = new Logger(SearchDocumentsService.name);
@@ -40,27 +69,30 @@ export class SearchDocumentsService {
   async searchListingClusterIds(filters: SearchFilters, limit = 60) {
     const query = hasTextQuery(filters.query) ? filters.query!.trim() : undefined;
     const conditions: Prisma.Sql[] = [Prisma.sql`TRUE`];
+    const purpose = toSearchDocumentPurpose(filters.purpose);
+    const marketSegment = filters.marketSegment ? toSearchDocumentMarketSegment(filters.marketSegment) : undefined;
 
     if (query) {
       conditions.push(Prisma.sql`query_document @@ websearch_to_tsquery('simple', ${query})`);
     }
 
-    if (filters.purpose) {
-      conditions.push(Prisma.sql`purpose = ${filters.purpose}`);
+    if (purpose) {
+      conditions.push(Prisma.sql`purpose = ${purpose}`);
     }
 
-    if (filters.marketSegment) {
-      conditions.push(Prisma.sql`market_segment = ${filters.marketSegment}`);
+    if (marketSegment) {
+      conditions.push(Prisma.sql`market_segment = ${marketSegment}`);
     } else {
-      conditions.push(Prisma.sql`market_segment <> 'off_plan'`);
+      conditions.push(Prisma.sql`market_segment <> 'OFF_PLAN'`);
     }
 
     if (filters.propertyTypes?.length) {
       conditions.push(Prisma.sql`property_type IN (${Prisma.join(filters.propertyTypes)})`);
     }
 
-    if (filters.areaIds?.length) {
-      conditions.push(Prisma.sql`area_slug IN (${Prisma.join(filters.areaIds)})`);
+    const areaSlugCondition = buildAreaSlugCondition(filters.areaIds ?? []);
+    if (areaSlugCondition) {
+      conditions.push(areaSlugCondition);
     }
 
     if (filters.bedrooms?.length) {
@@ -116,7 +148,12 @@ export class SearchDocumentsService {
           purpose,
           market_segment,
           property_type,
+          geo_leaf_slug,
+          governorate_slug,
+          city_slug,
           area_slug,
+          ancestor_slugs,
+          geo_confidence,
           bedrooms,
           bathrooms,
           area_sqm,

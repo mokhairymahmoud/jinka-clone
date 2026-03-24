@@ -1,13 +1,21 @@
 import { Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 
-import type { Coordinates, ListingCluster, ListingVariant, SearchFilters } from "@jinka-eg/types";
+import type { Coordinates, ListingCluster, ListingGeoReference, ListingVariant, SearchFilters } from "@jinka-eg/types";
 import { PrismaService } from "../common/prisma.service.js";
 import { SearchDocumentsService } from "../common/search-documents.service.js";
 
 type ClusterRecord = Prisma.ListingClusterGetPayload<{
   include: {
-    area: true;
+    area: {
+      include: {
+        parent: {
+          include: {
+            parent: true;
+          };
+        };
+      };
+    };
     variants: {
       orderBy: {
         updatedAt: "desc";
@@ -46,6 +54,81 @@ function toCoordinates(value: unknown): Coordinates | undefined {
         lng: maybe.lng
       }
     : undefined;
+}
+
+function areaTypeToPublic(value?: string | null) {
+  return value ? value.toLowerCase() as "governorate" | "city" | "area" : undefined;
+}
+
+function toAreaReference(
+  area:
+    | {
+        id?: string | null;
+        slug?: string | null;
+        nameEn?: string | null;
+        nameAr?: string | null;
+        type?: string | null;
+        parentId?: string | null;
+      }
+    | null
+) {
+  return {
+    id: area?.id ?? area?.slug ?? "unknown-area",
+    slug: area?.slug ?? "unknown-area",
+    type: areaTypeToPublic(area?.type) ?? "area",
+    parentId: area?.parentId ?? undefined,
+    name: localizedText(area?.nameEn, area?.nameAr)
+  };
+}
+
+function buildGeoReference(
+  area:
+    | {
+        id: string;
+        slug: string;
+        type: string;
+        nameEn: string;
+        nameAr: string;
+        parentId: string | null;
+        parent:
+          | {
+              id: string;
+              slug: string;
+              type: string;
+              nameEn: string;
+              nameAr: string;
+              parentId: string | null;
+              parent:
+                | {
+                    id: string;
+                    slug: string;
+                    type: string;
+                    nameEn: string;
+                    nameAr: string;
+                    parentId: string | null;
+                  }
+                | null;
+            }
+          | null;
+      }
+    | null,
+  confidence?: number
+): ListingGeoReference | undefined {
+  if (!area) {
+    return undefined;
+  }
+
+  const chain = [area.parent?.parent, area.parent, area]
+    .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
+    .map((entry) => toAreaReference(entry));
+
+  return {
+    governorate: chain.find((entry) => entry.type === "governorate"),
+    city: chain.find((entry) => entry.type === "city"),
+    area: chain.find((entry) => entry.type === "area"),
+    leaf: toAreaReference(area),
+    confidence
+  };
 }
 
 function getVariantPrice(rawFields: Record<string, unknown>, fallback: number, purpose: "rent" | "sale") {
@@ -107,7 +190,15 @@ export class ListingsService {
         }
       },
       include: {
-        area: true,
+        area: {
+          include: {
+            parent: {
+              include: {
+                parent: true
+              }
+            }
+          }
+        },
         variants: {
           where: {
             inactiveAt: null
@@ -157,7 +248,15 @@ export class ListingsService {
         }
       },
       include: {
-        area: true,
+        area: {
+          include: {
+            parent: {
+              include: {
+                parent: true
+              }
+            }
+          }
+        },
         variants: {
           where: {
             inactiveAt: null
@@ -182,7 +281,13 @@ export class ListingsService {
     const variants = cluster.variants.map((variant) => this.mapVariant(variant, cluster.bestPrice ?? 0, enumToPublic(cluster.purpose)));
     const firstVariant = variants[0];
     const fallbackArea = firstVariant
-      ? ((cluster.variants[0]?.rawFields as { area?: { slug?: string; nameEn?: string; nameAr?: string } }).area ?? null)
+      ? ((cluster.variants[0]?.rawFields as {
+          area?: { id?: string; slug?: string; nameEn?: string; nameAr?: string; type?: string; parentId?: string };
+          geoCanonicalization?: { confidence?: number };
+        }).area ?? null)
+      : null;
+    const fallbackGeo = firstVariant
+      ? ((cluster.variants[0]?.rawFields as { geoCanonicalization?: { confidence?: number } }).geoCanonicalization ?? null)
       : null;
     const latestFraudCase = cluster.fraudCases[0];
     const freshnessBase = cluster.variants
@@ -200,11 +305,8 @@ export class ListingsService {
       purpose: enumToPublic(cluster.purpose),
       marketSegment: enumToPublic(cluster.marketSegment),
       propertyType: cluster.propertyType as ListingCluster["propertyType"],
-      area: {
-        id: cluster.area?.id ?? fallbackArea?.slug ?? "unknown-area",
-        slug: cluster.area?.slug ?? fallbackArea?.slug ?? "unknown-area",
-        name: localizedText(cluster.area?.nameEn ?? fallbackArea?.nameEn, cluster.area?.nameAr ?? fallbackArea?.nameAr)
-      },
+      area: cluster.area ? toAreaReference(cluster.area) : toAreaReference(fallbackArea),
+      geo: buildGeoReference(cluster.area, typeof fallbackGeo?.confidence === "number" ? fallbackGeo.confidence : undefined),
       location: firstVariant?.location,
       bedrooms: cluster.bedrooms ?? undefined,
       bathrooms: cluster.bathrooms ?? undefined,

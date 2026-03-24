@@ -18,6 +18,8 @@ export type DedupComparableListing = {
   bathrooms?: number | null;
   areaSqm?: number | null;
   areaSlug?: string | null;
+  citySlug?: string | null;
+  governorateSlug?: string | null;
   titleEn: string;
   titleAr: string;
   compoundName?: string | null;
@@ -57,7 +59,29 @@ export function scoreDuplicateCandidate(left: DedupComparableListing, right: Ded
 
   const sameArea = Boolean(left.areaSlug && right.areaSlug && left.areaSlug === right.areaSlug);
   if (sameArea) {
-    score += pushReason(reasons, "same_area", "Area slug matched.", 0.1);
+    score += pushReason(reasons, "same_area", "Canonical area matched.", 0.12);
+  } else {
+    const sameCity = Boolean(left.citySlug && right.citySlug && left.citySlug === right.citySlug);
+    if (sameCity) {
+      score += pushReason(reasons, "same_city", "Canonical city matched.", 0.05);
+    } else if (left.citySlug && right.citySlug && left.citySlug !== right.citySlug) {
+      score += pushReason(reasons, "city_conflict", "Canonical city conflicted.", -0.08);
+    }
+
+    const sameGovernorate = Boolean(
+      left.governorateSlug &&
+        right.governorateSlug &&
+        left.governorateSlug === right.governorateSlug
+    );
+    if (sameGovernorate) {
+      score += pushReason(reasons, "same_governorate", "Canonical governorate matched.", 0.02);
+    } else if (
+      left.governorateSlug &&
+      right.governorateSlug &&
+      left.governorateSlug !== right.governorateSlug
+    ) {
+      score += pushReason(reasons, "governorate_conflict", "Canonical governorate conflicted.", -0.05);
+    }
   }
 
   const compoundSimilarity = stringSimilarity(left.compoundName, right.compoundName);
@@ -125,7 +149,7 @@ export function scoreDuplicateCandidate(left: DedupComparableListing, right: Ded
     score += pushReason(reasons, "near_coordinates", "Coordinates are within 1.2km.", 0.08);
   }
 
-  const boundedScore = Number(Math.min(score, 0.99).toFixed(3));
+  const boundedScore = Number(Math.max(0, Math.min(score, 0.99)).toFixed(3));
 
   return {
     score: boundedScore,

@@ -174,30 +174,30 @@ export const propertyFinderStaticBuyApartmentSeeds = [
   //   url: "https://www.propertyfinder.eg/en/buy/giza/apartments-for-sale-dokki.html",
   //   priority: 20
   // },
-  // {
-  //   label: "pf-buy-apartment-hay-sharq",
-  //   areaSlug: "hay-sharq",
-  //   url: "https://www.propertyfinder.eg/en/buy/alexandria/apartments-for-sale-hay-sharq.html",
-  //   priority: 20
-  // },
-  // {
-  //   label: "pf-buy-apartment-alexandria-compounds",
-  //   areaSlug: "alexandria-compounds",
-  //   url: "https://www.propertyfinder.eg/en/buy/alexandria/apartments-for-sale-alexandria-compounds.html",
-  //   priority: 20
-  // },
-  // {
-  //   label: "pf-buy-apartment-hay-awal-el-montazah",
-  //   areaSlug: "hay-awal-el-montazah",
-  //   url: "https://www.propertyfinder.eg/en/buy/alexandria/apartments-for-sale-hay-awal-el-montazah.html",
-  //   priority: 20
-  // },
-  // {
-  //   label: "pf-buy-apartment-hay-wasat",
-  //   areaSlug: "hay-wasat",
-  //   url: "https://www.propertyfinder.eg/en/buy/alexandria/apartments-for-sale-hay-wasat.html",
-  //   priority: 20
-  // },
+  {
+    label: "pf-buy-apartment-hay-sharq",
+    areaSlug: "hay-sharq",
+    url: "https://www.propertyfinder.eg/en/buy/alexandria/apartments-for-sale-hay-sharq.html",
+    priority: 20
+  },
+  {
+    label: "pf-buy-apartment-alexandria-compounds",
+    areaSlug: "alexandria-compounds",
+    url: "https://www.propertyfinder.eg/en/buy/alexandria/apartments-for-sale-alexandria-compounds.html",
+    priority: 20
+  },
+  {
+    label: "pf-buy-apartment-hay-awal-el-montazah",
+    areaSlug: "hay-awal-el-montazah",
+    url: "https://www.propertyfinder.eg/en/buy/alexandria/apartments-for-sale-hay-awal-el-montazah.html",
+    priority: 20
+  },
+  {
+    label: "pf-buy-apartment-hay-wasat",
+    areaSlug: "hay-wasat",
+    url: "https://www.propertyfinder.eg/en/buy/alexandria/apartments-for-sale-hay-wasat.html",
+    priority: 20
+  },
   {
     label: "pf-buy-apartment-hay-than-el-montazah",
     areaSlug: "hay-than-el-montazah",

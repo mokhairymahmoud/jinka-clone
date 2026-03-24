@@ -19,6 +19,8 @@ describe("scoreDuplicateCandidate", () => {
         bathrooms: 3,
         areaSqm: 150,
         areaSlug: "new-cairo",
+        citySlug: "new-cairo-city",
+        governorateSlug: "cairo",
         titleEn: "Lake View Residence apartment",
         titleAr: "شقة لايك فيو ريزيدنس",
         compoundName: "Lake View Residence",
@@ -40,6 +42,8 @@ describe("scoreDuplicateCandidate", () => {
         bathrooms: 3,
         areaSqm: 152,
         areaSlug: "new-cairo",
+        citySlug: "new-cairo-city",
+        governorateSlug: "cairo",
         titleEn: "Apartment at Lake View Residence",
         titleAr: "شقة في لايك فيو ريزيدنس",
         compoundName: "Lake View Residence",
@@ -70,6 +74,8 @@ describe("scoreDuplicateCandidate", () => {
         bathrooms: 4,
         areaSqm: 240,
         areaSlug: "sheikh-zayed",
+        citySlug: "sheikh-zayed-city",
+        governorateSlug: "giza",
         titleEn: "Standalone villa in Beverly Hills",
         titleAr: "فيلا مستقلة في بيفرلي هيلز",
         compoundName: "Beverly Hills",
@@ -91,6 +97,8 @@ describe("scoreDuplicateCandidate", () => {
         bathrooms: 4,
         areaSqm: 255,
         areaSlug: "sheikh-zayed",
+        citySlug: "sheikh-zayed-city",
+        governorateSlug: "giza",
         titleEn: "Villa for sale in Beverly Hills compound",
         titleAr: "فيلا للبيع في كمبوند بيفرلي هيلز",
         compoundName: "Beverly Hills Compound",
@@ -136,6 +144,49 @@ describe("scoreDuplicateCandidate", () => {
     );
 
     expect(result.score).toBe(0);
+    expect(result.decision).toBe("no_match");
+  });
+
+  it("penalizes conflicting canonical city signals", () => {
+    const result = scoreDuplicateCandidate(
+      {
+        variantId: "left",
+        source: "nawy",
+        sourceListingId: "left",
+        canonicalUrl: "https://example.com/left",
+        purpose: "sale",
+        marketSegment: "resale",
+        propertyType: "apartment",
+        priceAmount: 4200000,
+        areaSlug: "new-cairo",
+        citySlug: "new-cairo-city",
+        governorateSlug: "cairo",
+        titleEn: "Apartment for sale in Eastown",
+        titleAr: "شقة للبيع في إيستاون",
+        compoundName: "Eastown",
+        mediaHashes: []
+      },
+      {
+        variantId: "right",
+        source: "property_finder",
+        sourceListingId: "right",
+        canonicalUrl: "https://example.com/right",
+        purpose: "sale",
+        marketSegment: "resale",
+        propertyType: "apartment",
+        priceAmount: 4200000,
+        areaSlug: "zed-towers",
+        citySlug: "sheikh-zayed-city",
+        governorateSlug: "giza",
+        titleEn: "Apartment for sale in ZED Towers",
+        titleAr: "شقة للبيع في زد تاورز",
+        compoundName: "ZED Towers",
+        mediaHashes: []
+      }
+    );
+
+    expect(result.reasons.some((reason) => reason.code === "city_conflict")).toBe(true);
+    expect(result.reasons.some((reason) => reason.code === "governorate_conflict")).toBe(true);
     expect(result.decision).toBe("no_match");
   });
 });

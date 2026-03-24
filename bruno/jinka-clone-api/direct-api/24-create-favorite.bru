@@ -1,7 +1,7 @@
 meta {
   name: 24 Create Favorite
   type: http
-  seq: 24
+  seq: 26
 }
 
 post {
@@ -25,7 +25,7 @@ body:json {
 
 tests {
   const body = res.body;
-
+  
   if (body?.id) {
     bru.setEnvVar("favoriteId", body.id);
   }

@@ -1,7 +1,7 @@
 meta {
   name: 34 Admin Get Connectors
   type: http
-  seq: 34
+  seq: 36
 }
 
 get {
@@ -17,7 +17,7 @@ headers {
 
 tests {
   const body = res.body;
-
+  
   if (Array.isArray(body) && body[0]?.source) {
     bru.setEnvVar("connectorSource", body[0].source);
   }

@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{apiBaseUrl}}/v1/areas?q={{areaQuery}}
+  url: {{apiBaseUrl}}/v1/areas
   body: none
   auth: none
 }
@@ -16,11 +16,11 @@ headers {
 
 tests {
   const body = res.body;
-
+  
   test("status is not 5xx", function() {
     expect(res.status).to.be.lessThan(500);
   });
-
+  
   if (Array.isArray(body) && body[0]?.id) {
     bru.setEnvVar("areaId", body[0].id);
   }

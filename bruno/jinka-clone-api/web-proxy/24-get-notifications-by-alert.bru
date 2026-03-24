@@ -1,0 +1,16 @@
+meta {
+  name: 24 Get Notifications By Alert
+  type: http
+  seq: 24
+}
+
+get {
+  url: {{webBaseUrl}}/api/notifications?alertId={{alertId}}
+  body: none
+  auth: none
+}
+
+headers {
+  cookie: access_token={{accessToken}}; refresh_token={{refreshToken}}
+  accept: application/json
+}

@@ -13,6 +13,79 @@ function localizedText(en?: string | null, ar?: string | null) {
   };
 }
 
+function areaTypeToPublic(value?: string | null) {
+  return value ? value.toLowerCase() as "governorate" | "city" | "area" : undefined;
+}
+
+function toAreaReference(
+  area:
+    | {
+        id: string;
+        slug: string;
+        type?: string | null;
+        parentId?: string | null;
+        nameEn?: string | null;
+        nameAr?: string | null;
+      }
+    | null
+) {
+  return {
+    id: area?.id ?? "unknown-area",
+    slug: area?.slug ?? "unknown-area",
+    type: areaTypeToPublic(area?.type) ?? "area",
+    parentId: area?.parentId ?? undefined,
+    name: localizedText(area?.nameEn, area?.nameAr)
+  };
+}
+
+function buildGeoReference(
+  area:
+    | {
+        id: string;
+        slug: string;
+        type: string;
+        parentId: string | null;
+        nameEn: string;
+        nameAr: string;
+        parent:
+          | {
+              id: string;
+              slug: string;
+              type: string;
+              parentId: string | null;
+              nameEn: string;
+              nameAr: string;
+              parent:
+                | {
+                    id: string;
+                    slug: string;
+                    type: string;
+                    parentId: string | null;
+                    nameEn: string;
+                    nameAr: string;
+                  }
+                | null;
+            }
+          | null;
+      }
+    | null
+) {
+  if (!area) {
+    return undefined;
+  }
+
+  const chain = [area.parent?.parent, area.parent, area]
+    .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
+    .map((entry) => toAreaReference(entry));
+
+  return {
+    governorate: chain.find((entry) => entry.type === "governorate"),
+    city: chain.find((entry) => entry.type === "city"),
+    area: chain.find((entry) => entry.type === "area"),
+    leaf: toAreaReference(area)
+  };
+}
+
 @Injectable()
 export class ProjectsService {
   constructor(
@@ -35,7 +108,15 @@ export class ProjectsService {
       },
       include: {
         developer: true,
-        area: true
+        area: {
+          include: {
+            parent: {
+              include: {
+                parent: true
+              }
+            }
+          }
+        }
       }
     });
 
@@ -51,7 +132,15 @@ export class ProjectsService {
       where: { id },
       include: {
         developer: true,
-        area: true
+        area: {
+          include: {
+            parent: {
+              include: {
+                parent: true
+              }
+            }
+          }
+        }
       }
     });
 
@@ -67,11 +156,8 @@ export class ProjectsService {
       id: project.id,
       name: localizedText(project.nameEn, project.nameAr),
       developerName: localizedText(project.developer.nameEn, project.developer.nameAr),
-      area: {
-        id: project.area.id,
-        slug: project.area.slug,
-        name: localizedText(project.area.nameEn, project.area.nameAr)
-      },
+      area: toAreaReference(project.area),
+      geo: buildGeoReference(project.area),
       handoffYear: project.handoffYear ?? undefined,
       startingPrice: project.startingPrice
         ? {
@@ -89,6 +175,14 @@ export class ProjectsService {
 type ProjectRecord = Prisma.ProjectGetPayload<{
   include: {
     developer: true;
-    area: true;
+    area: {
+      include: {
+        parent: {
+          include: {
+            parent: true;
+          };
+        };
+      };
+    };
   };
 }>;

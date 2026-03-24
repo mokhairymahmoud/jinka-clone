@@ -22,21 +22,18 @@ body:json {
     "locale": "{{locale}}",
     "filters": {
       "query": "{{listingQuery}}",
-      "areaIds": ["{{areaId}}"],
       "purpose": "sale",
       "propertyTypes": ["apartment"],
       "sort": "{{sort}}"
     },
     "notifyByPush": true,
-    "notifyByEmail": true,
-    "quietHoursStart": "23:00",
-    "quietHoursEnd": "07:00"
+    "notifyByEmail": true
   }
 }
 
 tests {
   const body = res.body;
-
+  
   if (body?.id) {
     bru.setEnvVar("alertId", body.id);
   }

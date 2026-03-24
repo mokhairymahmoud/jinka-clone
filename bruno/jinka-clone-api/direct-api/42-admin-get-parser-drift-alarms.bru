@@ -1,7 +1,7 @@
 meta {
   name: 42 Admin Get Parser Drift Alarms
   type: http
-  seq: 42
+  seq: 44
 }
 
 get {
@@ -17,7 +17,7 @@ headers {
 
 tests {
   const body = res.body;
-
+  
   if (Array.isArray(body) && body[0]?.id) {
     bru.setEnvVar("parserDriftAlarmId", body[0].id);
   }

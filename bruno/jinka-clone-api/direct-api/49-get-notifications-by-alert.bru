@@ -1,11 +1,11 @@
 meta {
-  name: 22 Test Alert
+  name: 49 Get Notifications By Alert
   type: http
-  seq: 24
+  seq: 49
 }
 
-post {
-  url: {{apiBaseUrl}}/v1/alerts/{{alertId}}/test
+get {
+  url: {{apiBaseUrl}}/v1/notifications?alertId={{alertId}}
   body: none
   auth: none
 }

@@ -22,9 +22,10 @@ import {
   scoreDuplicateCandidate,
   type DedupComparableListing
 } from "./deduplication.js";
+import { GeoCanonicalizer } from "./geo-canonicalization.js";
 import { createRawSnapshotStorage, type RawSnapshotStorage } from "./object-storage.js";
 import { getConnector } from "./source-registry.js";
-import { hashImageUrls, normalizeArea, resolveCoordinates } from "./normalization.js";
+import { hashImageUrls } from "./normalization.js";
 
 type SeedSourcePayload = {
   source: ListingSource;
@@ -167,6 +168,111 @@ function toJsonLocalizedText(value?: { en: string; ar: string } | null) {
   } satisfies Prisma.InputJsonObject;
 }
 
+function toJsonExtractedGeoNode(
+  value?:
+    | {
+        sourceName?: string;
+        sourceSlug?: string;
+        sourceId?: string;
+        sourceType?: string;
+        level?: number;
+      }
+    | null
+) {
+  if (!value) {
+    return null;
+  }
+
+  const payload: Record<string, Prisma.InputJsonValue> = {};
+  if (value.sourceName) payload.sourceName = value.sourceName;
+  if (value.sourceSlug) payload.sourceSlug = value.sourceSlug;
+  if (value.sourceId) payload.sourceId = value.sourceId;
+  if (value.sourceType) payload.sourceType = value.sourceType;
+  if (typeof value.level === "number") payload.level = value.level;
+
+  return payload satisfies Prisma.InputJsonObject;
+}
+
+function toJsonExtractedGeoCandidate(
+  value?:
+    | {
+        rawLabel?: string;
+        rawPath?: string[];
+        rawFullText?: string;
+        governorate?: {
+          sourceName?: string;
+          sourceSlug?: string;
+          sourceId?: string;
+          sourceType?: string;
+          level?: number;
+        };
+        city?: {
+          sourceName?: string;
+          sourceSlug?: string;
+          sourceId?: string;
+          sourceType?: string;
+          level?: number;
+        };
+        area?: {
+          sourceName?: string;
+          sourceSlug?: string;
+          sourceId?: string;
+          sourceType?: string;
+          level?: number;
+        };
+        coordinates?: { lat: number; lng: number };
+      }
+    | null
+) {
+  if (!value) {
+    return null;
+  }
+
+  const payload: Record<string, Prisma.InputJsonValue> = {};
+  if (value.rawLabel) payload.rawLabel = value.rawLabel;
+  if (value.rawPath?.length) payload.rawPath = value.rawPath;
+  if (value.rawFullText) payload.rawFullText = value.rawFullText;
+
+  const governorate = toJsonExtractedGeoNode(value.governorate);
+  if (governorate) payload.governorate = governorate;
+  const city = toJsonExtractedGeoNode(value.city);
+  if (city) payload.city = city;
+  const area = toJsonExtractedGeoNode(value.area);
+  if (area) payload.area = area;
+  const coordinates = toJsonCoordinates(value.coordinates);
+  if (coordinates) payload.coordinates = coordinates;
+
+  return payload satisfies Prisma.InputJsonObject;
+}
+
+function toJsonCanonicalGeoNode(
+  value?:
+    | {
+        id: string;
+        slug: string;
+        type: string;
+        parentId?: string;
+        nameEn: string;
+        nameAr: string;
+      }
+    | null
+) {
+  if (!value) {
+    return null;
+  }
+
+  const payload: Record<string, Prisma.InputJsonValue> = {
+    id: value.id,
+    slug: value.slug,
+    type: value.type,
+    nameEn: value.nameEn,
+    nameAr: value.nameAr
+  };
+  if (value.parentId) payload.parentId = value.parentId;
+
+  return payload satisfies Prisma.InputJsonObject;
+}
+
 function isWithinQuietHours(start?: string | null, end?: string | null) {
   if (!start || !end) {
     return false;
@@ -247,14 +353,51 @@ function asCoordinates(value: unknown) {
   return lat !== undefined && lng !== undefined ? { lat, lng } : undefined;
 }
 
+function asExtractedGeoNode(value: unknown) {
+  const record = asRecord(value);
+
+  if (!record) {
+    return undefined;
+  }
+
+  return {
+    sourceName: asString(record.sourceName) ?? undefined,
+    sourceSlug: asString(record.sourceSlug) ?? undefined,
+    sourceId: asString(record.sourceId) ?? undefined,
+    sourceType: asString(record.sourceType) ?? undefined,
+    level: asNumber(record.level) ?? undefined
+  };
+}
+
+function collectAncestorSlugs(
+  area:
+    | {
+        slug: string;
+        parent: {
+          slug: string;
+          parent: {
+            slug: string;
+          } | null;
+        } | null;
+      }
+    | null
+) {
+  return [area?.slug, area?.parent?.slug, area?.parent?.parent?.slug].filter(
+    (value): value is string => typeof value === "string" && value.length > 0
+  );
+}
+
 export class IngestionPipeline {
   private sesClient: SESv2Client | null = null;
+  private readonly geoCanonicalizer: GeoCanonicalizer;
 
   constructor(
     private readonly queues: QueueMap,
     private readonly prisma = new PrismaClient(),
     private readonly storage: RawSnapshotStorage = createRawSnapshotStorage()
-  ) {}
+  ) {
+    this.geoCanonicalizer = new GeoCanonicalizer(this.prisma);
+  }
 
   async close() {
     await this.prisma.$disconnect();
@@ -856,8 +999,8 @@ export class IngestionPipeline {
       };
     }
 
-    const enrichment = this.buildNormalizedEnrichment(normalized);
-    const areaRecord = await this.upsertAreaRecord(enrichment.area);
+    const enrichment = await this.buildNormalizedEnrichment(normalized);
+    const areaId = enrichment.canonicalGeo.leaf?.id ?? null;
 
     const variant = await this.prisma.listingVariant.upsert({
       where: {
@@ -925,8 +1068,8 @@ export class IngestionPipeline {
       });
     }
 
-    const clusterSync = await this.syncClusterForVariant(variant.id, normalized, areaRecord?.id ?? null);
-    await this.syncProjectForCluster(clusterSync.clusterId, normalized, areaRecord?.id ?? null);
+    const clusterSync = await this.syncClusterForVariant(variant.id, normalized, areaId);
+    await this.syncProjectForCluster(clusterSync.clusterId, normalized, areaId);
     await this.persistPriceHistory(variant.id, clusterSync.clusterId, normalized.price);
     await this.markRunProgress(
       payload.runId,
@@ -1078,7 +1221,12 @@ export class IngestionPipeline {
       linkedProjectClusters: 0,
       reviewEdges: 0,
       autoAttachedVariants: 0,
-      collapsedClusters: 0
+      collapsedClusters: 0,
+      resolvedGovernorates: 0,
+      resolvedCities: 0,
+      resolvedAreas: 0,
+      unresolvedGeographies: 0,
+      lowConfidenceGeographies: 0
     };
 
     for (const variant of variants) {
@@ -1089,7 +1237,25 @@ export class IngestionPipeline {
         continue;
       }
 
-      const areaId = await this.refreshVariantNormalization(variant.id, normalized);
+      const normalization = await this.refreshVariantNormalization(variant.id, normalized);
+      const areaId = normalization.areaId;
+
+      if (!normalization.unresolved.includes("governorate")) {
+        summary.resolvedGovernorates += 1;
+      }
+      if (!normalization.unresolved.includes("city")) {
+        summary.resolvedCities += 1;
+      }
+      if (!normalization.unresolved.includes("area")) {
+        summary.resolvedAreas += 1;
+      }
+      if (normalization.unresolved.length > 0) {
+        summary.unresolvedGeographies += 1;
+      }
+      if (normalization.confidence < 0.6) {
+        summary.lowConfidenceGeographies += 1;
+      }
+
       const clusterSync =
         variant.clusterId !== null && !options.recluster
           ? {
@@ -1328,6 +1494,17 @@ export class IngestionPipeline {
       }
     });
 
+    const persistedVariant = await this.prisma.listingVariant.findUniqueOrThrow({
+      where: { id: variantId },
+      include: {
+        priceHistory: {
+          orderBy: {
+            recordedAt: "desc"
+          }
+        }
+      }
+    });
+
     const candidates = await this.prisma.listingVariant.findMany({
       where: {
         id: {
@@ -1353,7 +1530,7 @@ export class IngestionPipeline {
       take: 200
     });
 
-    const input = this.buildComparableListingFromNormalized(variantId, normalized);
+    const input = this.buildComparableListingFromVariant(persistedVariant);
     const matches = candidates
       .map((candidate) => {
         const comparable = this.buildComparableListingFromVariant(candidate);
@@ -1553,13 +1730,19 @@ export class IngestionPipeline {
     const primaryVariant = cluster.variants[0];
     const summary = this.extractVariantSummary(primaryVariant);
     const rawFields = asRecord(primaryVariant.rawFields);
-    const area = asRecord(rawFields?.area);
-    const areaSlug = asString(area?.slug);
+    const canonicalGeo = asRecord(rawFields?.geoCanonicalization);
+    const leafArea = asRecord(canonicalGeo?.leaf);
+    const areaId = asString(leafArea?.id);
+    const areaSlug = asString(leafArea?.slug) ?? asString(asRecord(rawFields?.area)?.slug);
     const bestPrice = await this.getBestPriceForVariants(
       cluster.variants.map((variant) => variant.id),
       cluster.bestPrice
     );
-    const nextArea = areaSlug ? await this.prisma.area.findUnique({ where: { slug: areaSlug } }) : null;
+    const nextArea = areaId
+      ? await this.prisma.area.findUnique({ where: { id: areaId } })
+      : areaSlug
+        ? await this.prisma.area.findUnique({ where: { slug: areaSlug } })
+        : null;
 
     await this.prisma.listingCluster.updateMany({
       where: { id: cluster.id },
@@ -1579,42 +1762,13 @@ export class IngestionPipeline {
     });
   }
 
-  private buildComparableListingFromNormalized(
-    variantId: string,
-    normalized: NormalizedListingCandidate
-  ): DedupComparableListing {
-    const area = normalizeArea(normalized.areaName, [
-      normalized.areaName ?? "",
-      normalized.compoundName?.en ?? "",
-      normalized.developerName?.en ?? ""
-    ]);
-
-    return {
-      variantId,
-      source: normalized.source,
-      sourceListingId: normalized.sourceListingId,
-      canonicalUrl: normalized.sourceUrl,
-      purpose: normalized.purpose,
-      marketSegment: normalized.marketSegment,
-      propertyType: normalized.propertyType,
-      priceAmount: normalized.price.amount,
-      bedrooms: normalized.bedrooms ?? null,
-      bathrooms: normalized.bathrooms ?? null,
-      areaSqm: normalized.areaSqm ?? null,
-      areaSlug: area?.slug ?? null,
-      titleEn: normalized.title.en,
-      titleAr: normalized.title.ar,
-      compoundName: normalized.compoundName?.en ?? null,
-      developerName: normalized.developerName?.en ?? null,
-      coordinates: normalized.location ?? null,
-      mediaHashes: normalized.mediaHashes
-    };
-  }
-
   private buildComparableListingFromVariant(variant: PersistedVariantRecord): DedupComparableListing {
     const rawFields = asRecord(variant.rawFields);
     const normalizedSummary = asRecord(rawFields?.normalized);
-    const area = asRecord(rawFields?.area);
+    const geoCanonicalization = asRecord(rawFields?.geoCanonicalization);
+    const leaf = asRecord(geoCanonicalization?.leaf);
+    const city = asRecord(geoCanonicalization?.city);
+    const governorate = asRecord(geoCanonicalization?.governorate);
 
     return {
       variantId: variant.id,
@@ -1629,7 +1783,9 @@ export class IngestionPipeline {
       bedrooms: asNumber(normalizedSummary?.bedrooms) ?? null,
       bathrooms: asNumber(normalizedSummary?.bathrooms) ?? null,
       areaSqm: asNumber(normalizedSummary?.areaSqm) ?? null,
-      areaSlug: asString(area?.slug) ?? null,
+      areaSlug: asString(leaf?.slug) ?? asString(asRecord(rawFields?.area)?.slug) ?? null,
+      citySlug: asString(city?.slug) ?? null,
+      governorateSlug: asString(governorate?.slug) ?? null,
       titleEn: variant.titleEn,
       titleAr: variant.titleAr,
       compoundName: asString(asRecord(normalizedSummary?.compoundName)?.en) ?? null,
@@ -1722,7 +1878,15 @@ export class IngestionPipeline {
     const cluster = await this.prisma.listingCluster.findUnique({
       where: { id: clusterId },
       include: {
-        area: true,
+        area: {
+          include: {
+            parent: {
+              include: {
+                parent: true
+              }
+            }
+          }
+        },
         variants: true
       }
     });
@@ -1804,7 +1968,23 @@ export class IngestionPipeline {
       areaSqm: number | null;
       canonicalTitleEn: string;
       canonicalTitleAr: string;
-      area: { slug: string; nameEn: string; nameAr: string } | null;
+      area:
+        | {
+            slug: string;
+            nameEn: string;
+            nameAr: string;
+            parent: {
+              slug: string;
+              nameEn: string;
+              nameAr: string;
+              parent: {
+                slug: string;
+                nameEn: string;
+                nameAr: string;
+              } | null;
+            } | null;
+          }
+        | null;
     },
     filters: AlertFilterRecord
   ) {
@@ -1828,7 +2008,9 @@ export class IngestionPipeline {
       return false;
     }
 
-    if (areaIds.length > 0 && (!cluster.area || !areaIds.includes(cluster.area.slug))) {
+    const areaSlugs = collectAncestorSlugs(cluster.area);
+
+    if (areaIds.length > 0 && (areaSlugs.length === 0 || !areaIds.some((slug) => areaSlugs.includes(slug)))) {
       return false;
     }
 
@@ -2860,13 +3042,32 @@ export class IngestionPipeline {
     }
   }
 
-  private buildNormalizedEnrichment(normalized: NormalizedListingCandidate) {
-    const area = normalizeArea(normalized.areaName, [
-      normalized.areaName ?? "",
-      normalized.compoundName?.en ?? "",
-      normalized.developerName?.en ?? ""
-    ]);
-    const coordinates = resolveCoordinates(normalized.location, area);
+  private async buildNormalizedEnrichment(normalized: NormalizedListingCandidate) {
+    const canonicalGeo = await this.geoCanonicalizer.canonicalize({
+      source: normalized.source,
+      areaName: normalized.areaName,
+      extractedGeo: normalized.extractedGeo,
+      location: normalized.location
+    });
+    const coordinates = normalized.location ?? canonicalGeo.extractedGeo.coordinates ?? null;
+    const leafArea = canonicalGeo.leaf;
+    const legacyArea =
+      leafArea
+        ? {
+            id: leafArea.id,
+            slug: leafArea.slug,
+            type: leafArea.type,
+            nameEn: leafArea.nameEn,
+            nameAr: leafArea.nameAr
+          }
+        : normalized.areaName
+          ? {
+              slug: slugify(normalized.areaName),
+              type: "area",
+              nameEn: normalized.areaName.trim(),
+              nameAr: normalized.areaName.trim()
+            }
+          : null;
     const normalizedSummary = {
       bedrooms: normalized.bedrooms ?? null,
       bathrooms: normalized.bathrooms ?? null,
@@ -2878,44 +3079,33 @@ export class IngestionPipeline {
     } satisfies Prisma.InputJsonObject;
     const persistedRawFields = {
       ...normalized.rawFields,
-      area: area
-        ? {
-            slug: area.slug,
-            nameEn: area.nameEn,
-            nameAr: area.nameAr,
-            centroid: toJsonCoordinates(area.centroid)
-          }
-        : null,
+      area: legacyArea,
+      geoExtraction: toJsonExtractedGeoCandidate(canonicalGeo.extractedGeo),
+      geoCanonicalization: {
+        governorate: toJsonCanonicalGeoNode(canonicalGeo.governorate),
+        city: toJsonCanonicalGeoNode(canonicalGeo.city),
+        area: toJsonCanonicalGeoNode(canonicalGeo.area),
+        leaf: toJsonCanonicalGeoNode(canonicalGeo.leaf),
+        ancestorIds: canonicalGeo.ancestorIds,
+        ancestorSlugs: canonicalGeo.ancestorSlugs,
+        confidence: canonicalGeo.confidence,
+        rule: canonicalGeo.rule,
+        unresolved: canonicalGeo.unresolved
+      },
       geocodedLocation: toJsonCoordinates(coordinates),
       mediaHashes: normalized.mediaHashes,
       normalized: normalizedSummary
     } satisfies Prisma.InputJsonObject;
 
-    return { area, coordinates, persistedRawFields };
-  }
-
-  private async upsertAreaRecord(area: ReturnType<typeof normalizeArea>) {
-    if (!area) {
-      return null;
-    }
-
-    return this.prisma.area.upsert({
-      where: { slug: area.slug },
-      update: {
-        nameEn: area.nameEn,
-        nameAr: area.nameAr
-      },
-      create: {
-        slug: area.slug,
-        nameEn: area.nameEn,
-        nameAr: area.nameAr
-      }
-    });
+    return {
+      coordinates,
+      canonicalGeo,
+      persistedRawFields
+    };
   }
 
   private async refreshVariantNormalization(variantId: string, normalized: NormalizedListingCandidate) {
-    const enrichment = this.buildNormalizedEnrichment(normalized);
-    const areaRecord = await this.upsertAreaRecord(enrichment.area);
+    const enrichment = await this.buildNormalizedEnrichment(normalized);
 
     await this.prisma.listingVariant.update({
       where: { id: variantId },
@@ -2924,7 +3114,11 @@ export class IngestionPipeline {
       }
     });
 
-    return areaRecord?.id ?? null;
+    return {
+      areaId: enrichment.canonicalGeo.leaf?.id ?? null,
+      confidence: enrichment.canonicalGeo.confidence,
+      unresolved: enrichment.canonicalGeo.unresolved
+    };
   }
 
   private rehydrateNormalizedCandidate(variant: PersistedVariantRecord): NormalizedListingCandidate | null {
@@ -2932,6 +3126,7 @@ export class IngestionPipeline {
     const sourcePayload = asRecord(rawFields.sourcePayload);
     const normalizedSummary = asRecord(rawFields.normalized);
     const areaRecord = asRecord(rawFields.area);
+    const geoExtraction = asRecord(rawFields.geoExtraction);
     const locationRecord = asCoordinates(normalizedSummary?.location) ?? asCoordinates(rawFields.geocodedLocation);
     const price = this.resolveVariantPrice(variant, sourcePayload, normalizedSummary);
 
@@ -2984,6 +3179,17 @@ export class IngestionPipeline {
       publishedAt: (variant.publishedAt ?? variant.updatedAt).toISOString(),
       extractionConfidence: variant.extractionConfidence,
       areaName: sourceAreaName,
+      extractedGeo: geoExtraction
+        ? {
+            rawLabel: asString(geoExtraction.rawLabel) ?? undefined,
+            rawPath: asStringArray(geoExtraction.rawPath),
+            rawFullText: asString(geoExtraction.rawFullText) ?? undefined,
+            governorate: asExtractedGeoNode(geoExtraction.governorate),
+            city: asExtractedGeoNode(geoExtraction.city),
+            area: asExtractedGeoNode(geoExtraction.area),
+            coordinates: asCoordinates(geoExtraction.coordinates)
+          }
+        : undefined,
       mediaHashes: mediaHashes.length > 0 ? mediaHashes : hashImageUrls(variant.imageUrls),
       rawFields: {
         ...rawFields,
