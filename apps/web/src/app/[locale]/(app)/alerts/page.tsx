@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { Badge, Card } from "@jinka-eg/ui";
 
+import type { AlertDefinition, NotificationItem } from "@jinka-eg/types";
 import { AlertControlsForm } from "../../../../components/alert-controls-form";
 import { CreateAlertForm } from "../../../../components/create-alert-form";
 import { DeleteAlertButton } from "../../../../components/delete-alert-button";
@@ -37,6 +39,26 @@ async function fetchAreas() {
   return response.json();
 }
 
+async function fetchNotifications() {
+  const accessToken = await getAccessTokenFromCookies();
+
+  if (!accessToken) {
+    return [];
+  }
+
+  const response = await apiFetch("/v1/notifications", {
+    headers: {
+      authorization: `Bearer ${accessToken}`
+    }
+  });
+
+  if (!response.ok) {
+    return [];
+  }
+
+  return response.json();
+}
+
 function formatDateTime(value: string | null | undefined) {
   if (!value) {
     return null;
@@ -48,23 +70,31 @@ function formatDateTime(value: string | null | undefined) {
   });
 }
 
+function formatPrice(value: number | null | undefined) {
+  if (typeof value !== "number") {
+    return null;
+  }
+
+  return new Intl.NumberFormat("en-US").format(value);
+}
+
 export default async function AlertsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const safeLocale = resolveLocale(locale);
   const t = getMessages(safeLocale);
-  const [alerts, areas] = await Promise.all([fetchAlerts(), fetchAreas()]);
-  const typedAlerts = alerts as Array<{
-    id: string;
-    name: string;
-    filters: Record<string, unknown>;
-    isPaused: boolean;
-    snoozedUntil?: string | null;
-    notifyByPush: boolean;
-    notifyByEmail: boolean;
-    quietHoursStart?: string;
-    quietHoursEnd?: string;
-    lastMatchedAt?: string | null;
-  }>;
+  const [alerts, areas, notifications] = await Promise.all([fetchAlerts(), fetchAreas(), fetchNotifications()]);
+  const typedAlerts = alerts as AlertDefinition[];
+  const typedNotifications = notifications as NotificationItem[];
+  const activityByAlert = typedNotifications.reduce<Record<string, NotificationItem[]>>((result, notification) => {
+    if (!notification.alertId) {
+      return result;
+    }
+
+    const existing = result[notification.alertId] ?? [];
+    existing.push(notification);
+    result[notification.alertId] = existing;
+    return result;
+  }, {});
 
   return (
     <div className="space-y-6">
@@ -123,6 +153,20 @@ export default async function AlertsPage({ params }: { params: Promise<{ locale:
                     ))}
                   </div>
                   <div className="text-sm text-[var(--jinka-muted)]">
+                    Delivery cadence: {alert.deliveryCadence}
+                  </div>
+                  <div className="text-sm text-[var(--jinka-muted)]">
+                    Price-drop threshold:{" "}
+                    {alert.minPriceDropPercent || alert.minPriceDropAmount
+                      ? [
+                          alert.minPriceDropPercent ? `${alert.minPriceDropPercent}%` : null,
+                          alert.minPriceDropAmount ? `EGP ${formatPrice(alert.minPriceDropAmount)}` : null
+                        ]
+                          .filter(Boolean)
+                          .join(" and ")
+                      : "any drop"}
+                  </div>
+                  <div className="text-sm text-[var(--jinka-muted)]">
                     Quiet hours: {alert.quietHoursStart ?? "none"} to {alert.quietHoursEnd ?? "none"}
                   </div>
                 </div>
@@ -133,6 +177,52 @@ export default async function AlertsPage({ params }: { params: Promise<{ locale:
                 </div>
               </div>
               <AlertControlsForm alert={alert} />
+              <div className="grid gap-3 rounded-[24px] border border-[var(--jinka-border)] bg-[var(--jinka-surface)] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-semibold text-[var(--jinka-text)]">Recent activity</div>
+                    <div className="text-sm text-[var(--jinka-muted)]">Latest inbox events and delivery states for this alert.</div>
+                  </div>
+                  <Link
+                    href={`/${safeLocale}/inbox?alertId=${encodeURIComponent(alert.id)}`}
+                    className="text-sm font-medium text-[var(--jinka-accent)]"
+                  >
+                    Open full history
+                  </Link>
+                </div>
+                {(activityByAlert[alert.id] ?? []).slice(0, 3).map((item) => (
+                  <div key={item.id} className="rounded-[20px] bg-[var(--jinka-surface-muted)] p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="space-y-2">
+                        <div className="text-sm font-semibold text-[var(--jinka-text)]">{item.title}</div>
+                        <div className="text-sm text-[var(--jinka-muted)]">{item.body}</div>
+                        {item.metadata?.eventType === "price_drop" ? (
+                          <div className="text-xs font-medium text-[var(--jinka-accent)]">
+                            Dropped by {item.metadata.percentageDrop ?? 0}% ({formatPrice(item.metadata.amountDrop)} EGP) from{" "}
+                            {formatPrice(item.metadata.previousBestPrice)} EGP
+                          </div>
+                        ) : null}
+                        <div className="flex flex-wrap gap-2">
+                          {(item.deliveries ?? []).map((delivery) => (
+                            <span
+                              key={`${item.id}:${delivery.channel}`}
+                              className="inline-flex rounded-full bg-[var(--jinka-surface)] px-3 py-1 text-xs font-medium text-[var(--jinka-muted)]"
+                            >
+                              {delivery.channel}: {delivery.status}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="text-xs text-[var(--jinka-muted)]">{formatDateTime(item.createdAt)}</div>
+                    </div>
+                  </div>
+                ))}
+                {(activityByAlert[alert.id] ?? []).length === 0 ? (
+                  <div className="rounded-[20px] bg-[var(--jinka-surface-muted)] px-4 py-3 text-sm text-[var(--jinka-muted)]">
+                    No activity yet for this alert.
+                  </div>
+                ) : null}
+              </div>
             </div>
           </Card>
         ))}

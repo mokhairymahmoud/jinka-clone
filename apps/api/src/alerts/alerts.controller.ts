@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, UseGuards } from "@nestjs/common";
-import { IsBoolean, IsDateString, IsObject, IsOptional, IsString } from "class-validator";
+import { IsBoolean, IsDateString, IsIn, IsInt, IsObject, IsOptional, IsString, Min } from "class-validator";
 
-import type { SearchFilters } from "@jinka-eg/types";
+import type { AlertDeliveryCadence, SearchFilters } from "@jinka-eg/types";
 import { CurrentUser } from "../auth/current-user.decorator.js";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard.js";
 import type { AuthenticatedUser } from "../auth/auth.types.js";
@@ -38,6 +38,20 @@ class CreateAlertDto {
   @IsOptional()
   @IsDateString()
   snoozedUntil?: string;
+
+  @IsOptional()
+  @IsIn(["immediate", "daily", "weekly"])
+  deliveryCadence?: AlertDeliveryCadence;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  minPriceDropPercent?: number | null;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  minPriceDropAmount?: number | null;
 }
 
 class UpdateAlertDto {
@@ -76,6 +90,20 @@ class UpdateAlertDto {
   @IsOptional()
   @IsBoolean()
   clearSnooze?: boolean;
+
+  @IsOptional()
+  @IsIn(["immediate", "daily", "weekly"])
+  deliveryCadence?: AlertDeliveryCadence;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  minPriceDropPercent?: number | null;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  minPriceDropAmount?: number | null;
 }
 
 @Controller("alerts")

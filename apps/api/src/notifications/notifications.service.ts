@@ -1,6 +1,6 @@
 import { Inject, Injectable, NotFoundException } from "@nestjs/common";
 
-import type { NotificationItem } from "@jinka-eg/types";
+import type { NotificationDeliveryStatus, NotificationItem } from "@jinka-eg/types";
 import { PrismaService } from "../common/prisma.service.js";
 import { ListingsService } from "../listings/listings.service.js";
 
@@ -39,6 +39,11 @@ export class NotificationsService {
             id: true,
             name: true
           }
+        },
+        deliveries: {
+          orderBy: {
+            createdAt: "asc"
+          }
         }
       }
     });
@@ -58,7 +63,14 @@ export class NotificationsService {
       alertId: notification.alert?.id ?? notification.alertId ?? undefined,
       alertName: notification.alert?.name ?? undefined,
       clusterId: notification.clusterId ?? undefined,
-      listing: notification.clusterId ? listingMap.get(notification.clusterId) : undefined
+      listing: notification.clusterId ? listingMap.get(notification.clusterId) : undefined,
+      metadata: ((notification.metadata ?? null) as NotificationItem["metadata"]) ?? undefined,
+      deliveries: notification.deliveries.map((delivery) => ({
+        channel: delivery.channel as "inbox" | "email" | "push",
+        status: delivery.status as NotificationDeliveryStatus,
+        attemptedAt: delivery.attemptedAt?.toISOString() ?? null,
+        deliveredAt: delivery.deliveredAt?.toISOString() ?? null
+      }))
     }));
   }
 }

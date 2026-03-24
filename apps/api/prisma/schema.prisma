@@ -124,6 +124,9 @@ model Alert {
   filters         Json
   isPaused        Boolean  @default(false)
   snoozedUntil    DateTime?
+  deliveryCadence String   @default("immediate")
+  minPriceDropPercent Int?
+  minPriceDropAmount  Int?
   notifyByPush    Boolean  @default(true)
   notifyByEmail   Boolean  @default(true)
   quietHoursStart String?

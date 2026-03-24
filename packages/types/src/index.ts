@@ -9,6 +9,8 @@ export type ListingPurpose = "rent" | "sale";
 export type MarketSegment = "resale" | "primary" | "off_plan";
 
 export type SearchSort = "relevance" | "newest" | "price_asc" | "price_desc";
+export type AlertDeliveryCadence = "immediate" | "daily" | "weekly";
+export type NotificationDeliveryStatus = "queued" | "deferred" | "delivered" | "skipped" | "failed";
 
 export type PropertyType =
   | "apartment"
@@ -159,11 +161,32 @@ export interface AlertDefinition {
   filters: SearchFilters;
   isPaused: boolean;
   snoozedUntil?: string | null;
+  deliveryCadence: AlertDeliveryCadence;
+  minPriceDropPercent?: number | null;
+  minPriceDropAmount?: number | null;
   notifyByPush: boolean;
   notifyByEmail: boolean;
   quietHoursStart?: string;
   quietHoursEnd?: string;
   lastMatchedAt?: string | null;
+}
+
+export interface NotificationDeliverySummary {
+  channel: "inbox" | "email" | "push";
+  status: NotificationDeliveryStatus;
+  attemptedAt?: string | null;
+  deliveredAt?: string | null;
+}
+
+export interface NotificationActivityMetadata {
+  eventType?: "new_listing" | "price_drop";
+  bestPrice?: number | null;
+  variantCount?: number;
+  previousBestPrice?: number | null;
+  amountDrop?: number | null;
+  percentageDrop?: number | null;
+  cadence?: AlertDeliveryCadence;
+  digest?: boolean;
 }
 
 export interface FavoriteRecord {
@@ -231,4 +254,6 @@ export interface NotificationItem {
   alertName?: string;
   clusterId?: string;
   listing?: ListingCluster;
+  metadata?: NotificationActivityMetadata;
+  deliveries?: NotificationDeliverySummary[];
 }

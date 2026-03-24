@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import type { SearchFilters } from "@jinka-eg/types";
+import type { AlertDeliveryCadence, SearchFilters } from "@jinka-eg/types";
 import { AreaSearchField, type AreaOption } from "./area-search-field";
 
 export function CreateAlertForm({
@@ -30,6 +30,9 @@ export function CreateAlertForm({
   const [maxPrice, setMaxPrice] = useState(initialFilters?.maxPrice ? String(initialFilters.maxPrice) : "");
   const [notifyByPush, setNotifyByPush] = useState(true);
   const [notifyByEmail, setNotifyByEmail] = useState(true);
+  const [deliveryCadence, setDeliveryCadence] = useState<AlertDeliveryCadence>("immediate");
+  const [minPriceDropPercent, setMinPriceDropPercent] = useState("");
+  const [minPriceDropAmount, setMinPriceDropAmount] = useState("");
   const [quietHoursStart, setQuietHoursStart] = useState("23:00");
   const [quietHoursEnd, setQuietHoursEnd] = useState("07:00");
   const [loading, setLoading] = useState(false);
@@ -63,6 +66,9 @@ export function CreateAlertForm({
           maxAreaSqm: initialFilters?.maxAreaSqm,
           bbox: initialFilters?.bbox
         },
+        deliveryCadence,
+        minPriceDropPercent: minPriceDropPercent ? Number(minPriceDropPercent) : null,
+        minPriceDropAmount: minPriceDropAmount ? Number(minPriceDropAmount) : null,
         notifyByPush,
         notifyByEmail,
         quietHoursStart,
@@ -126,6 +132,50 @@ export function CreateAlertForm({
           className="border border-[var(--jinka-border)] bg-[var(--jinka-surface-muted)] px-4 py-3 text-sm text-[var(--jinka-text)] outline-none transition focus:border-[var(--jinka-accent)]"
           placeholder="Max price"
         />
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="grid gap-2 text-sm text-[var(--jinka-muted)]">
+          <span>Delivery cadence</span>
+          <select
+            value={deliveryCadence}
+            onChange={(event) => setDeliveryCadence(event.target.value as AlertDeliveryCadence)}
+            className="border border-[var(--jinka-border)] bg-[var(--jinka-surface-muted)] px-4 py-3 text-sm text-[var(--jinka-text)] outline-none transition focus:border-[var(--jinka-accent)]"
+          >
+            <option value="immediate">Immediate</option>
+            <option value="daily">Daily digest</option>
+            <option value="weekly">Weekly digest</option>
+          </select>
+        </label>
+        <div className="rounded-[22px] bg-[var(--jinka-surface-muted)] px-4 py-3 text-sm text-[var(--jinka-muted)]">
+          Daily and weekly modes batch email and push delivery while still storing matches in the inbox immediately.
+        </div>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="grid gap-2 text-sm text-[var(--jinka-muted)]">
+          <span>Minimum price drop percent</span>
+          <input
+            type="number"
+            min="1"
+            value={minPriceDropPercent}
+            onChange={(event) => setMinPriceDropPercent(event.target.value)}
+            className="border border-[var(--jinka-border)] bg-[var(--jinka-surface-muted)] px-4 py-3 text-sm text-[var(--jinka-text)] outline-none transition focus:border-[var(--jinka-accent)]"
+            placeholder="Any drop"
+          />
+        </label>
+        <label className="grid gap-2 text-sm text-[var(--jinka-muted)]">
+          <span>Minimum price drop amount (EGP)</span>
+          <input
+            type="number"
+            min="1"
+            value={minPriceDropAmount}
+            onChange={(event) => setMinPriceDropAmount(event.target.value)}
+            className="border border-[var(--jinka-border)] bg-[var(--jinka-surface-muted)] px-4 py-3 text-sm text-[var(--jinka-text)] outline-none transition focus:border-[var(--jinka-accent)]"
+            placeholder="Any drop"
+          />
+        </label>
+      </div>
+      <div className="rounded-[22px] bg-[var(--jinka-surface-muted)] px-4 py-3 text-sm text-[var(--jinka-muted)]">
+        Price-drop rules only affect price-drop announcements. New listing matches still arrive immediately.
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex items-center gap-3 rounded-[22px] bg-[var(--jinka-surface-muted)] px-4 py-3 text-sm text-[var(--jinka-text)]">

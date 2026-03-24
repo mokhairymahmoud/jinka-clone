@@ -1,7 +1,7 @@
 import { Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 
-import type { ListingCluster, SearchFilters } from "@jinka-eg/types";
+import type { AlertDeliveryCadence, ListingCluster, SearchFilters } from "@jinka-eg/types";
 import { PrismaService } from "../common/prisma.service.js";
 import { ListingsService } from "../listings/listings.service.js";
 
@@ -45,6 +45,9 @@ function mapAlertRecord(
     filters: Prisma.JsonValue;
     isPaused: boolean;
     snoozedUntil: Date | null;
+    deliveryCadence: string;
+    minPriceDropPercent: number | null;
+    minPriceDropAmount: number | null;
     notifyByPush: boolean;
     notifyByEmail: boolean;
     quietHoursStart: string | null;
@@ -59,6 +62,9 @@ function mapAlertRecord(
     filters: alert.filters as SearchFilters,
     isPaused: alert.isPaused,
     snoozedUntil: alert.snoozedUntil?.toISOString() ?? null,
+    deliveryCadence: alert.deliveryCadence as AlertDeliveryCadence,
+    minPriceDropPercent: alert.minPriceDropPercent,
+    minPriceDropAmount: alert.minPriceDropAmount,
     notifyByPush: alert.notifyByPush,
     notifyByEmail: alert.notifyByEmail,
     quietHoursStart: alert.quietHoursStart ?? undefined,
@@ -91,6 +97,9 @@ export class AlertsService {
       filters: SearchFilters;
       isPaused?: boolean;
       snoozedUntil?: string;
+      deliveryCadence?: AlertDeliveryCadence;
+      minPriceDropPercent?: number | null;
+      minPriceDropAmount?: number | null;
       notifyByPush: boolean;
       notifyByEmail: boolean;
       quietHoursStart?: string;
@@ -105,6 +114,9 @@ export class AlertsService {
         filters: toJsonSearchFilters(payload.filters),
         isPaused: payload.isPaused ?? false,
         snoozedUntil: payload.snoozedUntil ? new Date(payload.snoozedUntil) : null,
+        deliveryCadence: payload.deliveryCadence ?? "immediate",
+        minPriceDropPercent: payload.minPriceDropPercent ?? null,
+        minPriceDropAmount: payload.minPriceDropAmount ?? null,
         notifyByPush: payload.notifyByPush,
         notifyByEmail: payload.notifyByEmail,
         quietHoursStart: payload.quietHoursStart,
@@ -128,6 +140,9 @@ export class AlertsService {
       name?: string;
       filters?: SearchFilters;
       isPaused?: boolean;
+      deliveryCadence?: AlertDeliveryCadence;
+      minPriceDropPercent?: number | null;
+      minPriceDropAmount?: number | null;
       notifyByPush?: boolean;
       notifyByEmail?: boolean;
       quietHoursStart?: string;
@@ -153,6 +168,9 @@ export class AlertsService {
         ...(payload.name !== undefined ? { name: payload.name } : {}),
         ...(payload.filters !== undefined ? { filters: toJsonSearchFilters(payload.filters) } : {}),
         ...(payload.isPaused !== undefined ? { isPaused: payload.isPaused } : {}),
+        ...(payload.deliveryCadence !== undefined ? { deliveryCadence: payload.deliveryCadence } : {}),
+        ...(payload.minPriceDropPercent !== undefined ? { minPriceDropPercent: payload.minPriceDropPercent } : {}),
+        ...(payload.minPriceDropAmount !== undefined ? { minPriceDropAmount: payload.minPriceDropAmount } : {}),
         ...(payload.notifyByPush !== undefined ? { notifyByPush: payload.notifyByPush } : {}),
         ...(payload.notifyByEmail !== undefined ? { notifyByEmail: payload.notifyByEmail } : {}),
         ...(payload.quietHoursStart !== undefined ? { quietHoursStart: payload.quietHoursStart } : {}),

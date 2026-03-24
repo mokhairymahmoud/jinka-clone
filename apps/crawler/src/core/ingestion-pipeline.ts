@@ -63,10 +63,18 @@ type PipelineStagePayload = {
   stage: "score-cluster" | "score-fraud" | "match-alerts" | "send-notification";
   clusterId?: string;
   eventType?: "new_listing" | "price_drop";
+  priceDrop?: PriceDropContext;
   notificationIds?: string[];
 };
 
 type AlertFilterRecord = Record<string, unknown>;
+
+type PriceDropContext = {
+  previousBestPrice: number;
+  currentBestPrice: number;
+  amountDrop: number;
+  percentageDrop: number;
+};
 
 type PersistedVariantRecord = Prisma.ListingVariantGetPayload<{
   include: {
@@ -96,6 +104,7 @@ type QueuedDeliveryRecord = Prisma.NotificationDeliveryGetPayload<{
 type ClusterSyncResult = {
   clusterId: string;
   eventType?: "new_listing" | "price_drop";
+  priceDrop?: PriceDropContext;
   reviewEdgeCount: number;
   autoAttached: boolean;
   collapsedCluster: boolean;
@@ -294,6 +303,34 @@ function isWithinQuietHours(start?: string | null, end?: string | null) {
   }
 
   return minutesNow >= startTotal || minutesNow <= endTotal;
+}
+
+function getDeliveryCadenceWindowMs(cadence?: string | null) {
+  if (cadence === "daily") {
+    return 24 * 60 * 60 * 1000;
+  }
+
+  if (cadence === "weekly") {
+    return 7 * 24 * 60 * 60 * 1000;
+  }
+
+  return 0;
+}
+
+function buildPriceDropContext(previousBestPrice: number | null, currentBestPrice: number) {
+  if (previousBestPrice === null || currentBestPrice >= previousBestPrice) {
+    return undefined;
+  }
+
+  const amountDrop = previousBestPrice - currentBestPrice;
+  const percentageDrop = Number(((amountDrop / previousBestPrice) * 100).toFixed(1));
+
+  return {
+    previousBestPrice,
+    currentBestPrice,
+    amountDrop,
+    percentageDrop
+  } satisfies PriceDropContext;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -1085,7 +1122,8 @@ export class IngestionPipeline {
         runId: payload.runId,
         stage: "score-cluster",
         clusterId: clusterSync.clusterId,
-        eventType: clusterSync.eventType
+        eventType: clusterSync.eventType,
+        priceDrop: clusterSync.priceDrop
       } satisfies PipelineStagePayload);
     }
 
@@ -1109,7 +1147,8 @@ export class IngestionPipeline {
         runId: payload.runId,
         stage: "score-fraud",
         clusterId: payload.clusterId,
-        eventType: payload.eventType
+        eventType: payload.eventType,
+        priceDrop: payload.priceDrop
       } satisfies PipelineStagePayload);
 
       return { source: payload.source, stage: payload.stage, status: "queued" };
@@ -1127,14 +1166,15 @@ export class IngestionPipeline {
         runId: payload.runId,
         stage: "match-alerts",
         clusterId: payload.clusterId,
-        eventType: payload.eventType
+        eventType: payload.eventType,
+        priceDrop: payload.priceDrop
       } satisfies PipelineStagePayload);
 
       return { source: payload.source, stage: payload.stage, status: "queued" };
     }
 
     if (payload.stage === "match-alerts" && payload.clusterId && payload.eventType) {
-      const notificationIds = await this.matchAlerts(payload.clusterId, payload.eventType);
+      const notificationIds = await this.matchAlerts(payload.clusterId, payload.eventType, payload.priceDrop);
 
       if (notificationIds.length > 0) {
         await this.queues["send-notification"].add(`send-notification:${payload.clusterId}:${Date.now()}`, {
@@ -1400,6 +1440,7 @@ export class IngestionPipeline {
             targetCluster.bestPrice !== null && normalized.price.amount < targetCluster.bestPrice
               ? "price_drop"
               : undefined,
+          priceDrop: buildPriceDropContext(targetCluster.bestPrice, normalized.price.amount),
           reviewEdgeCount: dedup.reviewEdgeCount,
           autoAttached: true,
           collapsedCluster: false
@@ -1454,6 +1495,7 @@ export class IngestionPipeline {
             targetCluster.bestPrice !== null && normalized.price.amount < targetCluster.bestPrice
               ? "price_drop"
               : undefined,
+          priceDrop: buildPriceDropContext(targetCluster.bestPrice, normalized.price.amount),
           reviewEdgeCount: dedup.reviewEdgeCount,
           autoAttached: true,
           collapsedCluster
@@ -1481,6 +1523,7 @@ export class IngestionPipeline {
       clusterId: currentCluster.id,
       eventType:
         currentCluster.bestPrice !== null && normalized.price.amount < currentCluster.bestPrice ? "price_drop" : undefined,
+      priceDrop: buildPriceDropContext(currentCluster.bestPrice, normalized.price.amount),
       reviewEdgeCount: dedup.reviewEdgeCount,
       autoAttached: false,
       collapsedCluster: false
@@ -1874,7 +1917,7 @@ export class IngestionPipeline {
     return true;
   }
 
-  private async matchAlerts(clusterId: string, eventType: "new_listing" | "price_drop") {
+  private async matchAlerts(clusterId: string, eventType: "new_listing" | "price_drop", priceDrop?: PriceDropContext) {
     const cluster = await this.prisma.listingCluster.findUnique({
       where: { id: clusterId },
       include: {
@@ -1915,13 +1958,17 @@ export class IngestionPipeline {
         continue;
       }
 
+      if (eventType === "price_drop" && !this.matchesPriceDropThresholds(alert, priceDrop)) {
+        continue;
+      }
+
       const title =
         eventType === "price_drop"
           ? `Price drop in ${cluster.area?.nameEn ?? "saved area"}`
           : `New match in ${cluster.area?.nameEn ?? "saved area"}`;
       const body =
         eventType === "price_drop"
-          ? `${cluster.canonicalTitleEn} is now available from EGP ${cluster.bestPrice ?? 0}.`
+          ? `${cluster.canonicalTitleEn} dropped by ${priceDrop?.percentageDrop ?? 0}% and is now available from EGP ${cluster.bestPrice ?? 0}.`
           : `${cluster.canonicalTitleEn} matched your alert ${alert.name}.`;
       const dedupeKey =
         eventType === "price_drop"
@@ -1936,6 +1983,9 @@ export class IngestionPipeline {
           metadata: {
             eventType,
             bestPrice: cluster.bestPrice,
+            previousBestPrice: priceDrop?.previousBestPrice ?? null,
+            amountDrop: priceDrop?.amountDrop ?? null,
+            percentageDrop: priceDrop?.percentageDrop ?? null,
             variantCount: cluster.variants.length
           }
         },
@@ -1950,6 +2000,9 @@ export class IngestionPipeline {
           metadata: {
             eventType,
             bestPrice: cluster.bestPrice,
+            previousBestPrice: priceDrop?.previousBestPrice ?? null,
+            amountDrop: priceDrop?.amountDrop ?? null,
+            percentageDrop: priceDrop?.percentageDrop ?? null,
             variantCount: cluster.variants.length
           }
         }
@@ -1966,6 +2019,34 @@ export class IngestionPipeline {
     }
 
     return notificationIds;
+  }
+
+  private matchesPriceDropThresholds(
+    alert: {
+      minPriceDropPercent: number | null;
+      minPriceDropAmount: number | null;
+    },
+    priceDrop?: PriceDropContext
+  ) {
+    const hasThreshold = alert.minPriceDropPercent !== null || alert.minPriceDropAmount !== null;
+
+    if (!hasThreshold) {
+      return true;
+    }
+
+    if (!priceDrop) {
+      return false;
+    }
+
+    if (alert.minPriceDropPercent !== null && priceDrop.percentageDrop < alert.minPriceDropPercent) {
+      return false;
+    }
+
+    if (alert.minPriceDropAmount !== null && priceDrop.amountDrop < alert.minPriceDropAmount) {
+      return false;
+    }
+
+    return true;
   }
 
   private matchesAlertFilters(
@@ -2095,6 +2176,14 @@ export class IngestionPipeline {
         pushEnabled?: boolean;
       };
       const inQuietHours = isWithinQuietHours(notification.alert?.quietHoursStart, notification.alert?.quietHoursEnd);
+      const cadenceWindowMs = getDeliveryCadenceWindowMs(notification.alert?.deliveryCadence);
+      const useDigestCadence = cadenceWindowMs > 0;
+      const emailEnabled = notification.alert?.notifyByEmail && prefs.emailEnabled !== false && !inQuietHours;
+      const pushEnabled =
+        notification.alert?.notifyByPush &&
+        prefs.pushEnabled !== false &&
+        notification.user.pushSubscriptions.length > 0 &&
+        !inQuietHours;
       const rows: Prisma.NotificationDeliveryCreateManyInput[] = [
         {
           notificationId: notification.id,
@@ -2108,11 +2197,11 @@ export class IngestionPipeline {
         {
           notificationId: notification.id,
           channel: "email",
-          status:
-            notification.alert?.notifyByEmail && prefs.emailEnabled !== false && !inQuietHours ? "queued" : "skipped",
-          attemptedAt:
-            notification.alert?.notifyByEmail && prefs.emailEnabled !== false && !inQuietHours ? null : new Date(),
+          status: emailEnabled ? (useDigestCadence ? "deferred" : "queued") : "skipped",
+          attemptedAt: emailEnabled ? null : new Date(),
           metadata: {
+            cadence: notification.alert?.deliveryCadence ?? "immediate",
+            digestMode: useDigestCadence,
             quietHours: inQuietHours,
             enabled: notification.alert?.notifyByEmail ?? false,
             userPrefEnabled: prefs.emailEnabled !== false,
@@ -2122,21 +2211,11 @@ export class IngestionPipeline {
         {
           notificationId: notification.id,
           channel: "push",
-          status:
-            notification.alert?.notifyByPush &&
-            prefs.pushEnabled !== false &&
-            notification.user.pushSubscriptions.length > 0 &&
-            !inQuietHours
-              ? "queued"
-              : "skipped",
-          attemptedAt:
-            notification.alert?.notifyByPush &&
-            prefs.pushEnabled !== false &&
-            notification.user.pushSubscriptions.length > 0 &&
-            !inQuietHours
-              ? null
-              : new Date(),
+          status: pushEnabled ? (useDigestCadence ? "deferred" : "queued") : "skipped",
+          attemptedAt: pushEnabled ? null : new Date(),
           metadata: {
+            cadence: notification.alert?.deliveryCadence ?? "immediate",
+            digestMode: useDigestCadence,
             quietHours: inQuietHours,
             enabled: notification.alert?.notifyByPush ?? false,
             userPrefEnabled: prefs.pushEnabled !== false,
@@ -2150,6 +2229,80 @@ export class IngestionPipeline {
         data: rows
       });
     }
+  }
+
+  async processDueDigestDeliveries(options: { limit?: number } = {}) {
+    const deferredDeliveries = await this.prisma.notificationDelivery.findMany({
+      where: {
+        status: "deferred",
+        channel: {
+          in: ["email", "push"]
+        }
+      },
+      orderBy: {
+        createdAt: "asc"
+      },
+      include: {
+        notification: {
+          include: {
+            alert: true,
+            user: {
+              include: {
+                pushSubscriptions: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    const groups = new Map<string, QueuedDeliveryRecord[]>();
+
+    for (const delivery of deferredDeliveries) {
+      const alertId = delivery.notification.alert?.id;
+
+      if (!alertId) {
+        continue;
+      }
+
+      const key = `${alertId}:${delivery.channel}`;
+      const existing = groups.get(key) ?? [];
+      existing.push(delivery);
+      groups.set(key, existing);
+    }
+
+    let processedGroups = 0;
+
+    for (const deliveries of groups.values()) {
+      if (processedGroups >= (options.limit ?? 25)) {
+        break;
+      }
+
+      const firstDelivery = deliveries[0];
+      const cadenceWindowMs = getDeliveryCadenceWindowMs(firstDelivery.notification.alert?.deliveryCadence);
+
+      if (cadenceWindowMs === 0) {
+        continue;
+      }
+
+      if (Date.now() - firstDelivery.createdAt.getTime() < cadenceWindowMs) {
+        continue;
+      }
+
+      if (firstDelivery.channel === "email") {
+        await this.sendEmailDigestDeliveries(deliveries);
+      }
+
+      if (firstDelivery.channel === "push") {
+        await this.sendPushDigestDeliveries(deliveries);
+      }
+
+      processedGroups += 1;
+    }
+
+    return {
+      processedDigestGroups: processedGroups
+    };
   }
 
   private async processNotificationDeliveries(notificationIds: string[]) {
@@ -2244,6 +2397,89 @@ export class IngestionPipeline {
     }
   }
 
+  private async sendEmailDigestDeliveries(deliveries: QueuedDeliveryRecord[]) {
+    const first = deliveries[0];
+    const alert = first.notification.alert;
+
+    if (!alert) {
+      return;
+    }
+
+    if (!process.env.EMAIL_FROM || !process.env.SES_REGION) {
+      await Promise.all(deliveries.map((delivery) => this.markDeliveryFailed(delivery.id, delivery.metadata, "SES is not configured")));
+      return;
+    }
+
+    const count = deliveries.length;
+    const cadence = alert.deliveryCadence ?? "digest";
+    const summaryLines = deliveries.slice(0, 5).map((delivery, index) => {
+      const listingUrl = delivery.notification.clusterId
+        ? `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/en/listing/${delivery.notification.clusterId}`
+        : null;
+
+      return [`${index + 1}. ${delivery.notification.title}`, listingUrl].filter(Boolean).join("\n");
+    });
+
+    if (count > 5) {
+      summaryLines.push(`...and ${count - 5} more matches in your inbox.`);
+    }
+
+    try {
+      const result = await this.getSesClient().send(
+        new SendEmailCommand({
+          FromEmailAddress: process.env.EMAIL_FROM,
+          Destination: {
+            ToAddresses: [first.notification.user.email]
+          },
+          Content: {
+            Simple: {
+              Subject: {
+                Data: `${count} new matches for ${alert.name}`
+              },
+              Body: {
+                Text: {
+                  Data: [
+                    `Here is your ${cadence} digest for ${alert.name}.`,
+                    "",
+                    ...summaryLines,
+                    "",
+                    `Open your inbox: ${(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000")}/en/inbox?alertId=${alert.id}`
+                  ].join("\n")
+                }
+              }
+            }
+          }
+        })
+      );
+
+      await Promise.all(
+        deliveries.map((delivery) =>
+          this.prisma.notificationDelivery.update({
+            where: { id: delivery.id },
+            data: {
+              status: "delivered",
+              attemptedAt: new Date(),
+              deliveredAt: new Date(),
+              metadata: {
+                ...(delivery.metadata as Record<string, unknown> | null),
+                digest: true,
+                digestCount: count,
+                messageId: result.MessageId ?? null,
+                recipient: first.notification.user.email
+              }
+            }
+          })
+        )
+      );
+    } catch (error) {
+      await Promise.all(
+        deliveries.map((delivery) =>
+          this.markDeliveryFailed(delivery.id, delivery.metadata, (error as Error).message)
+        )
+      );
+    }
+  }
+
   private async sendPushDelivery(delivery: QueuedDeliveryRecord) {
     if (!process.env.WEB_PUSH_PUBLIC_KEY || !process.env.WEB_PUSH_PRIVATE_KEY || !process.env.EMAIL_FROM) {
       await this.markDeliveryFailed(delivery.id, delivery.metadata, "Web push is not configured");
@@ -2325,6 +2561,98 @@ export class IngestionPipeline {
         }
       }
     });
+  }
+
+  private async sendPushDigestDeliveries(deliveries: QueuedDeliveryRecord[]) {
+    const first = deliveries[0];
+    const alert = first.notification.alert;
+
+    if (!alert) {
+      return;
+    }
+
+    if (!process.env.WEB_PUSH_PUBLIC_KEY || !process.env.WEB_PUSH_PRIVATE_KEY || !process.env.EMAIL_FROM) {
+      await Promise.all(
+        deliveries.map((delivery) => this.markDeliveryFailed(delivery.id, delivery.metadata, "Web push is not configured"))
+      );
+      return;
+    }
+
+    const subscriptions = first.notification.user.pushSubscriptions;
+
+    if (subscriptions.length === 0) {
+      await Promise.all(
+        deliveries.map((delivery) =>
+          this.prisma.notificationDelivery.update({
+            where: { id: delivery.id },
+            data: {
+              status: "skipped",
+              attemptedAt: new Date(),
+              metadata: {
+                ...(delivery.metadata as Record<string, unknown> | null),
+                digest: true,
+                reason: "no_subscriptions"
+              }
+            }
+          })
+        )
+      );
+      return;
+    }
+
+    webpush.setVapidDetails(`mailto:${process.env.EMAIL_FROM}`, process.env.WEB_PUSH_PUBLIC_KEY, process.env.WEB_PUSH_PRIVATE_KEY);
+
+    const payload = JSON.stringify({
+      title: `New matches for ${alert.name}`,
+      body: `${deliveries.length} listings matched since your last ${alert.deliveryCadence} digest.`,
+      alertId: alert.id
+    });
+    let deliveredCount = 0;
+    const failures: Array<{ endpoint: string; message: string }> = [];
+
+    for (const subscription of subscriptions) {
+      try {
+        await webpush.sendNotification(
+          {
+            endpoint: subscription.endpoint,
+            keys: {
+              p256dh: subscription.p256dhKey,
+              auth: subscription.authKey
+            }
+          },
+          payload
+        );
+        deliveredCount += 1;
+      } catch (error) {
+        failures.push({
+          endpoint: subscription.endpoint,
+          message: (error as Error).message
+        });
+      }
+    }
+
+    const status = deliveredCount > 0 ? "delivered" : "failed";
+
+    await Promise.all(
+      deliveries.map((delivery) =>
+        this.prisma.notificationDelivery.update({
+          where: { id: delivery.id },
+          data: {
+            status,
+            attemptedAt: new Date(),
+            deliveredAt: deliveredCount > 0 ? new Date() : null,
+            metadata: {
+              ...(delivery.metadata as Record<string, unknown> | null),
+              digest: true,
+              digestCount: deliveries.length,
+              deliveredCount,
+              failureCount: failures.length,
+              failures
+            }
+          }
+        })
+      )
+    );
   }
 
   private async markDeliveryFailed(id: string, metadata: Prisma.JsonValue | null, errorMessage: string) {

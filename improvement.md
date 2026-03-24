@@ -284,15 +284,18 @@ Once auth is hardened, users need visibility and control over their active sessi
 
 ### 10. Better alert controls
 
-Status: In progress
+Status: Completed
 
 Implemented in current slice:
 
 - Pause or resume an alert
 - Snooze an alert for 24 hours or 7 days
+- Choose immediate, daily digest, or weekly digest delivery cadence
+- Set minimum price-drop percentage and amount thresholds per alert
 - Edit per-alert push and email delivery settings
 - Edit quiet hours from the alert UI
 - Track and display the last matched time for each alert
+- Show recent per-alert activity history with delivery statuses
 
 #### Why
 

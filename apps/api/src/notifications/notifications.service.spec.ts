@@ -23,7 +23,30 @@ describe("NotificationsService.getNotifications", () => {
             alert: {
               id: "alert-1",
               name: "Working Alert"
-            }
+            },
+            metadata: {
+              eventType: "price_drop",
+              bestPrice: 4500000,
+              previousBestPrice: 5000000,
+              amountDrop: 500000,
+              percentageDrop: 10
+            },
+            deliveries: [
+              {
+                channel: "inbox",
+                status: "delivered",
+                attemptedAt: null,
+                deliveredAt: createdAt,
+                createdAt
+              },
+              {
+                channel: "email",
+                status: "deferred",
+                attemptedAt: null,
+                deliveredAt: null,
+                createdAt
+              }
+            ]
           }
         ])
       }
@@ -67,7 +90,28 @@ describe("NotificationsService.getNotifications", () => {
         alertId: "alert-1",
         alertName: "Working Alert",
         clusterId: "cluster-1",
-        listing: expect.objectContaining({ id: "cluster-1" })
+        listing: expect.objectContaining({ id: "cluster-1" }),
+        metadata: {
+          eventType: "price_drop",
+          bestPrice: 4500000,
+          previousBestPrice: 5000000,
+          amountDrop: 500000,
+          percentageDrop: 10
+        },
+        deliveries: [
+          {
+            channel: "inbox",
+            status: "delivered",
+            attemptedAt: null,
+            deliveredAt: createdAt.toISOString()
+          },
+          {
+            channel: "email",
+            status: "deferred",
+            attemptedAt: null,
+            deliveredAt: null
+          }
+        ]
       }
     ]);
     expect(prisma.alert.findFirst).not.toHaveBeenCalled();
@@ -82,6 +126,11 @@ describe("NotificationsService.getNotifications", () => {
           select: {
             id: true,
             name: true
+          }
+        },
+        deliveries: {
+          orderBy: {
+            createdAt: "asc"
           }
         }
       }
@@ -123,6 +172,11 @@ describe("NotificationsService.getNotifications", () => {
           select: {
             id: true,
             name: true
+          }
+        },
+        deliveries: {
+          orderBy: {
+            createdAt: "asc"
           }
         }
       }

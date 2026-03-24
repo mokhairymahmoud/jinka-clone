@@ -3,11 +3,16 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import type { AlertDeliveryCadence } from "@jinka-eg/types";
+
 type AlertControlsFormProps = {
   alert: {
     id: string;
     isPaused: boolean;
     snoozedUntil?: string | null;
+    deliveryCadence: AlertDeliveryCadence;
+    minPriceDropPercent?: number | null;
+    minPriceDropAmount?: number | null;
     notifyByPush: boolean;
     notifyByEmail: boolean;
     quietHoursStart?: string;
@@ -20,6 +25,9 @@ export function AlertControlsForm({ alert }: AlertControlsFormProps) {
   const [loading, setLoading] = useState(false);
   const [notifyByPush, setNotifyByPush] = useState(alert.notifyByPush);
   const [notifyByEmail, setNotifyByEmail] = useState(alert.notifyByEmail);
+  const [deliveryCadence, setDeliveryCadence] = useState<AlertDeliveryCadence>(alert.deliveryCadence);
+  const [minPriceDropPercent, setMinPriceDropPercent] = useState(alert.minPriceDropPercent ? String(alert.minPriceDropPercent) : "");
+  const [minPriceDropAmount, setMinPriceDropAmount] = useState(alert.minPriceDropAmount ? String(alert.minPriceDropAmount) : "");
   const [quietHoursStart, setQuietHoursStart] = useState(alert.quietHoursStart ?? "23:00");
   const [quietHoursEnd, setQuietHoursEnd] = useState(alert.quietHoursEnd ?? "07:00");
   const [message, setMessage] = useState<string | null>(null);
@@ -50,6 +58,9 @@ export function AlertControlsForm({ alert }: AlertControlsFormProps) {
 
   async function handleSavePreferences() {
     await patchAlert({
+      deliveryCadence,
+      minPriceDropPercent: minPriceDropPercent ? Number(minPriceDropPercent) : null,
+      minPriceDropAmount: minPriceDropAmount ? Number(minPriceDropAmount) : null,
       notifyByPush,
       notifyByEmail,
       quietHoursStart,
@@ -115,6 +126,50 @@ export function AlertControlsForm({ alert }: AlertControlsFormProps) {
             Clear snooze
           </button>
         ) : null}
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="grid gap-2 text-sm text-[var(--jinka-muted)]">
+          <span>Delivery cadence</span>
+          <select
+            value={deliveryCadence}
+            onChange={(event) => setDeliveryCadence(event.target.value as AlertDeliveryCadence)}
+            className="rounded-[18px] border border-[var(--jinka-border)] bg-[var(--jinka-surface)] px-4 py-3 text-[var(--jinka-text)] outline-none"
+          >
+            <option value="immediate">Immediate</option>
+            <option value="daily">Daily digest</option>
+            <option value="weekly">Weekly digest</option>
+          </select>
+        </label>
+        <div className="rounded-[20px] bg-[var(--jinka-surface)] px-4 py-3 text-sm text-[var(--jinka-muted)]">
+          Digest modes keep the inbox live and batch external email/push delivery into a scheduled summary.
+        </div>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="grid gap-2 text-sm text-[var(--jinka-muted)]">
+          <span>Minimum price drop percent</span>
+          <input
+            type="number"
+            min="1"
+            value={minPriceDropPercent}
+            onChange={(event) => setMinPriceDropPercent(event.target.value)}
+            className="rounded-[18px] border border-[var(--jinka-border)] bg-[var(--jinka-surface)] px-4 py-3 text-[var(--jinka-text)] outline-none"
+            placeholder="Any drop"
+          />
+        </label>
+        <label className="grid gap-2 text-sm text-[var(--jinka-muted)]">
+          <span>Minimum price drop amount (EGP)</span>
+          <input
+            type="number"
+            min="1"
+            value={minPriceDropAmount}
+            onChange={(event) => setMinPriceDropAmount(event.target.value)}
+            className="rounded-[18px] border border-[var(--jinka-border)] bg-[var(--jinka-surface)] px-4 py-3 text-[var(--jinka-text)] outline-none"
+            placeholder="Any drop"
+          />
+        </label>
+      </div>
+      <div className="rounded-[20px] bg-[var(--jinka-surface)] px-4 py-3 text-sm text-[var(--jinka-muted)]">
+        Set either threshold, or both, to only announce meaningful price drops for this alert.
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex items-center gap-3 rounded-[20px] bg-[var(--jinka-surface)] px-4 py-3 text-sm text-[var(--jinka-text)]">

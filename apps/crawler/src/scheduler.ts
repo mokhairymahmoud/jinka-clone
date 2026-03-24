@@ -44,6 +44,9 @@ async function main() {
     const stale = await pipeline.markInactiveVariants({
       sources
     });
+    const digests = await pipeline.processDueDigestDeliveries({
+      limit: Math.max(5, Math.round(limit / 2))
+    });
 
     console.log(
       JSON.stringify(
@@ -53,7 +56,8 @@ async function main() {
           queuedPartitions: queued.queuedPartitions,
           queuedDetailRefreshes: refreshed.queuedVariants,
           queuedSources: [...new Set([...queued.queuedSources, ...refreshed.queuedSources])],
-          markedInactive: stale.markedInactive
+          markedInactive: stale.markedInactive,
+          processedDigestGroups: digests.processedDigestGroups
         },
         null,
         2
