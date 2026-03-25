@@ -2,14 +2,28 @@ import { Badge, Card } from "@jinka-eg/ui";
 
 import { AccountSettingsForm } from "../../../../components/account-settings-form";
 import { PushSubscriptionManager } from "../../../../components/push-subscription-manager";
+import { SessionManagementPanel } from "../../../../components/session-management-panel";
 import { getMessages, resolveLocale } from "../../../../i18n/messages";
 import { requireSessionUser } from "../../../../lib/session";
+import { authenticatedApiFetch } from "../../../../lib/server-api";
+
+async function fetchSessions() {
+  const response = await authenticatedApiFetch("/v1/auth/sessions", undefined, {
+    persistRefresh: true
+  });
+
+  if (!response?.ok) {
+    return [];
+  }
+
+  return response.json();
+}
 
 export default async function AccountPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   const safeLocale = resolveLocale(locale);
   const t = getMessages(safeLocale);
-  const user = await requireSessionUser(safeLocale);
+  const [user, sessions] = await Promise.all([requireSessionUser(safeLocale), fetchSessions()]);
 
   return (
     <div className="space-y-6">
@@ -39,6 +53,9 @@ export default async function AccountPage({ params }: { params: Promise<{ locale
             disconnectedLabel={t.pushDisconnected}
             unsupportedLabel={t.pushNotSupported}
           />
+        </Card>
+        <Card className="border-[var(--jinka-border)] p-6 shadow-[var(--jinka-shadow)] md:col-span-2">
+          <SessionManagementPanel sessions={sessions as Parameters<typeof SessionManagementPanel>[0]["sessions"]} locale={safeLocale} />
         </Card>
       </div>
     </div>

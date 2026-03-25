@@ -1,7 +1,10 @@
-import { Body, Controller, Get, Headers, Inject, Post, Query, Req, Res } from "@nestjs/common";
+import { Body, Controller, Get, Headers, Inject, Param, Post, Query, Req, Res, UseGuards } from "@nestjs/common";
 import { IsEmail, IsString, Length } from "class-validator";
 import type { Request, Response } from "express";
 
+import { CurrentUser } from "./current-user.decorator.js";
+import { JwtAuthGuard } from "./jwt-auth.guard.js";
+import type { AuthenticatedUser } from "./auth.types.js";
 import { AuthService } from "./auth.service.js";
 
 class RequestOtpDto {
@@ -39,6 +42,11 @@ class GoogleCallbackQueryDto {
   state!: string;
 }
 
+class SessionParamsDto {
+  @IsString()
+  sessionId!: string;
+}
+
 function toSessionResponseBody(result: {
   user: {
     id: string;
@@ -59,8 +67,10 @@ export class AuthController {
   constructor(@Inject(AuthService) private readonly authService: AuthService) {}
 
   @Post("email/request-otp")
-  requestOtp(@Body() body: RequestOtpDto) {
-    return this.authService.requestOtp(body.email);
+  requestOtp(@Body() body: RequestOtpDto, @Req() req: Request) {
+    return this.authService.requestOtp(body.email, {
+      ipAddress: req.ip
+    });
   }
 
   @Post("email/verify-otp")
@@ -103,6 +113,24 @@ export class AuthController {
     res.clearCookie("access_token");
     res.clearCookie("refresh_token");
     return { success: true };
+  }
+
+  @Get("sessions")
+  @UseGuards(JwtAuthGuard)
+  getSessions(@CurrentUser() user: AuthenticatedUser) {
+    return this.authService.getSessions(user.id, user.sessionId);
+  }
+
+  @Post("sessions/revoke-others")
+  @UseGuards(JwtAuthGuard)
+  revokeOtherSessions(@CurrentUser() user: AuthenticatedUser) {
+    return this.authService.revokeOtherSessions(user.id, user.sessionId);
+  }
+
+  @Post("sessions/:sessionId/revoke")
+  @UseGuards(JwtAuthGuard)
+  revokeSession(@CurrentUser() user: AuthenticatedUser, @Param() params: SessionParamsDto) {
+    return this.authService.revokeSession(user.id, params.sessionId);
   }
 
   @Get("google/start")

@@ -57,6 +57,18 @@ The web app currently treats the presence of an `access_token` cookie as authent
 
 ### 2. Harden OTP authentication
 
+Status: Completed
+
+Implemented in current slice:
+
+- Add per-email and per-IP OTP request throttling
+- Add per-email and per-IP OTP verification throttling
+- Enforce max-attempt lockout on the active `OtpChallenge`
+- Mark locked challenges with `blockedAt` and stop them from being reused
+- Invalidate older active challenges when issuing a new OTP
+- Record request and verification IP metadata on OTP challenges
+- Emit abuse warnings when throttles or challenge lockouts trigger
+
 #### Problem
 
 OTP challenges are generated and failed attempts are counted, but the system does not enforce a maximum number of attempts or rate-limit requests. That leaves the latest active OTP vulnerable to brute-force attempts.
@@ -260,6 +272,17 @@ Generated `tsbuildinfo` files are tracked in the repo and Turbo reports warnings
 ## Priority 3: Product Features
 
 ### 9. Session and device management
+
+Status: Completed
+
+Implemented in current slice:
+
+- Add an active session list under account settings
+- Mark the current device session explicitly
+- Show last active time, sign-in time, expiry time, IP, and device/browser summary
+- Revoke a specific non-current session
+- Revoke all other sessions in one action
+- Record session refresh activity timestamps on `AuthSession`
 
 #### Why
 

@@ -22,12 +22,14 @@ export class JwtAuthGuard implements CanActivate {
         sub: string;
         email: string;
         role: AuthenticatedUser["role"];
+        sid?: string;
       }>(token, { secret: process.env.JWT_ACCESS_SECRET ?? "development-secret" });
 
       request.user = {
         id: payload.sub,
         email: payload.email,
-        role: payload.role
+        role: payload.role,
+        sessionId: payload.sid
       } satisfies AuthenticatedUser;
 
       return true;

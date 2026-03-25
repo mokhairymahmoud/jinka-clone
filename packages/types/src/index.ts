@@ -243,6 +243,17 @@ export interface ReportRecord {
   createdAt: string;
 }
 
+export interface AuthSessionRecord {
+  id: string;
+  current: boolean;
+  deviceLabel: string;
+  browserLabel: string;
+  ipAddress?: string | null;
+  createdAt: string;
+  lastSeenAt: string;
+  expiresAt: string;
+}
+
 export interface NotificationItem {
   id: string;
   title: string;

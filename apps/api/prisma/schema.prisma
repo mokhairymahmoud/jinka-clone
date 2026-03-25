@@ -80,8 +80,12 @@ model OtpChallenge {
   userId      String?
   email       String
   codeHash    String
+  requestIp   String?
+  lastAttemptIp String?
+  lastAttemptAt DateTime?
   expiresAt   DateTime
   consumedAt  DateTime?
+  blockedAt   DateTime?
   attempts    Int      @default(0)
   user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
@@ -96,6 +100,7 @@ model AuthSession {
   refreshTokenHash String
   userAgent        String?
   ipAddress        String?
+  lastSeenAt       DateTime @default(now())
   expiresAt        DateTime
   revokedAt        DateTime?
   user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
